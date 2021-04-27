@@ -1,3 +1,4 @@
 ﻿# RobinLe Libraries
-This repo contains some libraries which were primarily created for game developement.
+In this repository, I'm currently working on sources that are supposed to one day be part of static game engine libraries.
 
+I'm planning to create at least a NES-like game engine and a simple, png-based 2D game engine.

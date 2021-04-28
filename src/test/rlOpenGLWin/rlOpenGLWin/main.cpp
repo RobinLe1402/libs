@@ -107,6 +107,8 @@ public:
 private:
 
 	GLuint m_iTex = 0;
+	double dHeight = 1;
+	bool bHeightInc = false;
 
 	bool OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override
 	{
@@ -158,17 +160,43 @@ private:
 
 	bool OnUpdate(float fElapsedTime) override
 	{
+		if (bHeightInc)
+		{
+			dHeight += fElapsedTime * 0.5;
+			if (dHeight >= 1)
+			{
+				dHeight = 1;
+				bHeightInc = false;
+			}
+		}
+		else
+		{
+			dHeight -= fElapsedTime * 0.5;
+			if (dHeight <= 0)
+			{
+				dHeight = 0;
+				bHeightInc = true;
+			}
+		}
+
+
 		glBindTexture(GL_TEXTURE_2D, m_iTex);
 		glBegin(GL_QUADS);
 		{
-			glTexCoord2f(0.0f, 1.0);		glVertex3f(-1.0f, -1.0f, 0.0f);
+			/*glTexCoord2f(0.0f, 1.0);		glVertex3f(-1.0f, -1.0f, 0.0f);
 			glTexCoord2f(0.0f, 0.0);		glVertex3f(-1.0f, 1.0f, 0.0f);
 			glTexCoord2f(1.0f, 0.0);		glVertex3f(1.0f, 1.0f, 0.0f);
-			glTexCoord2f(1.0f, 1.0);		glVertex3f(1.0f, -1.0f, 0.0f);
+			glTexCoord2f(1.0f, 1.0);		glVertex3f(1.0f, -1.0f, 0.0f);*/
+
+			glTexCoord2f(0.0f, dHeight);	glVertex3f(-1.0f, -1.0f, 0.0f);
+			glTexCoord2f(0.0f, 0.0);		glVertex3f(-1.0f, 1.0f, 0.0f);
+			glTexCoord2f(1.0f, 0.0);		glVertex3f(1.0f, 1.0f, 0.0f);
+			glTexCoord2f(1.0f, dHeight);	glVertex3f(1.0f, -1.0f, 0.0f);
 		}
 		glEnd();
 
-		setTitle(std::to_wstring(fElapsedTime).c_str());
+		//setTitle(std::to_wstring(fElapsedTime).c_str());
+		//OutputDebugStringA((std::to_string(fElapsedTime) + '\n').c_str());
 
 		return true;
 	}
@@ -188,8 +216,8 @@ int WINAPI WinMain(
 	config.bVSync = true;
 	config.bInitialFullscreen = false;
 	config.bResizable = true;
-	config.iWidth = 256 * 2;
-	config.iHeight = 240 * 2;
+	config.iWidth = 256 * 4;
+	config.iHeight = 240 * 4;
 	config.szWinClassName = L"rlOpenGLWin_TestWin";
 	config.szInitialCaption = L"OpenGL Test";
 

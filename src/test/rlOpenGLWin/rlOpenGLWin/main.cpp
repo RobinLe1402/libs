@@ -183,15 +183,17 @@ private:
 		glBindTexture(GL_TEXTURE_2D, m_iTex);
 		glBegin(GL_QUADS);
 		{
+			// static texture
 			/*glTexCoord2f(0.0f, 1.0);		glVertex3f(-1.0f, -1.0f, 0.0f);
 			glTexCoord2f(0.0f, 0.0);		glVertex3f(-1.0f, 1.0f, 0.0f);
 			glTexCoord2f(1.0f, 0.0);		glVertex3f(1.0f, 1.0f, 0.0f);
 			glTexCoord2f(1.0f, 1.0);		glVertex3f(1.0f, -1.0f, 0.0f);*/
 
-			glTexCoord2f(0.0f, dHeight);	glVertex3f(-1.0f, -1.0f, 0.0f);
-			glTexCoord2f(0.0f, 0.0);		glVertex3f(-1.0f, 1.0f, 0.0f);
-			glTexCoord2f(1.0f, 0.0);		glVertex3f(1.0f, 1.0f, 0.0f);
-			glTexCoord2f(1.0f, dHeight);	glVertex3f(1.0f, -1.0f, 0.0f);
+			// animated texture
+			glTexCoord2f(0.0f, (GLfloat)dHeight);	glVertex3f(-1.0f, -1.0f, 0.0f);
+			glTexCoord2f(0.0f, 0.0);				glVertex3f(-1.0f, 1.0f, 0.0f);
+			glTexCoord2f(1.0f, 0.0);				glVertex3f(1.0f, 1.0f, 0.0f);
+			glTexCoord2f(1.0f, (GLfloat)dHeight);	glVertex3f(1.0f, -1.0f, 0.0f);
 		}
 		glEnd();
 

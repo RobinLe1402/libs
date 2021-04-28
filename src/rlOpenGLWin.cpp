@@ -28,7 +28,6 @@ namespace rl
 	bool OpenGLWin::m_bRunning = false;
 	OpenGLWin* OpenGLWin::m_pInstance = nullptr;
 	DWORD OpenGLWin::m_dwStyleCache = 0;
-	bool OpenGLWin::m_bUnknownSize = false;
 
 
 
@@ -89,20 +88,6 @@ namespace rl
 			}
 			if (wParam != SIZE_MINIMIZED)
 				m_pInstance->processResize(LOWORD(lParam), HIWORD(lParam));
-			break;
-
-		case WM_SIZING:
-			m_bUnknownSize = true;
-			break;
-
-		case WM_PAINT:
-			bProcessed = false;
-			if (!m_bUnknownSize) // only process message if window size changed
-				break;
-
-			GetClientRect(m_pInstance->m_hWnd, &rect);
-			m_pInstance->processResize(rect.right - rect.left, rect.bottom - rect.top);
-			m_bUnknownSize = false;
 			break;
 
 

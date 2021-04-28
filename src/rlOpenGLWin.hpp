@@ -292,7 +292,6 @@ namespace rl
 		HGLRC m_hGLRC = NULL; // OpenGL rendering context
 
 		static DWORD m_dwStyleCache; // cached dwStyle. Only used on first WM_GETMINMAXINFO
-		static bool m_bUnknownSize; // is the current exact window size unknown?
 
 		int m_iWinPosX = 50, m_iWinPosY = 50; // for when switching to windowed mode
 

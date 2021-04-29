@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8437c0c4-4012-4992-ba88-a984d882d6e4}</ProjectGuid>
-    <RootNamespace>rlOpenGLWin</RootNamespace>
+    <ProjectGuid>{36278131-5fa4-4994-8d41-c04db4713cfb}</ProjectGuid>
+    <RootNamespace>rlSplashScreen</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -59,23 +59,23 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\_Project properties\robinle.props" />
-    <Import Project="..\..\..\..\_Project properties\robinle32.props" />
+    <Import Project="..\..\..\_Project properties\robinle.props" />
+    <Import Project="..\..\..\_Project properties\robinle32.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\_Project properties\robinle.props" />
-    <Import Project="..\..\..\..\_Project properties\robinle32.props" />
+    <Import Project="..\..\..\_Project properties\robinle.props" />
+    <Import Project="..\..\..\_Project properties\robinle32.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\_Project properties\robinle.props" />
-    <Import Project="..\..\..\..\_Project properties\robinle64.props" />
+    <Import Project="..\..\..\_Project properties\robinle.props" />
+    <Import Project="..\..\..\_Project properties\robinle64.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\_Project properties\robinle.props" />
-    <Import Project="..\..\..\..\_Project properties\robinle64.props" />
+    <Import Project="..\..\..\_Project properties\robinle.props" />
+    <Import Project="..\..\..\_Project properties\robinle64.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -143,19 +143,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\rlOpenGLWin.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\..\rlSplashScreen.cpp" />
+    <ClCompile Include="test-rlSplashScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\rlOpenGLWin.hpp" />
+    <ClInclude Include="..\..\rlSplashScreen.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico" />
-    <Image Include="..\..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlOpenGLWin Test\texture.bmp" />
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
+    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlSplashScreen Test\boot.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

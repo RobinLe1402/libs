@@ -1,4 +1,4 @@
-#include "../../../rlOpenGLWin.hpp"
+#include "../../rlOpenGLWin.hpp"
 
 #include "resource.h"
 
@@ -167,7 +167,7 @@ private:
 
 	bool OnCreate() override
 	{
-		OpenGLImage img(m_hInstance, MAKEINTRESOURCEW(IDB_BITMAP1));
+		OpenGLImage img(m_hInstance, MAKEINTRESOURCEW(IDB_TEXTURE));
 
 		uint32_t iColor[] = { 0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFF000000 };
 
@@ -322,7 +322,7 @@ int WINAPI WinMain(
 	config.iHeight = 240 * 4;
 	config.szWinClassName = L"rlOpenGLWin_TestWin";
 	config.szInitialCaption = L"OpenGL Test";
-	config.hIconBig = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_ICON1));
+	config.hIconBig = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_ROBINLE));
 
 	win.run(config);
 

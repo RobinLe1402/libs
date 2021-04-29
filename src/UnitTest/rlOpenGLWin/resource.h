@@ -2,8 +2,8 @@
 // Microsoft Visual C++ generated include file.
 // Used by resource.rc
 //
-#define IDB_BITMAP1                     101
-#define IDI_ICON1                       102
+#define IDB_TEXTURE                     101
+#define IDI_ROBINLE                     102
 
 // Next default values for new objects
 // 

@@ -267,7 +267,7 @@ namespace rl
 
 	private: // methods
 
-		static LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		static LRESULT WINAPI WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/// <summary>
 		/// Set the minimum/maximum size struct on <c>WM_GETMINMAXINFO</c>

@@ -318,6 +318,7 @@ namespace rl
 
 				float fElapsed = oElapsed.count();
 
+				glClear(GL_COLOR_BUFFER_BIT);
 				if (!OnUpdate(fElapsed))
 					m_bAtomRunning = false;
 

@@ -1,7 +1,7 @@
 /***************************************************************************************************
  FILE:	rlOpenGLWin.hpp
  LIB:	rlOpenGLWin.lib
- DESCR:	Library for creating an OpenGL window
+ DESCR:	Class for creating an OpenGL (game) window
 ***************************************************************************************************/
 
 
@@ -55,6 +55,15 @@ typedef nativeuint_t		WPARAM;
 // DECLARATION
 namespace rl
 {
+
+	/// <summary>
+	/// OpenGL coordinates for placing textures
+	/// </summary>
+	struct OpenGLCoord
+	{
+		float x, y;
+	};
+
 
 	/// <summary>
 	/// Startup configuration for <c>rl::OpenGLWin</c>
@@ -195,14 +204,28 @@ namespace rl
 		void setWindowedSize(uint32_t width, uint32_t height);
 
 		/// <summary>
-		/// Get current client width
+		/// Get current client width<para/>
+		/// Uses cached size data from before last <c>OnUpdate()</c> call
 		/// </summary>
-		inline uint32_t getWidth() { return m_iWidth; }
+		inline uint32_t getWidth() { return m_iCachedWidth; }
 
 		/// <summary>
-		/// Get current client height
+		/// Get current client height<para/>
+		/// Uses cached size data from before last <c>OnUpdate()</c> call
 		/// </summary>
-		inline uint32_t getHeight() { return m_iHeight; }
+		inline uint32_t getHeight() { return m_iCachedHeight; }
+
+		/// <summary>
+		/// Get current client width<para/>
+		/// Uses live size data which might have changed since the last <c>OnUpdate()</c> call
+		/// </summary>
+		inline uint32_t getLiveWidth() { return m_iWidth; }
+
+		/// <summary>
+		/// Get current client height<para/>
+		/// Uses live size data which might have changed since the last <c>OnUpdate()</c> call
+		/// </summary>
+		inline uint32_t getLiveHeight() { return m_iHeight; }
 
 
 
@@ -234,6 +257,14 @@ namespace rl
 		void setIcon(HICON BigIcon, HICON SmallIcon = NULL);
 
 
+
+		/// <summary>
+		/// Convert pixel coordinates to OpenGL coordinates (for texture placement)<para/>
+		/// Uses cached size data from before last <c>OnUpdate()</c> call
+		/// </summary>
+		OpenGLCoord getPixelCoord(int x, int y);
+
+
 	private: // methods
 
 		static LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -257,6 +288,11 @@ namespace rl
 		/// Process a restored fullscreen window
 		/// </summary>
 		void processRestore();
+
+		/// <summary>
+		/// Write the current size into the cache variables
+		/// </summary>
+		void cacheSize();
 
 
 	private: // variables
@@ -284,6 +320,7 @@ namespace rl
 		static std::atomic<bool> m_bRunning; // for allowing run() only once
 		std::atomic<bool> m_bMinimized = false; // window currently minimized?
 		std::atomic<uint32_t> m_iWidth = 0, m_iHeight = 0; // current client size
+		std::atomic<uint32_t> m_iCachedWidth = 0, m_iCachedHeight = 0; // cached client size
 		std::atomic<bool> m_bAtomVSync = false; // is vsync enabled?
 		std::atomic<bool> m_bAtomThreadConfirmRunning = false; // let thread confirm m_bAtomRunning
 		std::atomic<bool> m_bAtomRunning = false; // should the window keep running?

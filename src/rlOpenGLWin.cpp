@@ -56,7 +56,8 @@ namespace rl
 
 	LRESULT OpenGLWin::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
-		static RECT rect;
+		static RECT rect = {};
+		static bool bUnknownSize = false;
 
 		bool bProcessed = true;
 		switch (uMsg)
@@ -73,6 +74,35 @@ namespace rl
 
 			//--------------------------------------------------------------------------------------
 			// SIZE CHANGE/REPAINT
+
+		case WM_SIZING:
+			bUnknownSize = true;
+			break;
+
+		case WM_PAINT:
+		{
+			// only process message if window is being sized, isn't redrawn by Windows
+			if (!bUnknownSize)
+			{
+				bProcessed = false;
+				break;
+			}
+
+			GetClientRect(hWnd, &rect);
+			m_pInstance->m_iWidth = rect.right - rect.left;
+			m_pInstance->m_iHeight = rect.bottom - rect.top;
+
+			// repaint full window in black to prevent corrupted image being displayed
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(hWnd, &ps);
+			HBRUSH brush = CreateSolidBrush(0);
+			FillRect(hdc, &ps.rcPaint, brush);
+			DeleteObject(brush);
+			EndPaint(hWnd, &ps);
+			bUnknownSize = false;
+
+			break;
+		}
 
 		case WM_SIZE:
 			switch (wParam)
@@ -264,7 +294,7 @@ namespace rl
 		m_bAtomThreadConfirmRunning = true;
 
 		std::thread trd(&rl::OpenGLWin::OpenGLThread, this, GetDC(m_hWnd));
-		
+
 		while (m_bAtomThreadConfirmRunning); // wait for thread to give startup permission (or not)
 
 		if (m_bAtomRunning)
@@ -289,7 +319,7 @@ namespace rl
 					DispatchMessage(&msg);
 				}
 
-				// process full message queue before updating window
+				// process full message queue before doing anything else
 				while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
 				{
 					if (msg.message == WM_QUIT)
@@ -312,7 +342,7 @@ namespace rl
 				}
 			}
 
-			trd.join();
+			trd.join(); // wait for OpenGL thread to quit
 
 			m_pInstance = nullptr;
 			m_bRunning = false;
@@ -355,7 +385,7 @@ namespace rl
 		if (!m_bFullscreen)
 			SendMessageW(m_hWnd, WM_SIZE, SIZE_RESTORED, MAKELPARAM(m_iWidth, m_iHeight));
 		else
-			ShowWindow(m_hWnd, SW_RESTORE);		
+			ShowWindow(m_hWnd, SW_RESTORE);
 	}
 
 	void OpenGLWin::setFullscreen(HMONITOR monitor)
@@ -435,6 +465,24 @@ namespace rl
 		SendMessageW(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)SmallIcon);
 	}
 
+	OpenGLCoord OpenGLWin::getPixelCoord(int x, int y)
+	{
+		OpenGLCoord oResult;
+		const OpenGLCoord oScreenCenter = { m_iCachedWidth / 2.0f, m_iCachedHeight / 2.0f };
+
+		if (x >= oScreenCenter.x)
+			oResult.x = (x - oScreenCenter.x) / oScreenCenter.x;
+		else
+			oResult.x = -1.0f + x / oScreenCenter.x;
+
+		if (y >= oScreenCenter.y)
+			oResult.y = -1.0f * (y - oScreenCenter.y) / oScreenCenter.y;
+		else
+			oResult.y = 1.0f - y / oScreenCenter.y;
+
+		return oResult;
+	}
+
 
 
 
@@ -466,7 +514,7 @@ namespace rl
 			mmi.ptMinTrackSize.x = rect.right - rect.left;
 		if (m_iHeightMin > 0)
 			mmi.ptMinTrackSize.y = rect.bottom - rect.top;
-			
+
 	}
 
 	void OpenGLWin::OpenGLThread(HDC hDC)
@@ -492,7 +540,8 @@ namespace rl
 			throw std::exception("Couldn't make the OpenGL instance the current one");
 		}
 
-		glViewport(0, 0, m_iWidth, m_iHeight); // initial size
+		cacheSize();
+		glViewport(0, 0, m_iCachedWidth, m_iCachedHeight); // initial size
 
 		// get VSync function pointer
 		wglSwapInterval_t* wglSwapInterval =
@@ -506,7 +555,6 @@ namespace rl
 			wglSwapInterval(0);
 
 		// end of OpenGL initialization
-
 
 
 		m_bAtomRunning = OnCreate(); // set running value for main thread
@@ -531,7 +579,11 @@ namespace rl
 				}
 
 				glClear(GL_COLOR_BUFFER_BIT); // clear buffer
-				glViewport(0, 0, m_iWidth, m_iHeight); // always make sure the viewport is correct
+
+				// always make sure the viewport is correct
+				cacheSize();
+				glViewport(0, 0, m_iCachedWidth, m_iCachedHeight);
+
 
 				// calculate time
 				time2 = std::chrono::system_clock::now();
@@ -539,7 +591,7 @@ namespace rl
 				time1 = time2;
 
 				m_bAtomRunning = OnUpdate(oElapsed.count());
-				
+
 				SwapBuffers(hDC); // refresh display
 
 				// handle VSync change refresh
@@ -579,6 +631,16 @@ namespace rl
 		std::unique_lock<std::mutex> lm(m_muxMinimize);
 		m_cvMinimize.notify_all();
 		m_bMinimized = false;
+	}
+
+	void OpenGLWin::cacheSize()
+	{
+		// transfer size data using variable in-between, since copy assignment of atomic variables
+		// is not possible (function deleted)
+
+		uint32_t iWidth = m_iWidth, iHeight = m_iHeight;
+		m_iCachedWidth = iWidth;
+		m_iCachedHeight = iHeight;
 	}
 
 }

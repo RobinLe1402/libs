@@ -1,5 +1,7 @@
 #include "../../../rlOpenGLWin.hpp"
 
+#include "resource.h"
+
 #include <Windows.h>
 #include <gl/GL.h>
 
@@ -34,7 +36,7 @@ private:
 	uint32_t* m_pData = nullptr;
 	uint32_t m_iWidth = 0, m_iHeight = 0;
 
-	
+
 	static uint32_t WinToOGL(uint32_t iCol)
 	{
 		// iCol = ARGB
@@ -53,11 +55,33 @@ private:
 
 public:
 
-	OpenGLImage(const wchar_t* szPath)
+	OpenGLImage(HINSTANCE hInstance, const WCHAR* szResourceName)
 	{
 		Gdiplus::GdiplusStartup(&m_gpTk, &m_gpSi, NULL);
 
+		Gdiplus::Bitmap* bmp = Gdiplus::Bitmap::FromResource(hInstance, szResourceName);
 
+		m_iWidth = bmp->GetWidth();
+		m_iHeight = bmp->GetHeight();
+
+		m_pData = new uint32_t[(size_t)m_iWidth * m_iHeight];
+
+		for (uint32_t iX = 0; iX < m_iWidth; iX++)
+		{
+			for (uint32_t iY = 0; iY < m_iHeight; iY++)
+			{
+				Gdiplus::Color col;
+				bmp->GetPixel(iX, iY, &col);
+				m_pData[iY * m_iWidth + iX] = WinToOGL(col.GetValue());
+			}
+		}
+
+		delete bmp;
+	}
+
+	OpenGLImage(const wchar_t* szPath)
+	{
+		Gdiplus::GdiplusStartup(&m_gpTk, &m_gpSi, NULL);
 
 		Gdiplus::Bitmap* bmp = Gdiplus::Bitmap::FromFile(szPath);
 		m_iWidth = bmp->GetWidth();
@@ -99,25 +123,26 @@ public:
 class TestWin : public rl::OpenGLWin
 {
 public:
-	
-	TestWin() {}
+
+	TestWin(HINSTANCE hInstance) : m_hInstance(hInstance) {}
 	virtual ~TestWin() {}
 
 
 private:
 
+	HINSTANCE m_hInstance;
+
 	GLuint m_iTex = 0;
-	double dHeight = 1;
-	bool bHeightInc = false;
+	double m_dHeight = 1;
+	bool m_bHeightInc = false;
+	bool m_bUpsideDown = false;
+
+	const double dScaleFactor = 1; // scaling per second
 
 	bool OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override
 	{
 		switch (uMsg)
 		{
-		case WM_LBUTTONUP:
-			setIcon(LoadIconW(NULL, IDI_ERROR));
-			break;
-
 		case WM_KEYUP:
 			if (wParam == 'F')
 			{
@@ -133,7 +158,8 @@ private:
 
 	bool OnCreate() override
 	{
-		OpenGLImage img(LR"(E:\Bilder\Anderes\;n;.png)");
+		//OpenGLImage img(LR"(E:\Bilder\Anderes\;n;.png)");
+		OpenGLImage img(m_hInstance, MAKEINTRESOURCEW(IDB_BITMAP1));
 
 		uint32_t iColor[] = { 0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFF000000 };
 
@@ -160,25 +186,39 @@ private:
 
 	bool OnUpdate(float fElapsedTime) override
 	{
-		if (bHeightInc)
+		if (m_bHeightInc)
 		{
-			dHeight += fElapsedTime * 0.5;
-			if (dHeight >= 1)
+			m_dHeight += fElapsedTime * dScaleFactor;
+			if (m_dHeight >= 1)
 			{
-				dHeight = 1;
-				bHeightInc = false;
+				m_dHeight = 1;
+				m_bHeightInc = false;
 			}
 		}
 		else
 		{
-			dHeight -= fElapsedTime * 0.5;
-			if (dHeight <= 0)
+			m_dHeight -= fElapsedTime * dScaleFactor;
+			if (m_dHeight <= 0)
 			{
-				dHeight = 0;
-				bHeightInc = true;
+				m_dHeight = 0;
+				m_bHeightInc = true;
+				m_bUpsideDown = !m_bUpsideDown;
 			}
 		}
 
+		GLfloat fTexBottom;
+		GLfloat fTexTop;
+
+		if (!m_bUpsideDown)
+		{
+			fTexBottom = 0.0f;
+			fTexTop = 1.0f;
+		}
+		else
+		{
+			fTexBottom = 1.0f;
+			fTexTop = 0.0f;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, m_iTex);
 		glBegin(GL_QUADS);
@@ -190,10 +230,10 @@ private:
 			glTexCoord2f(1.0f, 1.0);		glVertex3f(1.0f, -1.0f, 0.0f);*/
 
 			// animated texture
-			glTexCoord2f(0.0f, (GLfloat)dHeight);	glVertex3f(-1.0f, -1.0f, 0.0f);
-			glTexCoord2f(0.0f, 0.0);				glVertex3f(-1.0f, 1.0f, 0.0f);
-			glTexCoord2f(1.0f, 0.0);				glVertex3f(1.0f, 1.0f, 0.0f);
-			glTexCoord2f(1.0f, (GLfloat)dHeight);	glVertex3f(1.0f, -1.0f, 0.0f);
+			glTexCoord2f(0.0f, fTexTop);	glVertex3f(-1.0f, -(GLfloat)m_dHeight, 0.0f);
+			glTexCoord2f(0.0f, fTexBottom);	glVertex3f(-1.0f, (GLfloat)m_dHeight, 0.0f);
+			glTexCoord2f(1.0f, fTexBottom);	glVertex3f(1.0f, (GLfloat)m_dHeight, 0.0f);
+			glTexCoord2f(1.0f, fTexTop);	glVertex3f(1.0f, -(GLfloat)m_dHeight, 0.0f);
 		}
 		glEnd();
 
@@ -213,7 +253,7 @@ int WINAPI WinMain(
 	_In_ int iCmdShow)
 {
 
-	TestWin win;
+	TestWin win(hInstance);
 	rl::OpenGLWin_Config config;
 	config.bVSync = true;
 	config.bInitialFullscreen = false;
@@ -222,6 +262,7 @@ int WINAPI WinMain(
 	config.iHeight = 240 * 4;
 	config.szWinClassName = L"rlOpenGLWin_TestWin";
 	config.szInitialCaption = L"OpenGL Test";
+	config.hIconBig = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_ICON1));
 
 	win.run(config);
 

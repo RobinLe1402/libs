@@ -345,4 +345,4 @@ namespace rl
 #undef NULL
 #undef WINAPI
 
-#endif /* ROBINLE_OPENGL_WINDOW_HPP */
+#endif // ROBINLE_OPENGL_WINDOW_HPP

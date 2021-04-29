@@ -25,6 +25,7 @@ typedef BOOL(WINAPI wglSwapInterval_t)(int interval);
 
 
 
+
 namespace rl
 {
 
@@ -48,6 +49,8 @@ namespace rl
 
 	OpenGLWin::OpenGLWin() {}
 	OpenGLWin::~OpenGLWin() { quit(); }
+
+
 
 
 
@@ -182,6 +185,9 @@ namespace rl
 			return 0;
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
+
+
+
 
 
 	//----------------------------------------------------------------------------------------------

@@ -133,6 +133,7 @@ private:
 	HINSTANCE m_hInstance;
 
 	GLuint m_iTex = 0;
+	GLuint m_iPx = 0;
 	double m_dHeight = 1;
 	bool m_bHeightInc = false;
 	bool m_bUpsideDown = false;
@@ -145,13 +146,14 @@ private:
 	{
 		switch (uMsg)
 		{
-		case WM_LBUTTONUP:
+		case WM_LBUTTONUP: // toggle image "rotation"
 			m_bAnim = !m_bAnim;
 			if (m_bAnim)
 				m_bAnimRunning = true;
+			break;
 
 		case WM_KEYUP:
-			if (wParam == 'F')
+			if (wParam == 'F') // toggle fullscreen
 			{
 				if (getFullscreen())
 					setWindowed();
@@ -165,7 +167,6 @@ private:
 
 	bool OnCreate() override
 	{
-		//OpenGLImage img(LR"(E:\Bilder\Anderes\;n;.png)");
 		OpenGLImage img(m_hInstance, MAKEINTRESOURCEW(IDB_BITMAP1));
 
 		uint32_t iColor[] = { 0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFF000000 };
@@ -173,13 +174,32 @@ private:
 		glEnable(GL_TEXTURE_2D);
 		glGenTextures(1, &m_iTex);
 		glBindTexture(GL_TEXTURE_2D, m_iTex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getWidth(), img.getHeight(), 0, GL_RGBA,
 			GL_UNSIGNED_BYTE, img.getData());
 
+
+
+		// draw pixel block to test pixel coordinate calculation
+		glGenTextures(1, &m_iPx);
+		glBindTexture(GL_TEXTURE_2D, m_iPx);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+
+		pixel px;
+		px.a = 0xFF;
+		px.r = 0xFF;
+		px.g = 0;
+		px.b = 0;
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &px);
+
 		//setWindowedSize(img.getWidth(), img.getHeight());
+
+
 
 		OnUpdate(0);
 
@@ -189,12 +209,18 @@ private:
 	bool OnDestroy() override
 	{
 		glDeleteTextures(1, &m_iTex);
+		glDeleteTextures(1, &m_iPx);
 
 		return true;
 	}
 
 	bool OnUpdate(float fElapsedTime) override
 	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+
 		if (m_bAnimRunning)
 		{
 			if (m_bHeightInc)
@@ -252,6 +278,24 @@ private:
 			glTexCoord2f(1.0f, fTexTop);	glVertex3f(1.0f, -(GLfloat)m_dHeight, 0.0f);
 		}
 		glEnd();
+
+
+
+		const rl::OpenGLCoord crd1 = getPixelCoord(getWidth() - 5, 0);
+		const rl::OpenGLCoord crd2 = getPixelCoord(getWidth(), 5);
+
+		for (uint8_t i = 0; i < 255; i++)
+		{
+			glBindTexture(GL_TEXTURE_2D, m_iPx);
+			glBegin(GL_QUADS);
+			{
+				glTexCoord2f(0.0f, 1.0);	glVertex3f(crd1.x, crd2.y, 0.0f);
+				glTexCoord2f(0.0f, 0.0);	glVertex3f(crd1.x, crd1.y, 0.0f);
+				glTexCoord2f(1.0f, 0.0);	glVertex3f(crd2.x, crd1.y, 0.0f);
+				glTexCoord2f(1.0f, 1.0);	glVertex3f(crd2.x, crd2.y, 0.0f);
+			}
+			glEnd();
+		}
 
 		//setTitle(std::to_wstring(fElapsedTime).c_str());
 		//OutputDebugStringA((std::to_string(fElapsedTime) + '\n').c_str());

@@ -67,6 +67,11 @@ namespace rl
 			// MINIMUM/MAXIMUM SIZE
 
 		case WM_GETMINMAXINFO:
+			if (m_pInstance->m_bFullscreen)
+			{
+				bProcessed = false;
+				break;
+			}
 			m_pInstance->setMinMaxStruct(lParam);
 			break;
 
@@ -88,6 +93,7 @@ namespace rl
 				break;
 			}
 
+			// update size
 			GetClientRect(hWnd, &rect);
 			m_pInstance->m_iWidth = rect.right - rect.left;
 			m_pInstance->m_iHeight = rect.bottom - rect.top;

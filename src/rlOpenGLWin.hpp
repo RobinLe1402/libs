@@ -34,7 +34,6 @@ typedef unsigned int uint32_t;
 #define NULL 0
 #define WINAPI __stdcall
 DECLARE_HANDLE(HDC);
-DECLARE_HANDLE(HGLRC);
 DECLARE_HANDLE(HICON);
 DECLARE_HANDLE(HMONITOR);
 DECLARE_HANDLE(HWND);
@@ -48,9 +47,7 @@ typedef nativeuint_t		WPARAM;
 
 
 #include <atomic>
-#include <string>
-
-typedef BOOL(WINAPI wglSwapInterval)(int interval);
+#include <mutex>
 
 
 
@@ -90,7 +87,13 @@ namespace rl
 	protected: // virtual methods
 
 		/// <summary>
-		/// Called on every screen update<para/>
+		/// Called from OpenGL thread after OpenGL was initialized and before the window gets shown
+		/// </summary>
+		/// <returns>Should the window loop start?</returns>
+		virtual bool OnCreate() { return true; }
+
+		/// <summary>
+		/// Called from OpenGL thread on every screen update<para/>
 		/// Must be overwritten as the default method always returns false
 		/// </summary>
 		/// <param name="fElapsedTime">= elapsed seconds since last call</param>
@@ -98,29 +101,18 @@ namespace rl
 		virtual bool OnUpdate(float fElapsedTime) { return false; }
 
 		/// <summary>
-		/// Called after OpenGL was initialized and before the window gets shown
-		/// </summary>
-		/// <returns>Should the window loop start?</returns>
-		virtual bool OnCreate() { return true; }
-
-		/// <summary>
-		/// Called when a <c>WM_CLOSE</c> message is received
-		/// </summary>
-		/// <returns>Should the window get destroyed?</returns>
-		virtual bool OnTryClosing() { return true; }
-
-		/// <summary>
-		/// Called before the window closes<para/>
+		/// Called from OpenGL thread before the window closes<para/>
 		/// Only called if window loop was actually started -->
 		/// <c>OnCreate()</c> must have returned <c>true</c>
 		/// </summary>
 		/// <returns>
-		/// Should the window really get destroyed? (Ignored if <c>WM_QUIT</c> is received)
+		/// Should the window really get destroyed? (Ignored if <c>WM_QUIT</c> is received)<para/>
+		/// If <c>false</c> is returned, the window is still refreshed one last time
 		/// </returns>
 		virtual bool OnDestroy() { return true; }
 
 		/// <summary>
-		/// Called on every message the window receives
+		/// Called from WinAPI thread on every message the window receives
 		/// </summary>
 		/// <returns>
 		/// Was the message processed?<para/>
@@ -129,12 +121,12 @@ namespace rl
 		virtual bool OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) { return false; }
 
 		/// <summary>
-		/// Called right before the window is minimized
+		/// Called from WinAPI thread right before the window is minimized
 		/// </summary>
 		virtual void OnMinimize() {}
 
 		/// <summary>
-		/// Called right before window is restored from being minimized
+		/// Called from WinAPI thread right before window is restored from being minimized
 		/// </summary>
 		virtual void OnRestore() {}
 
@@ -168,7 +160,7 @@ namespace rl
 		/// <summary>
 		/// Is the window currently minimized?
 		/// </summary>
-		inline bool getMinimized() { return m_bMinimized; }
+		inline bool isMinimized() { return m_bMinimized; }
 
 		/// <summary>
 		/// Restores the window from minimization immediately (and continues all processing)
@@ -217,12 +209,12 @@ namespace rl
 		/// <summary>
 		/// Switch VSync on or off
 		/// </summary>
-		void setVSync(bool enabled);
+		inline void setVSync(bool enabled) { m_bAtomVSync = enabled; }
 
 		/// <summary>
 		/// Is VSync currently enabled?
 		/// </summary>
-		inline bool getVSync() { return m_bVSync; }
+		inline bool getVSync() { return m_bAtomVSync; }
 
 
 
@@ -230,12 +222,6 @@ namespace rl
 		/// Get the window's handle
 		/// </summary>
 		inline HWND getHWND() { return m_hWnd; }
-
-		/// <summary>
-		/// Get the window's device context handle
-		/// </summary>
-		/// <returns></returns>
-		inline HDC getHDC() { return m_hDC; }
 
 		/// <summary>
 		/// Set window title
@@ -253,35 +239,30 @@ namespace rl
 		static LRESULT __stdcall WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/// <summary>
-		/// Update OpenGL viewport to current values of <c>m_iWidth</c> and <c>m_iHeight</c>
-		/// </summary>
-		void updateViewport();
-
-		/// <summary>
-		/// Repaint the viewport
-		/// </summary>
-		/// <param name="bWaitForVSync">= should be waited for VSync? (Only in main loop)</param>
-		void repaint(bool bWaitForVSync = false);
-
-		/// <summary>
-		/// Update size variables
-		/// </summary>
-		void processResize(uint32_t iNewClientX, uint32_t iNewClientY);
-
-		/// <summary>
 		/// Set the minimum/maximum size struct on <c>WM_GETMINMAXINFO</c>
 		/// </summary>
 		void setMinMaxStruct(LPARAM lParam);
+
+		/// <summary>
+		/// OpenGL thread function
+		/// </summary>
+		void OpenGLThread(HDC hDC);
+
+		/// <summary>
+		/// Process a minimized fullscreen window
+		/// </summary>
+		void processMinimize();
+
+		/// <summary>
+		/// Process a restored fullscreen window
+		/// </summary>
+		void processRestore();
 
 
 	private: // variables
 
 		HWND m_hWnd = NULL;
-		HDC m_hDC = NULL;
-		uint32_t m_iWidth = 0, m_iHeight = 0; // current client size
-		bool m_bMinimized = false; // window currently minimized?
 		bool m_bResizable = false; // window resizable if in windowed mode?
-		bool m_bVSync = false; // is vsync enabled?
 		uint32_t m_iWinWidth = 0, m_iWinHeight = 0; // client size in windowed mode
 		uint32_t m_iWidthMin = 0, m_iHeightMin = 0; // minimum client size in windowed mode
 		uint32_t m_iWidthMax = 0, m_iHeightMax = 0; // maximum client size in windowed mode
@@ -289,20 +270,23 @@ namespace rl
 		wchar_t m_szWinClassName[256 + 1] = {}; // window class name
 		HICON m_hIconBig = NULL, m_hIconSmall = NULL; // window icons
 		HMONITOR m_hMonitorFullscreen = NULL; // monitor for fullscreen mode
-		HGLRC m_hGLRC = NULL; // OpenGL rendering context
+
+		// variables for skipping minimized state
+		std::mutex m_muxMinimize;
+		std::condition_variable m_cvMinimize;
 
 		static DWORD m_dwStyleCache; // cached dwStyle. Only used on first WM_GETMINMAXINFO
 
 		int m_iWinPosX = 50, m_iWinPosY = 50; // for when switching to windowed mode
 
-		bool m_bBlockResize = false; // for while setting fullscreen/windowed mode
+		static OpenGLWin* m_pInstance; // pointer to single instance
 
-		std::atomic<bool> m_bAtomRunning = false; // is the window loop currently running?
-
-		wglSwapInterval* m_wglSwapInterval = nullptr; // for enabling/disabling vsync
-
-		static bool m_bRunning; // is this class currently active?
-		static OpenGLWin* m_pInstance;
+		static std::atomic<bool> m_bRunning; // for allowing run() only once
+		std::atomic<bool> m_bMinimized = false; // window currently minimized?
+		std::atomic<uint32_t> m_iWidth = 0, m_iHeight = 0; // current client size
+		std::atomic<bool> m_bAtomVSync = false; // is vsync enabled?
+		std::atomic<bool> m_bAtomThreadConfirmRunning = false; // let thread confirm m_bAtomRunning
+		std::atomic<bool> m_bAtomRunning = false; // should the window keep running?
 
 	};
 

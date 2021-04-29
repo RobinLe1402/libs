@@ -3,7 +3,9 @@
 #define NULL 0
 #include <chrono>
 #undef NULL
+
 #include <stdint.h>
+#include <thread>
 #include <Windows.h>
 
 // OpenGL
@@ -18,6 +20,10 @@
 
 
 
+typedef BOOL(WINAPI wglSwapInterval_t)(int interval);
+
+
+
 
 namespace rl
 {
@@ -25,8 +31,8 @@ namespace rl
 	//==============================================================================================
 	// STATIC VARIABLES
 
-	bool OpenGLWin::m_bRunning = false;
 	OpenGLWin* OpenGLWin::m_pInstance = nullptr;
+	std::atomic<bool> OpenGLWin::m_bRunning = false;
 	DWORD OpenGLWin::m_dwStyleCache = 0;
 
 
@@ -75,19 +81,22 @@ namespace rl
 				if (!m_pInstance->m_bMinimized)
 				{
 					m_pInstance->OnMinimize();
-					m_pInstance->m_bMinimized = true;
+					m_pInstance->processMinimize();
 				}
 				break;
 			case SIZE_RESTORED:
 				if (m_pInstance->m_bMinimized)
 				{
 					m_pInstance->OnRestore();
-					m_pInstance->m_bMinimized = false;
+					m_pInstance->processRestore();
 				}
 				break;
 			}
 			if (wParam != SIZE_MINIMIZED)
-				m_pInstance->processResize(LOWORD(lParam), HIWORD(lParam));
+			{
+				m_pInstance->m_iWidth = LOWORD(lParam);
+				m_pInstance->m_iHeight = HIWORD(lParam);
+			}
 			break;
 
 
@@ -111,7 +120,13 @@ namespace rl
 			// CLOSING
 
 		case WM_CLOSE:
-			if (!m_pInstance->OnTryClosing())
+			// request destruction from thread
+			m_pInstance->m_bAtomRunning = false;
+			m_pInstance->m_bAtomThreadConfirmRunning = true;
+
+			while (m_pInstance->m_bAtomThreadConfirmRunning); // wait for confirmation
+
+			if (m_pInstance->m_bAtomRunning)
 				return 0;
 		case WM_DESTROY:
 			PostQuitMessage(0);
@@ -170,7 +185,7 @@ namespace rl
 		m_iWinHeight = config.iHeight;
 		m_bResizable = config.bResizable;
 		m_bFullscreen = config.bInitialFullscreen;
-		m_bVSync = config.bVSync;
+		m_bAtomVSync = config.bVSync;
 		m_iWidthMin = config.iWidthMin;
 		m_iHeightMin = config.iHeightMin;
 		m_iWidthMax = config.iWidthMax;
@@ -246,37 +261,13 @@ namespace rl
 			iPos, iWidth, iHeight, NULL, NULL, NULL, NULL);
 		m_dwStyleCache = 0;
 
-		m_hDC = GetDC(m_hWnd);
+		m_bAtomThreadConfirmRunning = true;
 
+		std::thread trd(&rl::OpenGLWin::OpenGLThread, this, GetDC(m_hWnd));
+		
+		while (m_bAtomThreadConfirmRunning); // wait for thread to give startup permission (or not)
 
-		PIXELFORMATDESCRIPTOR pfd =
-		{
-			sizeof(PIXELFORMATDESCRIPTOR), 1,
-			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-			PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			PFD_MAIN_PLANE, 0, 0, 0, 0
-		};
-		int pf = ChoosePixelFormat(m_hDC, &pfd);
-		SetPixelFormat(m_hDC, pf, &pfd);
-
-		m_hGLRC = wglCreateContext(m_hDC);
-		if (!wglMakeCurrent(m_hDC, m_hGLRC))
-		{
-			wglDeleteContext(m_hGLRC);
-			throw std::exception("Couldn't make the OpenGL instance the current one");
-		}
-
-		glViewport(0, 0, m_iWidth, m_iHeight);
-
-		m_wglSwapInterval = (wglSwapInterval*)wglGetProcAddress("wglSwapIntervalEXT");
-
-		if (m_bVSync)
-			m_wglSwapInterval(1);
-		else
-			m_wglSwapInterval(0);
-
-
-		if (OnCreate())
+		if (m_bAtomRunning)
 		{
 			m_bRunning = true;
 			m_bAtomRunning = true;
@@ -284,7 +275,7 @@ namespace rl
 			auto time1 = std::chrono::system_clock::now();
 			auto time2 = time1;
 
-			repaint();
+			//repaint();
 			ShowWindow(m_hWnd, SW_SHOW);
 
 			MSG msg{};
@@ -311,35 +302,24 @@ namespace rl
 					DispatchMessageW(&msg);
 				}
 
-				// calculate time
-				time2 = std::chrono::system_clock::now();
-				std::chrono::duration<float> oElapsed = time2 - time1;
-				time1 = time2;
 
-				float fElapsed = oElapsed.count();
-
-				glClear(GL_COLOR_BUFFER_BIT);
-				if (!OnUpdate(fElapsed))
-					m_bAtomRunning = false;
-
-
-				// window shouldn't be destroyed --> continue running (exception: WM_QUIT)
-				if (!m_bAtomRunning && !OnDestroy() && msg.message != WM_QUIT)
-					m_bAtomRunning = true;
-
-				repaint(true);
+				// window should be closed --> wait for confirmation from thread (except on WM_QUIT)
+				if (!m_bAtomRunning && msg.message != WM_QUIT)
+				{
+					// wait for thread to confirm m_bAtomRunning
+					m_bAtomThreadConfirmRunning = true;
+					while (m_bAtomThreadConfirmRunning);
+				}
 			}
+
+			trd.join();
 
 			m_pInstance = nullptr;
 			m_bRunning = false;
 			m_hWnd = NULL;
-			m_hDC = NULL;
-			m_hGLRC = NULL;
 		}
 
 		UnregisterClassW(m_szWinClassName, NULL);
-
-		wglDeleteContext(m_hGLRC);
 
 		m_pInstance = nullptr;
 
@@ -357,13 +337,12 @@ namespace rl
 		if (m_bMinimized)
 			return;
 
-
 		if (!m_bFullscreen)
 			SendMessageW(m_hWnd, WM_SIZE, SIZE_MINIMIZED, MAKELPARAM(m_iWidth, m_iHeight));
 		else
 			ShowWindow(m_hWnd, SW_MINIMIZE);
 
-		m_bMinimized = true;
+		processMinimize();
 	}
 
 	void OpenGLWin::restore()
@@ -371,13 +350,12 @@ namespace rl
 		if (!m_bMinimized)
 			return;
 
+		processRestore();
 
 		if (!m_bFullscreen)
 			SendMessageW(m_hWnd, WM_SIZE, SIZE_RESTORED, MAKELPARAM(m_iWidth, m_iHeight));
 		else
-			ShowWindow(m_hWnd, SW_RESTORE);
-
-		m_bMinimized = false;
+			ShowWindow(m_hWnd, SW_RESTORE);		
 	}
 
 	void OpenGLWin::setFullscreen(HMONITOR monitor)
@@ -400,12 +378,10 @@ namespace rl
 		m_hMonitorFullscreen = monitor;
 		m_bFullscreen = true;
 
-		m_bBlockResize = true;
 		MONITORINFO mi = { sizeof(mi) };
 		GetMonitorInfoW(monitor, &mi);
 		DWORD dwStyle = GetWindowLongW(m_hWnd, GWL_STYLE);
 		SetWindowLongW(m_hWnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
-		m_bBlockResize = false;
 
 		SetWindowPos(m_hWnd, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top,
 			mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
@@ -417,6 +393,7 @@ namespace rl
 		if (!m_bFullscreen)
 			return;
 
+		m_bFullscreen = false;
 
 		DWORD dwStyle = GetWindowLongW(m_hWnd, GWL_STYLE);
 		DWORD dwExStyle = GetWindowLongW(m_hWnd, GWL_EXSTYLE);
@@ -425,16 +402,13 @@ namespace rl
 		if (!m_bResizable)
 			dwStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
 
-		m_bBlockResize = true;
+
 		SetWindowLongW(m_hWnd, GWL_STYLE, dwStyle);
 		RECT rect = { 0, 0, (LONG)m_iWinWidth, (LONG)m_iWinHeight };
 		AdjustWindowRectEx(&rect, GetWindowLongW(m_hWnd, GWL_STYLE), FALSE, dwExStyle);
-		m_bBlockResize = false;
 
 		SetWindowPos(m_hWnd, HWND_TOPMOST, m_iWinPosX, m_iWinPosY, rect.right - rect.left,
 			rect.bottom - rect.top, SWP_FRAMECHANGED);
-
-		m_bFullscreen = false;
 	}
 
 	void OpenGLWin::setWindowedSize(uint32_t width, uint32_t height)
@@ -453,16 +427,6 @@ namespace rl
 		}
 	}
 
-	void OpenGLWin::setVSync(bool enabled)
-	{
-		if (enabled)
-			m_wglSwapInterval(1);
-		else
-			m_wglSwapInterval(0);
-
-		m_bVSync = enabled;
-	}
-
 	void OpenGLWin::setTitle(const wchar_t* title) { SetWindowTextW(m_hWnd, title); }
 
 	void OpenGLWin::setIcon(HICON BigIcon, HICON SmallIcon)
@@ -477,39 +441,6 @@ namespace rl
 
 	//----------------------------------------------------------------------------------------------
 	// PRIVATE METHODS
-
-	void OpenGLWin::updateViewport()
-	{
-		glViewport(0, 0, m_iWidth, m_iHeight);
-	}
-
-	void OpenGLWin::repaint(bool bWaitForVSync)
-	{
-		SwapBuffers(m_hDC);
-
-		if (m_bVSync && bWaitForVSync)
-			DwmFlush();
-	}
-
-	void OpenGLWin::processResize(uint32_t iNewClientX, uint32_t iNewClientY)
-	{
-		if (m_bBlockResize)
-			return;
-
-		glViewport(0, 0, iNewClientX, iNewClientY);
-
-		m_iWidth = iNewClientX;
-		m_iHeight = iNewClientY;
-
-		if (!m_bFullscreen)
-		{
-			m_iWinWidth = m_iWidth;
-			m_iWinHeight = m_iHeight;
-		}
-
-		OnUpdate(0);
-		repaint();
-	}
 
 	void OpenGLWin::setMinMaxStruct(LPARAM lParam)
 	{
@@ -536,6 +467,118 @@ namespace rl
 		if (m_iHeightMin > 0)
 			mmi.ptMinTrackSize.y = rect.bottom - rect.top;
 			
+	}
+
+	void OpenGLWin::OpenGLThread(HDC hDC)
+	{
+		// start of OpenGL initialization
+
+		PIXELFORMATDESCRIPTOR pfd =
+		{
+			sizeof(PIXELFORMATDESCRIPTOR), 1,
+			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+			PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			PFD_MAIN_PLANE, 0, 0, 0, 0
+		};
+		int pf = ChoosePixelFormat(hDC, &pfd);
+		SetPixelFormat(hDC, pf, &pfd);
+
+		HGLRC hGLRC = wglCreateContext(hDC);
+		if (!wglMakeCurrent(hDC, hGLRC))
+		{
+			wglDeleteContext(hGLRC);
+			m_bAtomRunning = false;
+			m_bAtomThreadConfirmRunning = true;
+			throw std::exception("Couldn't make the OpenGL instance the current one");
+		}
+
+		glViewport(0, 0, m_iWidth, m_iHeight); // initial size
+
+		// get VSync function pointer
+		wglSwapInterval_t* wglSwapInterval =
+			(wglSwapInterval_t*)wglGetProcAddress("wglSwapIntervalEXT");
+
+		bool bVSync = m_bAtomVSync;
+
+		if (bVSync)
+			wglSwapInterval(1);
+		else
+			wglSwapInterval(0);
+
+		// end of OpenGL initialization
+
+
+
+		m_bAtomRunning = OnCreate(); // set running value for main thread
+		m_bAtomThreadConfirmRunning = false; // confirm answer to main thread
+
+		if (m_bAtomRunning)
+		{
+			bool bRunning = true; // m_bAtomThreadConfirmRunning must be handled before quitting
+
+			auto time1 = std::chrono::system_clock::now();
+			auto time2 = time1;
+			std::chrono::duration<float> oElapsed;
+
+			while (bRunning)
+			{
+				if (m_bMinimized) // minimized-- > wait for next message-- > reduces CPU load
+				{
+					std::unique_lock<std::mutex> lm(m_muxMinimize);
+					m_cvMinimize.wait(lm);
+
+					time1 = std::chrono::system_clock::now(); // time frozen during minimized state
+				}
+
+				glClear(GL_COLOR_BUFFER_BIT); // clear buffer
+				glViewport(0, 0, m_iWidth, m_iHeight); // always make sure the viewport is correct
+
+				// calculate time
+				time2 = std::chrono::system_clock::now();
+				oElapsed = time2 - time1;
+				time1 = time2;
+
+				m_bAtomRunning = OnUpdate(oElapsed.count());
+				
+				SwapBuffers(hDC); // refresh display
+
+				// handle VSync change refresh
+				if (m_bAtomVSync != bVSync)
+				{
+					bVSync = m_bAtomVSync;
+					if (bVSync)
+						wglSwapInterval(1);
+					else
+						wglSwapInterval(0);
+				}
+
+				// if VSync is enabled, wait for full redraw
+				if (bVSync)
+					DwmFlush();
+
+				// handle main thread's destruction request
+				if (m_bAtomThreadConfirmRunning)
+				{
+					m_bAtomRunning = !OnDestroy();
+					m_bAtomThreadConfirmRunning = false;
+					bRunning = m_bAtomRunning;
+				}
+			}
+		}
+
+		wglDeleteContext(hGLRC);
+	}
+
+	void OpenGLWin::processMinimize()
+	{
+		m_bMinimized = true;
+	}
+
+	void OpenGLWin::processRestore()
+	{
+		std::unique_lock<std::mutex> lm(m_muxMinimize);
+		m_cvMinimize.notify_all();
+		m_bMinimized = false;
 	}
 
 }

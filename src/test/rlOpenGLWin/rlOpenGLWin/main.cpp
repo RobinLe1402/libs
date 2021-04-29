@@ -136,6 +136,8 @@ private:
 	double m_dHeight = 1;
 	bool m_bHeightInc = false;
 	bool m_bUpsideDown = false;
+	bool m_bAnim = false;
+	bool m_bAnimRunning = false;
 
 	const double dScaleFactor = 1; // scaling per second
 
@@ -143,6 +145,11 @@ private:
 	{
 		switch (uMsg)
 		{
+		case WM_LBUTTONUP:
+			m_bAnim = !m_bAnim;
+			if (m_bAnim)
+				m_bAnimRunning = true;
+
 		case WM_KEYUP:
 			if (wParam == 'F')
 			{
@@ -174,6 +181,8 @@ private:
 
 		//setWindowedSize(img.getWidth(), img.getHeight());
 
+		OnUpdate(0);
+
 		return true;
 	}
 
@@ -186,25 +195,32 @@ private:
 
 	bool OnUpdate(float fElapsedTime) override
 	{
-		if (m_bHeightInc)
+		if (m_bAnimRunning)
 		{
-			m_dHeight += fElapsedTime * dScaleFactor;
-			if (m_dHeight >= 1)
+			if (m_bHeightInc)
 			{
-				m_dHeight = 1;
-				m_bHeightInc = false;
+				m_dHeight += fElapsedTime * dScaleFactor;
+				if (m_dHeight >= 1)
+				{
+					m_dHeight = 1;
+					m_bHeightInc = false;
+
+					if (!m_bAnim && !m_bUpsideDown)
+						m_bAnimRunning = false;
+				}
+			}
+			else
+			{
+				m_dHeight -= fElapsedTime * dScaleFactor;
+				if (m_dHeight <= 0)
+				{
+					m_dHeight = 0;
+					m_bHeightInc = true;
+					m_bUpsideDown = !m_bUpsideDown;
+				}
 			}
 		}
-		else
-		{
-			m_dHeight -= fElapsedTime * dScaleFactor;
-			if (m_dHeight <= 0)
-			{
-				m_dHeight = 0;
-				m_bHeightInc = true;
-				m_bUpsideDown = !m_bUpsideDown;
-			}
-		}
+
 
 		GLfloat fTexBottom;
 		GLfloat fTexTop;

@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlOpenGLWin", "rlOpenGLWin\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlSplashScreen", "rlSplashScreen\rlSplashScreen.vcxproj", "{36278131-5FA4-4994-8D41-C04DB4713CFB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "General", "General\General.vcxproj", "{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{36278131-5FA4-4994-8D41-C04DB4713CFB}.Release|x64.Build.0 = Release|x64
 		{36278131-5FA4-4994-8D41-C04DB4713CFB}.Release|x86.ActiveCfg = Release|Win32
 		{36278131-5FA4-4994-8D41-C04DB4713CFB}.Release|x86.Build.0 = Release|Win32
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Debug|x64.ActiveCfg = Debug|x64
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Debug|x64.Build.0 = Debug|x64
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Debug|x86.ActiveCfg = Debug|Win32
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Debug|x86.Build.0 = Debug|Win32
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Release|x64.ActiveCfg = Release|x64
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Release|x64.Build.0 = Release|x64
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Release|x86.ActiveCfg = Release|Win32
+		{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

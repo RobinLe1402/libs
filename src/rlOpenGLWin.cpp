@@ -65,6 +65,10 @@ namespace rl
 		bool bProcessed = true;
 		switch (uMsg)
 		{
+		case WM_CREATE:
+			// unpin from top
+			SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			break;
 
 			//--------------------------------------------------------------------------------------
 			// MINIMUM/MAXIMUM SIZE
@@ -159,14 +163,15 @@ namespace rl
 			// CLOSING
 
 		case WM_CLOSE:
-			// request destruction from thread
-			m_pInstance->m_bAtomRunning = false;
-			m_pInstance->m_bAtomThreadConfirmRunning = true;
 
-			while (m_pInstance->m_bAtomThreadConfirmRunning); // wait for confirmation
+			m_pInstance->wakeUpFromMinimized(); // wake up thread (if minimized)
 
-			if (m_pInstance->m_bAtomRunning)
+			if (!m_pInstance->getQuitPermission()) // thread says "keep running" --> cancel closing
+			{
+				m_pInstance->restore(); // restore graphically
 				return 0;
+			}
+
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			return 0;
@@ -299,8 +304,10 @@ namespace rl
 			iHeight = rect.bottom - rect.top;
 		}
 		m_dwStyleCache = dwStyle;
-		m_hWnd = CreateWindowW(m_szWinClassName, config.szInitialCaption, dwStyle, iPos,
-			iPos, iWidth, iHeight, NULL, NULL, NULL, NULL);
+
+
+		m_hWnd = CreateWindowExW(WS_EX_TOPMOST, m_szWinClassName, config.szInitialCaption, dwStyle,
+			iPos, iPos, iWidth, iHeight, NULL, NULL, NULL, NULL);
 		m_dwStyleCache = 0;
 
 		m_bAtomThreadConfirmRunning = true;
@@ -324,33 +331,31 @@ namespace rl
 			while (m_bAtomRunning)
 			{
 
-				if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
-				{
-					GetMessageW(&msg, NULL, 0, 0);
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
-				}
-
 				// process full message queue before doing anything else
 				while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
 				{
-					if (msg.message == WM_QUIT)
-					{
-						m_bAtomRunning = false;
-						break;
-					}
-
 					TranslateMessage(&msg);
 					DispatchMessageW(&msg);
+
+
+					if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
+					{
+						GetMessageW(&msg, NULL, 0, 0);
+						TranslateMessage(&msg);
+						DispatchMessage(&msg);
+					}
+				}
+
+				if (msg.message == WM_QUIT)
+				{
+					m_bAtomRunning = false;
 				}
 
 
 				// window should be closed --> wait for confirmation from thread (except on WM_QUIT)
 				if (!m_bAtomRunning && msg.message != WM_QUIT)
 				{
-					// wait for thread to confirm m_bAtomRunning
-					m_bAtomThreadConfirmRunning = true;
-					while (m_bAtomThreadConfirmRunning);
+					getQuitPermission();
 				}
 			}
 
@@ -531,6 +536,7 @@ namespace rl
 
 	void OpenGLWin::OpenGLThread(HDC hDC)
 	{
+		m_bAtomOpenGLThreadRunning = true;
 		// start of OpenGL initialization
 
 		PIXELFORMATDESCRIPTOR pfd =
@@ -624,6 +630,7 @@ namespace rl
 				if (m_bAtomThreadConfirmRunning)
 				{
 					m_bAtomRunning = !OnDestroy();
+					m_bAtomOpenGLThreadRunning = false;
 					m_bAtomThreadConfirmRunning = false;
 					bRunning = m_bAtomRunning;
 				}
@@ -636,13 +643,22 @@ namespace rl
 	void OpenGLWin::processMinimize()
 	{
 		m_bMinimized = true;
+		m_bAtomIdle = true;
 	}
 
 	void OpenGLWin::processRestore()
 	{
+		if (m_bAtomIdle)
+			wakeUpFromMinimized();
+
+		m_bMinimized = false;
+	}
+
+	void OpenGLWin::wakeUpFromMinimized()
+	{
 		std::unique_lock<std::mutex> lm(m_muxMinimize);
 		m_cvMinimize.notify_all();
-		m_bMinimized = false;
+		m_bAtomIdle = false;
 	}
 
 	void OpenGLWin::cacheSize()
@@ -653,6 +669,16 @@ namespace rl
 		uint32_t iWidth = m_iWidth, iHeight = m_iHeight;
 		m_iCachedWidth = iWidth;
 		m_iCachedHeight = iHeight;
+	}
+
+	bool OpenGLWin::getQuitPermission()
+	{
+		if (!m_bAtomOpenGLThreadRunning)
+			return true;
+
+		m_bAtomThreadConfirmRunning = true;
+		while (m_bAtomThreadConfirmRunning); // wait for thread to answer
+		return !m_bAtomRunning;
 	}
 
 }

@@ -70,7 +70,7 @@ namespace rl
 	/// </summary>
 	struct OpenGLWin_Config
 	{
-		uint32_t iWidth = 0, iHeight = 0; // initial client size in windowed mode
+		uint32_t iWidth = 500, iHeight = 250; // initial client size in windowed mode
 		bool bResizable = false; // should the window be resizable in windowed mode?
 		bool bInitialFullscreen = false; // should the application start in fullscreen mode?
 		bool bVSync = false; // should vsync be enabled by default?
@@ -290,9 +290,20 @@ namespace rl
 		void processRestore();
 
 		/// <summary>
+		/// Notify all threads waiting for end of minimized state
+		/// </summary>
+		void wakeUpFromMinimized();
+
+		/// <summary>
 		/// Write the current size into the cache variables
 		/// </summary>
 		void cacheSize();
+
+		/// <summary>
+		/// Query quitting, wait for thread's answer
+		/// </summary>
+		/// <returns>thread's answer</returns>
+		bool getQuitPermission();
 
 
 	private: // variables
@@ -324,6 +335,8 @@ namespace rl
 		std::atomic<bool> m_bAtomVSync = false; // is vsync enabled?
 		std::atomic<bool> m_bAtomThreadConfirmRunning = false; // let thread confirm m_bAtomRunning
 		std::atomic<bool> m_bAtomRunning = false; // should the window keep running?
+		std::atomic<bool> m_bAtomOpenGLThreadRunning = false; // is the OpenGL thread running?
+		std::atomic<bool> m_bAtomIdle = false; // are threads currently idle?
 
 	};
 

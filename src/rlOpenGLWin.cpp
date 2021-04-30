@@ -65,10 +65,6 @@ namespace rl
 		bool bProcessed = true;
 		switch (uMsg)
 		{
-		case WM_CREATE:
-			// unpin from top
-			SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			break;
 
 			//--------------------------------------------------------------------------------------
 			// MINIMUM/MAXIMUM SIZE
@@ -285,11 +281,26 @@ namespace rl
 		else
 			dwStyle |= WS_POPUP;
 
-		int iPos;
+		int iPosX, iPosY;
 		if (m_bFullscreen)
-			iPos = 0;
-		else
-			iPos = CW_USEDEFAULT;
+		{
+			iPosX = 0;
+			iPosY = 0;
+		}
+		else // windowed --> screen center
+		{
+			MONITORINFO mi = { sizeof(mi) };
+			GetMonitorInfoW(m_hMonitorFullscreen, &mi);
+
+			const int iCenterX = (mi.rcWork.right - mi.rcWork.left) / 2;
+			const int iCenterY = (mi.rcWork.bottom - mi.rcWork.top) / 2;
+
+			RECT rect = { 0, 0, (LONG)m_iWidth, (LONG)m_iHeight };
+			AdjustWindowRect(&rect, dwStyle, FALSE);
+			
+			iPosX = mi.rcWork.left + iCenterX - (rect.right - rect.left) / 2;
+			iPosY = mi.rcWork.top + iCenterY - (rect.bottom - rect.top) / 2;
+		}
 
 		m_pInstance = this;
 
@@ -306,8 +317,8 @@ namespace rl
 		m_dwStyleCache = dwStyle;
 
 
-		m_hWnd = CreateWindowExW(WS_EX_TOPMOST, m_szWinClassName, config.szInitialCaption, dwStyle,
-			iPos, iPos, iWidth, iHeight, NULL, NULL, NULL, NULL);
+		m_hWnd = CreateWindowW(m_szWinClassName, config.szInitialCaption, dwStyle,
+			iPosX, iPosY, iWidth, iHeight, NULL, NULL, NULL, NULL);
 		m_dwStyleCache = 0;
 
 		m_bAtomThreadConfirmRunning = true;
@@ -336,14 +347,13 @@ namespace rl
 				{
 					TranslateMessage(&msg);
 					DispatchMessageW(&msg);
+				}
 
-
-					if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
-					{
-						GetMessageW(&msg, NULL, 0, 0);
-						TranslateMessage(&msg);
-						DispatchMessage(&msg);
-					}
+				if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
+				{
+					GetMessageW(&msg, NULL, 0, 0);
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
 				}
 
 				if (msg.message == WM_QUIT)
@@ -580,6 +590,8 @@ namespace rl
 
 		if (m_bAtomRunning)
 		{
+			SetForegroundWindow(m_hWnd); // window should be active after creation
+
 			bool bRunning = true; // m_bAtomThreadConfirmRunning must be handled before quitting
 
 			auto time1 = std::chrono::system_clock::now();

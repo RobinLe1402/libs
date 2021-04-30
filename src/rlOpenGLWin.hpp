@@ -70,7 +70,7 @@ namespace rl
 	/// </summary>
 	struct OpenGLWin_Config
 	{
-		uint32_t iWidth = 500, iHeight = 250; // initial client size in windowed mode
+		uint32_t iWidth = 750, iHeight = 500; // initial client size in windowed mode
 		bool bResizable = false; // should the window be resizable in windowed mode?
 		bool bInitialFullscreen = false; // should the application start in fullscreen mode?
 		bool bVSync = false; // should vsync be enabled by default?

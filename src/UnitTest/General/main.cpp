@@ -37,15 +37,17 @@ int WINAPI WinMain(
 {
 	rl::SplashScreen_Config splashconfig(IDB_SPLASH);
 	splashconfig.bDropShadow = true;
+	//splashconfig.bAlwaysOnTop = true;
 	
 	rl::SplashScreen::Show(splashconfig);
 
 
-	rl::OpenGLWin_Config config;
-	config.bInitialFullscreen = true;
+	rl::OpenGLWin_Config openglconfig;
+	//config.bInitialFullscreen = true;
+	openglconfig.hIconBig = LoadIconW(hInstance, MAKEINTRESOURCE(IDI_ROBINLE));
 
 	GLTest gltest;
-	gltest.run(config);
+	gltest.run(openglconfig);
 
 
 	return 0;

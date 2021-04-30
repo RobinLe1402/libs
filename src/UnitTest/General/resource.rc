@@ -13,6 +13,26 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ROBINLE             ICON                    "E:\\Bilder\\Design\\_RobinLe-Logo\\RobinLe-Logo.ico"
+
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
 // German (Germany) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
@@ -51,6 +71,45 @@ END
 //
 
 IDB_SPLASH              BITMAP                  "E:\\OneDrive\\Programmieren\\_Allgemein\\_Ressourcen\\SplashScreen.bmp"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "CompanyName", "RobinLe"
+            VALUE "FileDescription", "RobinLe general test app"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "General.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2021 Robin Lemanska"
+            VALUE "OriginalFilename", "General.exe"
+            VALUE "ProductName", "RobinLe Tests"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200
+    END
+END
 
 #endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////

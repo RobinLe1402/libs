@@ -14,6 +14,7 @@ private:
 
 	bool OnCreate() override
 	{
+		Sleep(5000); // emulate resource loading
 		rl::SplashScreen::Close();
 		return true;
 	}

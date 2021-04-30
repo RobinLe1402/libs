@@ -24,7 +24,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Bitmap
 //
 
-IDB_SPLASH              BITMAP                  "E:\\OneDrive\\Programmieren\\_Allgemein\\_Ressourcen\\rlSplashScreen Test\\boot.bmp"
+IDB_SPLASH              BITMAP                  "boot.bmp"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ IDB_SPLASH              BITMAP                  "E:\\OneDrive\\Programmieren\\_A
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ROBINLE             ICON                    "E:\\Bilder\\Design\\_RobinLe-Logo\\RobinLe-Logo.ico"
+IDI_ROBINLE             ICON                    "..\\..\\..\\RobinLe-Logo.ico"
 
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////

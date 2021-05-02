@@ -9,8 +9,6 @@
 #pragma comment(lib, "gdiplus.lib")
 
 
-// TODO: Header + CPP für einfachere Verwendung von WinAPI-GDI+ (zum Laden von Grafiken/Texturen)
-
 struct pixel
 {
 	union

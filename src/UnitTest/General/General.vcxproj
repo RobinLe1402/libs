@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\rlOpenGLTexture.hpp" />
     <ClInclude Include="..\..\rlOpenGLWin.hpp" />
     <ClInclude Include="..\..\rlSplashScreen.hpp" />
     <ClInclude Include="resource.h" />
@@ -153,8 +154,11 @@
   <ItemGroup>
     <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico" />
     <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\SplashScreen.bmp" />
+    <Image Include="..\..\..\res\SplashScreen.bmp" />
+    <Image Include="..\..\..\RobinLe-Logo.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\rlOpenGLTexture.cpp" />
     <ClCompile Include="..\..\rlOpenGLWin.cpp" />
     <ClCompile Include="..\..\rlSplashScreen.cpp" />
     <ClCompile Include="main.cpp" />

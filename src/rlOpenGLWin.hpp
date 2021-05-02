@@ -96,14 +96,17 @@ namespace rl
 	protected: // virtual methods
 
 		/// <summary>
-		/// Called from OpenGL thread after OpenGL was initialized and before the window gets shown
+		/// Called from OpenGL thread after OpenGL was initialized and before the window gets
+		/// displayed<para/>
+		/// Create/load initial textures here
 		/// </summary>
 		/// <returns>Should the window loop start?</returns>
 		virtual bool OnCreate() { return true; }
 
 		/// <summary>
 		/// Called from OpenGL thread on every screen update<para/>
-		/// Must be overwritten as the default method always returns false
+		/// Must be overwritten as the default method always returns false<para/>
+		/// Draw textures here
 		/// </summary>
 		/// <param name="fElapsedTime">= elapsed seconds since last call</param>
 		/// <returns>Should the window keep running?</returns>
@@ -112,7 +115,8 @@ namespace rl
 		/// <summary>
 		/// Called from OpenGL thread before the window closes<para/>
 		/// Only called if window loop was actually started -->
-		/// <c>OnCreate()</c> must have returned <c>true</c>
+		/// <c>OnCreate()</c> must have returned <c>true</c><para/>
+		/// Destroy/unload textures here
 		/// </summary>
 		/// <returns>
 		/// Should the window really get destroyed? (Ignored if <c>WM_QUIT</c> is received)<para/>

@@ -34,9 +34,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\SplashScreen.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico">
       <Filter>Resource Files</Filter>
     </Image>

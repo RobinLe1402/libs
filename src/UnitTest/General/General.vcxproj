@@ -153,7 +153,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico" />
-    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\SplashScreen.bmp" />
     <Image Include="..\..\..\res\SplashScreen.bmp" />
     <Image Include="..\..\..\RobinLe-Logo.ico" />
   </ItemGroup>

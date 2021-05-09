@@ -14,143 +14,6 @@
 namespace rl
 {
 
-	void SourceVoice::play(WaveformData& data, float volume)
-	{
-		stop();
-		destroy();
-
-		uint8_t i = data.iBitsPerSample / 8;
-		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
-			throw std::exception("rl::SourceVoice: Invalid bitrate");
-
-		WAVEFORMATEX wavformat{};
-		wavformat.cbSize = 0;
-		wavformat.nChannels = data.iChannelCount;
-		wavformat.nSamplesPerSec = data.iSampleRate;
-		wavformat.wBitsPerSample = data.iBitsPerSample;
-		wavformat.wFormatTag = (wavformat.wBitsPerSample < 32 ?
-			WAVE_FORMAT_PCM : WAVE_FORMAT_IEEE_FLOAT);
-
-		wavformat.nBlockAlign = wavformat.wBitsPerSample / 8 * wavformat.nChannels;
-		wavformat.nAvgBytesPerSec = wavformat.nBlockAlign * wavformat.nSamplesPerSec;
-
-		if (FAILED(m_pEngine->CreateSourceVoice(&m_pVoice, &wavformat, 0,
-			XAUDIO2_DEFAULT_FREQ_RATIO, this)))
-			throw std::exception("rl::SourceVoice: Couldn't create source voice");
-
-		if (volume != 1.0)
-			m_pVoice->SetVolume(volume);
-
-		XAUDIO2_BUFFER buf{};
-		buf.AudioBytes = data.bytes;
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-		buf.pAudioData = (BYTE*)data.pData;
-		m_pVoice->SubmitSourceBuffer(&buf);
-		m_pVoice->Start();
-	}
-
-	void SourceVoice::pause()
-	{
-		if (!m_bRunning || m_bPaused)
-			return;
-
-		m_pVoice->Stop();
-		m_bPaused = true;
-	}
-
-	void SourceVoice::unpause()
-	{
-		if (!m_bRunning || !m_bPaused)
-			return;
-
-		m_pVoice->Start();
-		m_bPaused = false;
-	}
-
-	void SourceVoice::stop()
-	{
-		if (!m_bRunning)
-			return;
-
-		m_pVoice->Stop();
-		m_pVoice->FlushSourceBuffers();
-		m_bPaused = false;
-		m_bRunning = false;
-	}
-
-	void SourceVoice::destroy()
-	{
-		stop();
-		if (m_pVoice != nullptr)
-		{
-			m_pVoice->DestroyVoice();
-			m_pVoice = nullptr;
-		}
-	}
-
-
-
-	
-	SoundVoice::SoundVoice(std::mutex& mux, std::condition_variable& cv,
-		WaveformData& data, float volume = 1.0) : m_mux(mux), m_cv(cv)
-	{
-		uint8_t i = data.iBitsPerSample / 8;
-		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
-			throw std::exception("rl::SourceVoice: Invalid bitrate");
-
-		WAVEFORMATEX wavformat{};
-		wavformat.cbSize = 0;
-		wavformat.nChannels = data.iChannelCount;
-		wavformat.nSamplesPerSec = data.iSampleRate;
-		wavformat.wBitsPerSample = data.iBitsPerSample;
-		wavformat.wFormatTag = (wavformat.wBitsPerSample < 32 ?
-			WAVE_FORMAT_PCM : WAVE_FORMAT_IEEE_FLOAT);
-
-		wavformat.nBlockAlign = wavformat.wBitsPerSample / 8 * wavformat.nChannels;
-		wavformat.nAvgBytesPerSec = wavformat.nBlockAlign * wavformat.nSamplesPerSec;
-
-		if (FAILED(AudioEngine::getEnginePtr()->CreateSourceVoice(&m_pVoice, &wavformat, 0,
-			XAUDIO2_DEFAULT_FREQ_RATIO, this)))
-			throw std::exception("rl::SourceVoice: Couldn't create source voice");
-
-		if (volume != 1.0)
-			m_pVoice->SetVolume(volume);
-
-		XAUDIO2_BUFFER buf{};
-		buf.AudioBytes = data.bytes;
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-		buf.pAudioData = (BYTE*)data.pData;
-		m_pVoice->SubmitSourceBuffer(&buf);
-		m_pVoice->Start();
-	}
-
-	void SoundVoice::OnStreamEnd()
-	{
-		m_pVoice->Stop();
-		m_pVoice->FlushSourceBuffers();
-
-		std::unique_lock<std::mutex> lm(m_mux);
-		m_cv.notify_one();
-	}
-
-	
-	
-	Sound::Sound(WaveformData data, bool ManageData = true)
-	{
-		m_oData = data;
-		m_bManage = ManageData;
-	}
-
-	Sound::~Sound()
-	{
-		stopAll();
-		if (m_bManage)
-			delete[] m_oData.pData;
-	}
-
-
-
-
 	/***********************************************************************************************
 	struct int24_t
 	***********************************************************************************************/
@@ -188,6 +51,157 @@ namespace rl
 
 		memcpy(this, (uint8_t*)&i + (bBigEndian ? 1 : 0), 3);
 	}
+
+
+
+
+
+
+
+
+
+
+	SoundVoice::SoundVoice(std::mutex& mux, std::condition_variable& cv,
+		WaveformData& data, float volume) : m_mux(mux), m_cv(cv)
+	{
+		uint8_t i = data.iBitsPerSample / 8;
+		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
+			throw std::exception("rl::SoundVoice: Invalid bitrate");
+
+		WAVEFORMATEX wavformat{};
+		wavformat.cbSize = 0;
+		wavformat.nChannels = data.iChannelCount;
+		wavformat.nSamplesPerSec = data.iSampleRate;
+		wavformat.wBitsPerSample = data.iBitsPerSample;
+		wavformat.wFormatTag = (wavformat.wBitsPerSample < 32 ?
+			WAVE_FORMAT_PCM : WAVE_FORMAT_IEEE_FLOAT);
+
+		wavformat.nBlockAlign = wavformat.wBitsPerSample / 8 * wavformat.nChannels;
+		wavformat.nAvgBytesPerSec = wavformat.nBlockAlign * wavformat.nSamplesPerSec;
+
+		if (FAILED(AudioEngine::getEnginePtr()->CreateSourceVoice(&m_pVoice, &wavformat, 0,
+			XAUDIO2_DEFAULT_FREQ_RATIO, this)))
+			throw std::exception("rl::SoundVoice: Couldn't create source voice");
+
+		if (volume != 1.0)
+			m_pVoice->SetVolume(volume);
+
+		XAUDIO2_BUFFER buf{};
+		buf.AudioBytes = (UINT32)data.bytes;
+		buf.Flags = XAUDIO2_END_OF_STREAM;
+		buf.pAudioData = (BYTE*)data.pData;
+		m_pVoice->SubmitSourceBuffer(&buf);
+		m_pVoice->Start();
+	}
+
+	SoundVoice::~SoundVoice()
+	{
+		m_pVoice->DestroyVoice();
+	}
+
+	void SoundVoice::OnStreamEnd()
+	{
+		stop();
+	}
+
+	void SoundVoice::pause()
+	{
+		if (m_bPaused)
+			return;
+
+		m_pVoice->Stop();
+		m_bPaused = true;
+	}
+
+	void SoundVoice::resume()
+	{
+		if (!m_bPaused)
+			return;
+
+		m_pVoice->Start();
+		m_bPaused = false;
+	}
+
+	void SoundVoice::stop()
+	{
+		m_pVoice->Stop();
+		m_pVoice->FlushSourceBuffers();
+
+		std::unique_lock<std::mutex> lm(m_mux);
+		m_cv.notify_one();
+		m_mux.unlock();
+		lm.release();
+	}
+
+	
+	
+	Sound::Sound(WaveformData data, bool ManageData)
+	{
+		m_oData = data;
+		m_bManage = ManageData;
+	}
+
+	Sound::~Sound()
+	{
+		stopAll();
+		while (m_iThreadCount > 0); // wait for all threads to finish
+		if (m_bManage)
+			delete[] m_oData.pData;
+	}
+
+	void Sound::play(float volume)
+	{
+		std::thread trd(&rl::Sound::threadPlay, this, volume);
+		trd.detach();
+	}
+	
+	void Sound::pauseAll()
+	{
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		for (auto p : m_oVoices)
+			p->pause();
+		muxVector.unlock();
+	}
+
+	void Sound::resumeAll()
+	{
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		for (auto p : m_oVoices)
+			p->resume();
+		muxVector.unlock();
+	}
+
+	void Sound::stopAll()
+	{
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		for (auto p : m_oVoices)
+			p->stop();
+		muxVector.unlock();
+	}
+
+	void Sound::threadPlay(float volume)
+	{
+		m_iThreadCount++;
+		std::mutex mux;
+		std::unique_lock<std::mutex> lm(mux);
+		std::condition_variable cv;
+		SoundVoice voice(mux, cv, m_oData, volume);
+
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		m_oVoices.push_back(&voice);
+		muxVector.unlock();
+
+		cv.wait(lm); // wait for voice to stop
+
+		muxVector.lock();
+		m_oVoices.erase(std::find(m_oVoices.begin(), m_oVoices.end(), &voice));
+		muxVector.unlock();
+
+		m_iThreadCount--;
+
+		// RAII will destroy the voice
+	}
+
 
 
 
@@ -340,61 +354,6 @@ namespace rl
 			m_pMaster->DestroyVoice();
 			m_pMaster = nullptr;
 		}
-	}
-
-	void AudioEngine::playSound(WaveformData data)
-	{
-		if (data.bytes > XAUDIO2_MAX_BUFFER_BYTES)
-			throw std::exception("rl::AudioEngine: Sound buffer too big");
-
-		XAUDIO2_BUFFER buf{};
-		buf.pAudioData = (BYTE*)data.pData;
-		buf.AudioBytes = (UINT32)data.bytes;
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-
-		WAVEFORMATEX wf{};
-		if (data.iBitsPerSample == 32)
-			wf.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-		else
-			wf.wFormatTag = WAVE_FORMAT_PCM;
-		wf.nChannels = data.iChannelCount;
-		wf.wBitsPerSample = data.iBitsPerSample;
-		wf.nSamplesPerSec = data.iSampleRate;
-		wf.nBlockAlign = wf.nChannels * wf.wBitsPerSample / 8;
-		wf.nAvgBytesPerSec = wf.nBlockAlign * wf.nSamplesPerSec;
-
-		SoundCallback callback;
-
-		IXAudio2SourceVoice* pVoice;
-		HRESULT hr = m_pXAudio2->CreateSourceVoice(&pVoice, &wf, 0, XAUDIO2_DEFAULT_FREQ_RATIO, &callback);
-
-		hr = pVoice->SubmitSourceBuffer(&buf);
-		if (FAILED(hr))
-		{
-			OutputDebugStringA(std::to_string(hr).c_str());
-		}
-
-		std::condition_variable cv;
-		std::mutex mux;
-		callback.set(pVoice, &mux, &cv);
-
-		hr = pVoice->Start();
-		if (FAILED(hr))
-		{
-			OutputDebugStringA(std::to_string(hr).c_str());
-		}
-
-		std::unique_lock<std::mutex> lm(mux);
-		cv.wait(lm);
-
-		pVoice->DestroyVoice();
-
-		//std::thread trd(&rl::AudioEngine::threadFunc, this, pVoice);
-	}
-
-	void AudioEngine::threadFunc(IXAudio2SourceVoice* m_pVoice)
-	{
-
 	}
 
 

@@ -17,7 +17,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 		float* fBuf = new float[88200];
 		float fTimeBetweenSamples = 1.0f / 44100;
-		double dLoopDuration = 1.0 / 130.81;
+		float fFrequency = 750;
+		double dLoopDuration = 1.0 / fFrequency;
 
 		float fElapsed = 0;
 		for (size_t i = 0; i < 88200; i++)
@@ -35,8 +36,31 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		snd.iBitsPerSample = sizeof(float) * 8;
 		snd.iChannelCount = 1;
 		snd.iSampleRate = 44100;
-		engine.playSound(snd);
-		delete[] fBuf;
+		rl::Sound sound(snd);
+
+		int iRhythm[] =
+		{
+			100,
+			100,
+			100,
+			300,
+			300,
+			300,
+			100,
+			100,
+			100
+		};
+
+		sound.play();
+
+		for (int i : iRhythm)
+		{
+			Sleep(i);
+			sound.pauseAll();
+			Sleep(100);
+			sound.resumeAll();
+		}
+		sound.stopAll();
 
 	}
 	catch (std::exception e)

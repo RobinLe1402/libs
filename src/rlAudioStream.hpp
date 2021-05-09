@@ -92,7 +92,7 @@ namespace rl
 
 		void play(WaveformData& data, float volume = 1.0);
 		void pause();
-		void unpause();
+		void resume();
 		void stop();
 		void destroy();
 
@@ -107,26 +107,15 @@ namespace rl
 
 
 
-	class AudioStreamSourceVoice : public SourceVoice
-	{
-	public: // methods
-
-		inline void OnBufferEnd(void* pBufferContent) override;
-
-	};
-
-
-
 	class SoundVoice : public IXAudio2VoiceCallback
 	{
 	public: // methods
 
 		SoundVoice(std::mutex& mux, std::condition_variable& cv,
 			WaveformData& data, float volume = 1.0);
+		~SoundVoice();
 
-		inline IXAudio2SourceVoice* srcVoicePtr() { return m_pVoice; }
-
-		void OnStreamEnd() override;
+		void OnStreamEnd() override; // TODO:
 
 		virtual inline void OnBufferEnd(void* pBufferContext) override {}
 		inline void OnBufferStart(void* pBufferContext) override {}
@@ -135,12 +124,17 @@ namespace rl
 		inline void OnVoiceProcessingPassEnd() override {}
 		inline void OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
 
+		void pause();
+		void resume();
+		void stop();
+
 
 	private: // variables
 
 		std::mutex& m_mux;
 		std::condition_variable& m_cv;
 		IXAudio2SourceVoice* m_pVoice;
+		std::atomic<bool> m_bPaused;
 
 	};
 
@@ -167,15 +161,17 @@ namespace rl
 
 	private: // methods
 
+		// function to run in threads
 		void threadPlay(float volume);
-		// TODO: Implement this
 
 
 	private: // variables
 
 		WaveformData m_oData;
 		bool m_bManage = false;
-		std::vector<SourceVoice*> m_oVoices;
+		std::vector<SoundVoice*> m_oVoices;
+		std::mutex m_muxVector;
+		std::atomic<uint64_t> m_iThreadCount; // count of currently running threads
 
 	};
 
@@ -205,12 +201,6 @@ namespace rl
 			uint32_t samplerate = 44100, size_t BufBlockCount = 8, size_t BufSamples = 512);
 
 		void destroy();
-
-		/// <summary>
-		/// Play a short audio clip
-		/// </summary>
-		void playSound(WaveformData data);
-		// TODO: delete
 
 
 		/// <summary>

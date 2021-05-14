@@ -15,15 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\rlAudioStream.cpp">
+    <ClCompile Include="..\..\rlAudioEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test-rlAudioStream.cpp">
+    <ClCompile Include="test-rlAudioEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\rlAudioStream.hpp">
+    <ClInclude Include="..\..\rlAudioEngine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

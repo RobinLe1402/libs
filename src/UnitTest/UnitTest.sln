@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlSplashScreen", "rlSplashS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "General", "General\General.vcxproj", "{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlAudioStream", "rlAudioStream\rlAudioStream.vcxproj", "{4C0702FB-48CC-4860-A3F9-AF6CAA059AB8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlAudioEngine", "rlAudioEngine\rlAudioEngine.vcxproj", "{4C0702FB-48CC-4860-A3F9-AF6CAA059AB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

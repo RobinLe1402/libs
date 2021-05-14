@@ -22,9 +22,9 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{4c0702fb-48cc-4860-a3f9-af6caa059ab8}</ProjectGuid>
-    <RootNamespace>rlAudioStream</RootNamespace>
+    <RootNamespace>rlAudioEngine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>rlAudioStream</ProjectName>
+    <ProjectName>rlAudioEngine</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -144,11 +144,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\rlAudioStream.cpp" />
-    <ClCompile Include="test-rlAudioStream.cpp" />
+    <ClCompile Include="..\..\rlAudioEngine.cpp" />
+    <ClCompile Include="test-rlAudioEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\rlAudioStream.hpp" />
+    <ClInclude Include="..\..\rlAudioEngine.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

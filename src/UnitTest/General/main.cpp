@@ -3,6 +3,7 @@
 #include "../../rlSplashScreen.hpp"
 #include "../../rlOpenGLWin.hpp"
 #include "../../rlOpenGLTexture.hpp"
+#include "../../rlInput_Keyboard.hpp"
 
 #include <Windows.h>
 #include <gdiplus.h>
@@ -18,6 +19,8 @@ rl::OpenGLTexture tex1;
 class GLTest : public rl::OpenGLWin
 {
 private:
+
+	rl::Keyboard& kb = rl::Keyboard::getInstance();
 
 	bool OnCreate() override
 	{
@@ -50,8 +53,23 @@ private:
 		return true;
 	}
 
+	bool OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override
+	{
+		return kb.update(uMsg, wParam, lParam);
+	}
+
+	void OnGainFocus() override { kb.reset(); }
+
+	void OnLoseFocus() override
+	{
+		MessageBoxA(NULL, "-You've killed me!\n\n-Good.", "Focus",
+			MB_ICONINFORMATION | MB_SYSTEMMODAL);
+	}
+
 	bool OnUpdate(float fElapsedTime) override
 	{
+		kb.processInput();
+
 		glClearColor(0xFF, 0, 0, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glEnable(GL_BLEND);
@@ -76,6 +94,14 @@ private:
 		return true;
 	}
 
+	void OnAbout() override
+	{
+		if (kb.getKey(VK_SHIFT).bHeld)
+			MessageBoxA(getHWND(), "Secret message :P", "Secret", NULL);
+		else
+			rl::OpenGLWin::OnAbout();
+	}
+
 };
 
 
@@ -90,7 +116,7 @@ int WINAPI WinMain(
 	rl::SplashScreen_Config splashconfig(IDB_SPLASH);
 	splashconfig.bDropShadow = true;
 	splashconfig.bAlwaysOnTop = true;
-	
+
 	rl::SplashScreen::Show(splashconfig);
 
 

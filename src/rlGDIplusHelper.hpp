@@ -41,7 +41,7 @@ namespace rl
 
 	private:
 
-		UINT_PTR m_gpToken = NULL;
+		ULONG_PTR m_gpToken = NULL;
 	};
 
 }

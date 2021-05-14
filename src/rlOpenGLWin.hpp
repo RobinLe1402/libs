@@ -16,14 +16,6 @@
 //==================================================================================================
 // FORWARD DECLARATIONS
 
-#ifdef _WIN64
-typedef long long nativeint_t;
-typedef unsigned long long nativeuint_t;
-#else
-typedef long nativeint_t;
-typedef unsigned int nativeuint_t;
-#endif /* _WIN64 */
-
 //--------------------------------------------------------------------------------------------------
 // <stdint.h>
 typedef unsigned int uint32_t;
@@ -40,10 +32,17 @@ DECLARE_HANDLE(HWND);
 typedef int					BOOL;
 typedef unsigned long		DWORD;
 typedef long				LONG;
-typedef nativeint_t			LPARAM;
-typedef nativeint_t			LRESULT;
 typedef unsigned int		UINT;
-typedef nativeuint_t		WPARAM;
+
+#ifdef _WIN64
+typedef long long LPARAM;
+typedef long long LRESULT;
+typedef unsigned long long WPARAM;
+#else
+typedef long LPARAM;
+typedef long LRESULT;
+typedef unsigned int WPARAM;
+#endif // _WIN64
 
 
 #include <atomic>

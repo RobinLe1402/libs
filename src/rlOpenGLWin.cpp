@@ -531,13 +531,7 @@ namespace rl
 
 	void OpenGLWin::getVersion(uint8_t(&dest)[4])
 	{
-		static uint8_t version[4] =
-		{
-			0,
-			0,
-			0,
-			1
-		};
+		static uint8_t version[4] = { 0, 5, 0, 0 };
 
 		memcpy_s(dest, sizeof(dest), version, sizeof(version));
 	}

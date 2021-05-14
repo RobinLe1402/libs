@@ -67,6 +67,18 @@ namespace rl
 		{
 
 			//--------------------------------------------------------------------------------------
+			// WINDOW/SYSTEM MENU
+
+		case WM_SYSCOMMAND:
+			if (wParam == m_pInstance->m_iMenuAbout)
+				m_pInstance->OnAbout();
+			else
+				bProcessed = false;
+			break;
+
+
+
+			//--------------------------------------------------------------------------------------
 			// MINIMUM/MAXIMUM SIZE
 
 		case WM_GETMINMAXINFO:
@@ -321,6 +333,13 @@ namespace rl
 			iPosX, iPosY, iWidth, iHeight, NULL, NULL, NULL, NULL);
 		m_dwStyleCache = 0;
 
+		if (config.bSysMenuAbout)
+		{
+			HMENU hMenu = GetSystemMenu(m_hWnd, false);
+			InsertMenuW(hMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 255, NULL);
+			InsertMenuW(hMenu, 0, MF_BYPOSITION, m_iMenuAbout, L"About");
+		}
+
 		m_bAtomThreadConfirmRunning = true;
 
 		std::thread trd(&rl::OpenGLWin::OpenGLThread, this, GetDC(m_hWnd));
@@ -508,6 +527,59 @@ namespace rl
 			oResult.y = 1.0f - y / oScreenCenter.y;
 
 		return oResult;
+	}
+
+	void OpenGLWin::getVersion(uint8_t(&dest)[4])
+	{
+		static uint8_t version[4] =
+		{
+			0,
+			0,
+			0,
+			1
+		};
+
+		memcpy_s(dest, sizeof(dest), version, sizeof(version));
+	}
+
+
+	void OpenGLWin::OnAbout()
+	{
+		char szMsg[32]{};
+		strcat_s(szMsg, "RobinLe OpenGL Engine V");
+
+		uint8_t version[4];
+		getVersion(version);
+
+		char szInt[4]{};
+		
+
+
+		_itoa_s(version[0], szInt, 10);
+		strcat_s(szMsg, szInt);
+		memset(szInt, 0, 3);
+
+		strcat_s(szMsg, ".");
+
+		_itoa_s(version[1], szInt, 10);
+		strcat_s(szMsg, szInt);
+		memset(szInt, 0, 3);
+
+		strcat_s(szMsg, ".");
+
+		_itoa_s(version[2], szInt, 10);
+		strcat_s(szMsg, szInt);
+		memset(szInt, 0, 3);
+
+		strcat_s(szMsg, ".");
+
+		_itoa_s(version[3], szInt, 10);
+		strcat_s(szMsg, szInt);
+		memset(szInt, 0, 3);
+
+
+
+		MessageBoxA(m_hWnd, szMsg, "About", MB_OK);
 	}
 
 

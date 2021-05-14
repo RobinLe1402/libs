@@ -156,11 +156,13 @@ namespace rl
 			// FOCUS
 
 		case WM_KILLFOCUS: // minimize window when losing focus in fullscreen mode
+			m_pInstance->OnLoseFocus();
 			if (m_pInstance->m_bFullscreen)
 				m_pInstance->minimize();
 			break;
 
 		case WM_SETFOCUS: // restore window when receiving focus in fullscreen mode
+			m_pInstance->OnGainFocus();
 			if (m_pInstance->m_bFullscreen)
 				m_pInstance->restore();
 			break;

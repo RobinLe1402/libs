@@ -144,6 +144,16 @@ namespace rl
 		virtual void OnRestore() {}
 
 		/// <summary>
+		/// Called from WinAPI thread when the window gains keyboard focus
+		/// </summary>
+		virtual void OnGainFocus() {}
+
+		/// <summary>
+		/// Called from WinAPI thread when the window loses keyboard focus
+		/// </summary>
+		virtual void OnLoseFocus() {}
+
+		/// <summary>
 		/// Called from WinAPI thread when "About" button in the system menu is pressed<para/>
 		/// Displays a MessageBox with the <c>rl::OpenGLWin</c> version by default
 		/// </summary>

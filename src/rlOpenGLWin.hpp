@@ -81,6 +81,7 @@ namespace rl
 		HICON hIconBig = NULL; // initial big (taskbar) icon
 		HICON hIconSmall = NULL; // initial small (title bar) icon
 		HMONITOR hMonitorFullscreen = NULL; // monitor for fullscreen mode (NULL --> primary)
+		bool bSysMenuAbout = true; // Should an "About" button be added to the system/window menu?
 	};
 
 
@@ -142,6 +143,12 @@ namespace rl
 		/// Called from WinAPI thread right before window is restored from being minimized
 		/// </summary>
 		virtual void OnRestore() {}
+
+		/// <summary>
+		/// Called from WinAPI thread when "About" button in the system menu is pressed<para/>
+		/// Displays a MessageBox with the <c>rl::OpenGLWin</c> version by default
+		/// </summary>
+		virtual void OnAbout();
 
 
 	public: // methods
@@ -269,6 +276,15 @@ namespace rl
 		OpenGLCoord getPixelCoord(int x, int y);
 
 
+
+
+
+		/// <summary>
+		/// Get the current version of <c>rl::OpenGLWin</c>
+		/// </summary>
+		void getVersion(uint8_t(&dest)[4]);
+
+
 	private: // methods
 
 		static LRESULT WINAPI WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -341,6 +357,8 @@ namespace rl
 		std::atomic<bool> m_bAtomRunning = false; // should the window keep running?
 		std::atomic<bool> m_bAtomOpenGLThreadRunning = false; // is the OpenGL thread running?
 		std::atomic<bool> m_bAtomIdle = false; // are threads currently idle?
+
+		int m_iMenuAbout = 0; // ID of the "About" button in the system menu 
 
 	};
 

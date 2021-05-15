@@ -75,24 +75,6 @@ namespace rl
 
 
 
-
-
-	/// <summary>
-	/// Helper struct for 3-dimensional audio mapping<para/>
-	/// Compatible with every channel count from 1 (mono) to 8 (7.1 surround)
-	/// </summary>
-	struct SurroundVolume
-	{
-		float FrontLeft, FrontRight;
-		float FrontCenter;
-		float SideLeft, SideRight;
-		float BackLeft, BackRight;
-		float BackCenter;
-		float LFE; // subwoofer
-	};
-
-
-
 	/// <summary>
 	/// 3D audio position data
 	/// </summary>
@@ -208,14 +190,14 @@ namespace rl
 				WaveformData& data, float volume = 1.0);
 			~Voice();
 
-			void OnStreamEnd() override;
+			void __stdcall OnStreamEnd() override;
 
-			virtual inline void OnBufferEnd(void* pBufferContext) override {}
-			inline void OnBufferStart(void* pBufferContext) override {}
-			inline void OnLoopEnd(void* pBufferContext) override {}
-			inline void OnVoiceError(void* pBufferContext, HRESULT Error) override {}
-			inline void OnVoiceProcessingPassEnd() override {}
-			inline void OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
+			virtual inline void __stdcall OnBufferEnd(void* pBufferContext) override {}
+			inline void __stdcall OnBufferStart(void* pBufferContext) override {}
+			inline void __stdcall OnLoopEnd(void* pBufferContext) override {}
+			inline void __stdcall OnVoiceError(void* pBufferContext, HRESULT Error) override {}
+			inline void __stdcall OnVoiceProcessingPassEnd() override {}
+			inline void __stdcall OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
 
 			/// <summary>
 			/// Pause playback until <c>resume()</c> is called
@@ -383,14 +365,14 @@ namespace rl
 			Callback(IAudioStream* stream, std::mutex& mux, std::condition_variable& cv);
 			~Callback() {}
 
-			void OnBufferEnd(void* pBufferContext) override;
-			void OnStreamEnd() override;
+			void __stdcall OnBufferEnd(void* pBufferContext) override;
+			void __stdcall OnStreamEnd() override;
 
-			inline void OnBufferStart(void* pBufferContext) override {}
-			inline void OnLoopEnd(void* pBufferContext) override {}
-			inline void OnVoiceError(void* pBufferContext, HRESULT Error) override {}
-			inline void OnVoiceProcessingPassEnd() override {}
-			inline void OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
+			inline void __stdcall OnBufferStart(void* pBufferContext) override {}
+			inline void __stdcall OnLoopEnd(void* pBufferContext) override {}
+			inline void __stdcall OnVoiceError(void* pBufferContext, HRESULT Error) override {}
+			inline void __stdcall OnVoiceProcessingPassEnd() override {}
+			inline void __stdcall OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
 
 
 		private: // variables

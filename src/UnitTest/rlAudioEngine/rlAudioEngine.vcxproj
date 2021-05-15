@@ -144,13 +144,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\rlAudioDevices.cpp" />
     <ClCompile Include="..\..\rlAudioEngine.cpp" />
-    <ClCompile Include="..\..\rlAudioEngine_Devices.cpp" />
     <ClCompile Include="test-rlAudioEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\rlAudioDevices.hpp" />
     <ClInclude Include="..\..\rlAudioEngine.hpp" />
-    <ClInclude Include="..\..\rlAudioEngine_Devices.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

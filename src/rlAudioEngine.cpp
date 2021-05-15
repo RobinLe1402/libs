@@ -571,10 +571,10 @@ namespace rl
 		}
 
 
-		void OnBufferEnd(void* pBufferContext) override {}
-		void OnBufferStart(void* pBufferContext) override {}
-		void OnLoopEnd(void* pBufferContext) override {}
-		void OnStreamEnd() override
+		void __stdcall OnBufferEnd(void* pBufferContext) override {}
+		void __stdcall OnBufferStart(void* pBufferContext) override {}
+		void __stdcall OnLoopEnd(void* pBufferContext) override {}
+		void __stdcall OnStreamEnd() override
 		{
 			m_pVoice->Stop();
 			m_pVoice->FlushSourceBuffers();
@@ -582,9 +582,9 @@ namespace rl
 			std::unique_lock<std::mutex> lm(*m_mux);
 			m_cv->notify_one();
 		}
-		void OnVoiceError(void* pBufferContext, HRESULT Error) override {}
-		void OnVoiceProcessingPassEnd() override {}
-		void OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
+		void __stdcall OnVoiceError(void* pBufferContext, HRESULT Error) override {}
+		void __stdcall OnVoiceProcessingPassEnd() override {}
+		void __stdcall OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
 	};
 
 

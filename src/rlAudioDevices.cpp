@@ -1,4 +1,4 @@
-#include "rlAudioEngine_Devices.hpp"
+#include "rlAudioDevices.hpp"
 
 #include <functiondiscoverykeys_devpkey.h>
 #include <Windows.h>
@@ -202,7 +202,8 @@ namespace rl
 		{
 			if (((WAVEFORMATEX*)pv.blob.pBlobData)->nChannels != m_oDevices[index].iChannelCount)
 			{
-				m_oDevices[index].iChannelCount = ((WAVEFORMATEX*)pv.blob.pBlobData)->nChannels;
+				m_oDevices[index].iChannelCount =
+					(uint8_t)((WAVEFORMATEX*)pv.blob.pBlobData)->nChannels;
 				bool bDefault = m_sDefaultDevice == pwstrDeviceId;
 				for (auto o : m_oCallbacks)
 				{

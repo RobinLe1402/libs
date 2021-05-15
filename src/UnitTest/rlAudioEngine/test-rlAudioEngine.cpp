@@ -76,7 +76,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		engine.create(device.sID.c_str(), 6);
 
 		ExampleStream stream(engine);
-		stream.play3D(-1, 0, 32, 1);
+
+		rl::Audio3DPos pos = { -1.0f, 0.0f };
+		pos.radius = 1.0;
+
+		stream.play3D(pos, 32, 1);
 		Sleep(5000);
 
 

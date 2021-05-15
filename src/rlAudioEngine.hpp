@@ -93,6 +93,18 @@ namespace rl
 
 
 
+	/// <summary>
+	/// 3D audio position data
+	/// </summary>
+	struct Audio3DPos
+	{
+		float x; // -1.0f = left, 0.0f = center, 1.0f = right
+		float z; // 0.0f = front, 1.0f = side, 2.0f = back
+		float radius = 2.5f; // emission radius, scale is same as x and z
+	};
+
+
+
 
 
 	/// <summary>
@@ -108,6 +120,9 @@ namespace rl
 	/// </param>
 	WAVEFORMATEX CreateWaveFmt(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate);
 
+	/// <summary>
+	/// Check <c>WAVEFORMATEX</c> for consistency and valid data
+	/// </summary>
 	bool ValidWaveFmt(WAVEFORMATEX& fmt);
 
 
@@ -126,6 +141,7 @@ namespace rl
 
 
 
+	// forward declaration
 	class AudioEngine;
 
 
@@ -291,7 +307,7 @@ namespace rl
 		/// </summary>
 		/// <param name="x">= left/right position (0.0 = center, -1.0 = left, 1.0 = right)</param>
 		/// <param name="z">= front/back position (0.0 = front, 0.5 = center, 1.0 = back)</param>
-		void play3D(float x, float z, uint8_t BitsPerSample, uint8_t ChannelCount,
+		void play3D(Audio3DPos pos, uint8_t BitsPerSample, uint8_t ChannelCount,
 			uint32_t SampleRate = 44100, float volume = 1.0f, size_t BufferBlocks = 8,
 			size_t BufferBlockSamples = 512);
 
@@ -301,7 +317,7 @@ namespace rl
 		/// <param name="x">= left/right position (0.0 = center, -1.0 = left, 1.0 = right)</param>
 		/// <param name="z">= front/back position (0.0 = front, 0.5 = center, 1.0 = back)</param>
 		/// <param name="volume">= pseudo y position</param>
-		void setPos(float x, float z, float volume = 1.0f);
+		void setPos(Audio3DPos pos, float volume = 1.0f);
 
 		/// <summary>
 		/// Pause this stream
@@ -399,7 +415,8 @@ namespace rl
 		std::atomic<bool> m_bPaused = false;
 
 		IXAudio2SourceVoice* m_pVoice = nullptr;
-		IXAudio2SubmixVoice* m_pMonoVoice = nullptr;
+		IXAudio2SubmixVoice* m_pVoiceMono = nullptr;
+		IXAudio2SubmixVoice* m_pVoiceSurround = nullptr;
 
 		std::mutex m_mux;
 		std::condition_variable m_cv;
@@ -415,12 +432,11 @@ namespace rl
 		uint8_t* m_pBufferData = nullptr;
 
 		bool m_b3D = false;
-		float m_fPosX = 0.0f;
-		float m_fPosZ = 0.0f;
+		Audio3DPos m_oPos = {};
 		float m_fVolume = 0.0f;
 
 		uint8_t m_i3DDestChannelCount = 0; // for handling engine reconstructions
-		float* m_f3DVolume = nullptr;
+		float m_f3DVolume[8] = {};
 
 	};
 
@@ -517,7 +533,7 @@ namespace rl
 		/// <summary>
 		/// Create a 3D volume matrix based on 2D coordinates
 		/// </summary>
-		void get3DOutputVolume(float x, float z, float** OutputMatrix);
+		void get3DOutputVolume(Audio3DPos pos, float (&OutputMatrix)[8]);
 
 
 

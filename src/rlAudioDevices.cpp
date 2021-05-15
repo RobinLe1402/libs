@@ -18,15 +18,6 @@ namespace rl
 	***********************************************************************************************/
 
 	//==============================================================================================
-	// STATIC VARIABLES
-
-	// static variables
-
-
-
-
-
-	//==============================================================================================
 	// METHODS
 
 
@@ -311,12 +302,12 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
-	ULONG STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::AddRef()
+	ULONG AudioDeviceManager::NotificationClient::AddRef()
 	{
 		return InterlockedIncrement(&m_cRef);
 	}
 
-	ULONG STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::Release()
+	ULONG AudioDeviceManager::NotificationClient::Release()
 	{
 		ULONG ulRef = InterlockedDecrement(&m_cRef);
 		if (ulRef == 0)
@@ -326,8 +317,7 @@ namespace rl
 		return ulRef;
 	}
 
-	HRESULT STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::QueryInterface(REFIID riid,
-		VOID** ppvInterface)
+	HRESULT AudioDeviceManager::NotificationClient::QueryInterface(REFIID riid, VOID** ppvInterface)
 	{
 		if (riid == IID_IUnknown)
 		{
@@ -347,8 +337,8 @@ namespace rl
 		return S_OK;
 	}
 
-	HRESULT STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::OnDefaultDeviceChanged(
-		EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
+	HRESULT AudioDeviceManager::NotificationClient::OnDefaultDeviceChanged(EDataFlow flow,
+		ERole role, LPCWSTR pwstrDefaultDeviceId)
 	{
 		if (flow != eRender) // only handle output devices
 			return S_OK;
@@ -357,50 +347,30 @@ namespace rl
 		return S_OK;
 	}
 
-	HRESULT STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::OnDeviceAdded(
-		LPCWSTR pwstrDeviceId)
+	HRESULT AudioDeviceManager::NotificationClient::OnDeviceAdded(LPCWSTR pwstrDeviceId)
 	{
 		m_oMgr.OnDeviceAdded(pwstrDeviceId);
 		return S_OK;
 	}
 
-	HRESULT STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::OnDeviceRemoved(
-		LPCWSTR pwstrDeviceId)
+	HRESULT AudioDeviceManager::NotificationClient::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
 	{
 		m_oMgr.OnDeviceRemoved(pwstrDeviceId);
 		return S_OK;
 	}
 
-	HRESULT STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::OnDeviceStateChanged(
-		LPCWSTR pwstrDeviceId, DWORD dwNewState)
+	HRESULT AudioDeviceManager::NotificationClient::OnDeviceStateChanged(LPCWSTR pwstrDeviceId,
+		DWORD dwNewState)
 	{
 		m_oMgr.OnDeviceStateChanged(pwstrDeviceId, dwNewState);
 		return S_OK;
 	}
 
-	HRESULT STDMETHODCALLTYPE AudioDeviceManager::NotificationClient::OnPropertyValueChanged(
-		LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+	HRESULT AudioDeviceManager::NotificationClient::OnPropertyValueChanged(LPCWSTR pwstrDeviceId,
+		const PROPERTYKEY key)
 	{
 		m_oMgr.OnPropertyValueChanged(pwstrDeviceId, key);
 		return S_OK;
 	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PROTECTED METHODS
-
-	// protected methods
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	// private methods
 
 }

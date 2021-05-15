@@ -34,7 +34,7 @@ namespace rl
 {
 
 	/// <summary>
-	/// A single audio device
+	/// Information about a single audio device
 	/// </summary>
 	struct AudioDevice
 	{
@@ -42,6 +42,8 @@ namespace rl
 		std::wstring sFriendlyName;
 		uint8_t iChannelCount;
 	};
+
+
 
 
 
@@ -72,6 +74,12 @@ namespace rl
 
 
 
+
+
+	/// <summary>
+	/// Get information about currently available audio output devices,
+	/// register a <c>IAudioDeviceEventCallback</c> etc.
+	/// </summary>
 	class AudioDeviceManager
 	{
 	public: // methods
@@ -98,9 +106,11 @@ namespace rl
 		void getDevice(AudioDevice& dest, const wchar_t* szID);
 
 		/// <summary>
-		/// Monitor a specific single audio output device
+		/// Monitor a specific single audio output device<para/>
+		/// Note: Every <c>IAudioDeviceEventCallback</c> object can only monitor one device at a
+		/// time. Calling this method while aonther device is being monitored will not do anything.
 		/// </summary>
-		/// <param name="szDeviceID">= ID of the MMEDevice (if nullptr --> default device)</param>
+		/// <param name="szDeviceID">= ID of the MMEDevice (if 0 --> default device)</param>
 		bool registerCallback(const wchar_t* szDeviceID, IAudioDeviceEventCallback* callback);
 
 		/// <summary>
@@ -144,24 +154,24 @@ namespace rl
 
 		public: // IUnknown implementation
 
-			ULONG STDMETHODCALLTYPE AddRef() override;
-			ULONG STDMETHODCALLTYPE Release() override;
-			HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, VOID** ppvInterface) override;
+			ULONG __stdcall AddRef() override;
+			ULONG __stdcall Release() override;
+			HRESULT __stdcall QueryInterface(REFIID riid, VOID** ppvInterface) override;
 
 
 		public: // IMMNotificationClient
 
-			HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow, ERole role,
+			HRESULT __stdcall OnDefaultDeviceChanged(EDataFlow flow, ERole role,
 				LPCWSTR pwstrDefaultDeviceId) override;
 
-			HRESULT STDMETHODCALLTYPE OnDeviceAdded(LPCWSTR pwstrDeviceId) override;
+			HRESULT __stdcall OnDeviceAdded(LPCWSTR pwstrDeviceId) override;
 
-			HRESULT STDMETHODCALLTYPE OnDeviceRemoved(LPCWSTR pwstrDeviceId) override;
+			HRESULT __stdcall OnDeviceRemoved(LPCWSTR pwstrDeviceId) override;
 
-			HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+			HRESULT __stdcall OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
 				override;
 
-			HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR pwstrDeviceId,
+			HRESULT __stdcall OnPropertyValueChanged(LPCWSTR pwstrDeviceId,
 				const PROPERTYKEY key) override;
 
 

@@ -445,8 +445,7 @@ namespace rl
 		/// </param>
 		/// <returns>Was the mastering voice successfully created?</returns>
 		bool create(const wchar_t* szDeviceID = NULL, uint8_t ChannelCount = 2,
-			uint32_t samplerate = 44100, size_t StreamBufBlockCount = 8,
-			size_t StreamBufSamples = 512);
+			uint32_t samplerate = 44100);
 
 		/// <summary>
 		/// Destroy the mastering voice

@@ -656,8 +656,7 @@ namespace rl
 		return engine;
 	}
 
-	bool AudioEngine::create(const wchar_t* szDeviceID, uint8_t ChannelCount, uint32_t samplerate,
-		size_t StreamBufBlockCount, size_t StreamBufSamples)
+	bool AudioEngine::create(const wchar_t* szDeviceID, uint8_t ChannelCount, uint32_t samplerate)
 	{
 		destroy();
 

@@ -1,4 +1,5 @@
 #include "../../rlAudioEngine.hpp"
+#include "../../rlAudioEngine_Devices.hpp"
 
 #include <exception>
 
@@ -18,7 +19,7 @@ public:
 private: // variables
 
 	float m_fCurrentPos = 0.0f; // percentage of loop completed (0.0 - 1.0)
-	float m_fLoopDuration = 1.0f / 770;
+	float m_fLoopDuration = 1.0f / 250;
 
 
 private: // methods
@@ -31,7 +32,7 @@ private: // methods
 		switch (getBitsPerSample())
 		{
 		case 32:
-			*((float*)pBuffer) = 0.5f * (float)sin(2.0 * M_PI + 2.0 * M_PI * m_fCurrentPos / m_fLoopDuration);
+			*((float*)pBuffer) = 0.25f * (float)sin(2.0 * M_PI + 2.0 * M_PI * m_fCurrentPos / m_fLoopDuration);
 			break;
 		default:
 			return false;
@@ -47,13 +48,35 @@ private: // methods
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
+	/*auto& devman = rl::AudioDeviceManager::getInstance();
+	std::wstring sMsg;
+
+	do
+	{
+		auto o = devman.enumerateDevices();
+		sMsg.clear();
+		for (auto& dev : o)
+		{
+			sMsg += L"\"" + dev.sFriendlyName + L"\": \"" + dev.sID + L"\" (" +
+				std::to_wstring(dev.iChannelCount) + L" channels)\n";
+		}
+		sMsg.pop_back();
+	} while (MessageBoxW(NULL, sMsg.c_str(), L"Audio output devices", MB_SYSTEMMODAL | MB_OKCANCEL) == IDOK);
+
+
+	return 0;*/
+
 	try
 	{
+		rl::AudioDevice device = {};
+		auto& devmgr = rl::AudioDeviceManager::getInstance();
+		devmgr.getDevice(device, 0);
+
 		auto& engine = rl::AudioEngine::getInstance();
-		engine.create();
+		engine.create(device.sID.c_str(), 6);
 
 		ExampleStream stream(engine);
-		stream.run(32, 1);
+		stream.play3D(-1, 0, 32, 1);
 		Sleep(5000);
 
 
@@ -108,7 +131,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	}
 	catch (std::exception e)
 	{
-		MessageBoxA(NULL, e.what(), "Test exception", MB_ICONINFORMATION);
+		MessageBoxA(NULL, e.what(), "std::exception", MB_ICONERROR);
 	}
 
 	return 0;

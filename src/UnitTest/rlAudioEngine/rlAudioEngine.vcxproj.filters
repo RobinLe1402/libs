@@ -21,9 +21,15 @@
     <ClCompile Include="test-rlAudioEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\rlAudioEngine_Devices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\rlAudioEngine.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\rlAudioEngine_Devices.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

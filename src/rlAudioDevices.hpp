@@ -1,7 +1,7 @@
 /***************************************************************************************************
  FILE:	rlAudioEngine_Devices.hpp
  CPP:	rlAudioEngine_Devices.cpp
- DESCR:	Help classes for managing audio output devices
+ DESCR:	Helper types for audio output devices
 ***************************************************************************************************/
 
 

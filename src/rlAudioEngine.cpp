@@ -111,429 +111,6 @@ namespace rl
 
 
 
-	Sound::Voice::Voice(AudioEngine& engine, std::mutex& mux, std::condition_variable& cv,
-		WaveformData& data, float volume) : m_mux(mux), m_cv(cv)
-	{
-		uint8_t i = data.iBitsPerSample / 8;
-		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
-			throw std::exception("rl::SoundVoice: Invalid bitrate");
-
-		WAVEFORMATEX wavformat =
-			CreateWaveFmt(data.iBitsPerSample, data.iChannelCount, data.iSampleRate);
-
-		if (FAILED(engine.getEngine()->CreateSourceVoice(&m_pVoice, &wavformat, 0,
-			XAUDIO2_DEFAULT_FREQ_RATIO, this)))
-			throw std::exception("rl::SoundVoice: Couldn't create source voice");
-
-		if (volume != 1.0)
-			m_pVoice->SetVolume(volume);
-
-		XAUDIO2_BUFFER buf{};
-		buf.AudioBytes = (UINT32)data.bytes;
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-		buf.pAudioData = (BYTE*)data.pData;
-		m_pVoice->SubmitSourceBuffer(&buf);
-		m_pVoice->Start();
-	}
-
-	Sound::Voice::~Voice()
-	{
-		m_pVoice->DestroyVoice();
-	}
-
-	void Sound::Voice::OnStreamEnd()
-	{
-		stop();
-	}
-
-	void Sound::Voice::pause()
-	{
-		if (m_bPaused)
-			return;
-
-		m_pVoice->Stop();
-		m_bPaused = true;
-	}
-
-	void Sound::Voice::resume()
-	{
-		if (!m_bPaused)
-			return;
-
-		m_pVoice->Start();
-		m_bPaused = false;
-	}
-
-	void Sound::Voice::stop()
-	{
-		m_pVoice->Stop();
-		m_pVoice->FlushSourceBuffers();
-
-		std::unique_lock<std::mutex> lm(m_mux);
-		m_cv.notify_one();
-		m_mux.unlock();
-		lm.release();
-	}
-
-
-
-	Sound::Sound(AudioEngine& engine, WaveformData data, bool ManageData) :
-		m_oEngine(engine), m_oData(data), m_bManage(ManageData)
-	{
-		m_oData = data;
-		m_bManage = ManageData;
-		engine.registerSound(this);
-	}
-
-	Sound::~Sound()
-	{
-		stopAll();
-		while (m_iThreadCount > 0); // wait for all threads to finish
-		if (m_bManage)
-			delete[] m_oData.pData;
-
-		m_oEngine.unregisterSound(this);
-	}
-
-	void Sound::play(float volume)
-	{
-		std::thread trd(&rl::Sound::threadPlay, this, volume);
-		trd.detach();
-	}
-
-	void Sound::pauseAll()
-	{
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		for (auto p : m_oVoices)
-			p->pause();
-		muxVector.unlock();
-	}
-
-	void Sound::resumeAll()
-	{
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		for (auto p : m_oVoices)
-			p->resume();
-		muxVector.unlock();
-	}
-
-	void Sound::stopAll()
-	{
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		for (auto p : m_oVoices)
-			p->stop();
-		muxVector.unlock();
-	}
-
-	void Sound::threadPlay(float volume)
-	{
-		m_iThreadCount++;
-		std::mutex mux;
-		std::unique_lock<std::mutex> lm(mux);
-		std::condition_variable cv;
-		Voice voice(m_oEngine, mux, cv, m_oData, volume);
-
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		m_oVoices.push_back(&voice);
-		muxVector.unlock();
-
-		cv.wait(lm); // wait for voice to stop
-
-		muxVector.lock();
-		m_oVoices.erase(std::find(m_oVoices.begin(), m_oVoices.end(), &voice));
-		muxVector.unlock();
-
-		m_iThreadCount--;
-
-		// RAII will destroy the voice
-	}
-
-
-
-
-
-
-
-
-
-
-	/***********************************************************************************************
-	class IAudioStream
-	***********************************************************************************************/
-
-	//----------------------------------------------------------------------------------------------
-	// CONSTRUCTORS, DESTRUCTORS
-
-	IAudioStream::IAudioStream(AudioEngine& engine) : m_oEngine(engine),
-		m_oCallback(this, m_mux, m_cv)
-	{
-		m_oEngine.registerStream(this);
-	}
-
-	IAudioStream::~IAudioStream()
-	{
-		stop();
-		m_oEngine.unregisterStream(this);
-	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
-
-	void IAudioStream::play(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
-		float volume, size_t BufferBlocks, size_t BufferBlockSamples)
-	{
-		stop();
-
-		if (BitsPerSample == 0 || BitsPerSample % 8 > 1 || BitsPerSample > 32 ||
-			ChannelCount == 0 || ChannelCount > XAUDIO2_MAX_AUDIO_CHANNELS ||
-			SampleRate % XAUDIO2_QUANTUM_DENOMINATOR > 0 ||
-			SampleRate < XAUDIO2_MIN_SAMPLE_RATE || SampleRate > XAUDIO2_MAX_SAMPLE_RATE ||
-			BufferBlocks < 2 || BufferBlockSamples < 1)
-			throw std::exception("rl::IAudioStream: Invalid launch parameters");
-
-		m_iBitsPerSample = BitsPerSample;
-		m_iChannelCount = ChannelCount;
-		m_iSampleRate = SampleRate;
-
-		m_iBufferBlocks = BufferBlocks;
-		m_iBufferBlockSamples = BufferBlockSamples;
-		m_iBlocksFree = BufferBlocks;
-
-		m_fVolume = volume;
-
-		m_iBlockSize = m_iBufferBlocks * m_iBufferBlockSamples * m_iChannelCount *
-			(m_iBitsPerSample / 8);
-
-		m_trd = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
-			SampleRate, volume);
-	}
-
-	void IAudioStream::play3D(Audio3DPos pos, uint8_t BitsPerSample, uint8_t ChannelCount,
-		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
-	{
-		stop();
-
-		m_b3D = true;
-		m_oPos = pos;
-		play(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks, BufferBlockSamples);
-	}
-
-	void IAudioStream::setPos(Audio3DPos pos, float volume)
-	{
-		if (!m_b3D)
-			return;
-
-		m_oPos = pos;
-		refresh3DOutput();
-		setVolume(volume);
-	}
-
-	void IAudioStream::pause()
-	{
-		if (!m_bRunning || m_bPaused)
-			return;
-
-		m_pVoice->Stop();
-		m_bPaused = true;
-	}
-
-	void IAudioStream::resume()
-	{
-		if (!m_bRunning || !m_bPaused)
-			return;
-
-		m_bPaused = false;
-		m_pVoice->Start();
-	}
-
-	void IAudioStream::stop()
-	{
-		if (!m_bRunning)
-			return;
-
-		m_bRunning = false;
-
-		if (m_trd.joinable())
-			m_trd.join(); // wait for thread to finish
-
-		m_bPaused = false;
-		m_b3D = false;
-	}
-
-	void IAudioStream::setVolume(float volume)
-	{
-		if (!m_bRunning)
-			return;
-
-		m_pVoice->SetVolume(volume);
-	}
-
-	void IAudioStream::refresh3DOutput()
-	{
-		if (!m_b3D)
-			return;
-
-		m_oEngine.get3DOutputVolume(m_oPos, m_f3DVolume);
-		m_pVoiceMono->SetOutputMatrix(m_pVoiceSurround, 1, 8, m_f3DVolume);
-	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	void IAudioStream::threadFunc(uint8_t iBitsPerSample, uint8_t iChannelCount,
-		uint32_t iSampleRate, float fVolume)
-	{
-		WAVEFORMATEX wavfmt = CreateWaveFmt(iBitsPerSample, iChannelCount, iSampleRate);
-		if (!m_b3D) // regular playback
-		{
-			m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
-				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback);
-		}
-		else // 3D mode
-		{
-			auto p = m_oEngine.getEngine();
-			XAUDIO2_SEND_DESCRIPTOR send = { 0 };
-			XAUDIO2_VOICE_SENDS sendlist = { 1, &send };
-
-			// 7.1 surround submix
-			p->CreateSubmixVoice(&m_pVoiceSurround, 8, iSampleRate, 0, 1);
-
-			// mono submix
-			send.pOutputVoice = m_pVoiceSurround;
-			p->CreateSubmixVoice(&m_pVoiceMono, 1, iSampleRate, 0, 0, &sendlist);
-
-			// source input
-			send.pOutputVoice = m_pVoiceMono;
-			p->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
-				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback, &sendlist);
-			refresh3DOutput();
-		}
-
-		if (fVolume != 1.0)
-			m_pVoice->SetVolume(fVolume);
-
-		const float fTimeBetweenCalls = 1.0f / m_iSampleRate;
-		const size_t iBytesPerSampleGroup = (size_t)m_iBitsPerSample / 8 * m_iChannelCount;
-		XAUDIO2_BUFFER buf = {};
-
-		m_pBufferData = new uint8_t[m_iBlockSize * m_iBufferBlocks];
-
-		OnStartup();
-
-		// fill buffer first time
-		for (size_t i = 0; i < m_iBufferBlocks; i++)
-		{
-			buf = {};
-			for (size_t j = 0; j < m_iBufferBlockSamples; j++)
-			{
-				if (!OnUpdate(fTimeBetweenCalls, m_pBufferData +
-					i * m_iBlockSize + j * iBytesPerSampleGroup))
-				{
-					buf.Flags = XAUDIO2_END_OF_STREAM;
-					m_iBlocksFree = 1;
-					break;
-				}
-
-				buf.AudioBytes += m_iChannelCount * ((size_t)m_iBitsPerSample / 8);
-			}
-
-			buf.pAudioData = m_pBufferData + i * m_iBlockSize;
-			m_pVoice->SubmitSourceBuffer(&buf);
-
-			if (buf.Flags == XAUDIO2_END_OF_STREAM)
-				break;
-		}
-		m_iBufferCurrentBlock = 0;
-		m_iBlocksFree = 0;
-		m_bRunning = true;
-
-		m_pVoice->Start();
-
-		while (m_bRunning)
-		{
-			// wait while buffer is filled
-			if (m_iBlocksFree == 0)
-			{
-				std::unique_lock<std::mutex> lm(m_mux);
-				m_cv.wait(lm);
-			}
-
-			// fill up buffer
-			while (m_iBlocksFree > 0)
-			{
-				buf = {};
-				for (size_t i = 0; i < m_iBufferBlockSamples; i++)
-				{
-					if (!OnUpdate(fTimeBetweenCalls, m_pBufferData +
-						m_iBufferCurrentBlock * m_iBlockSize + i * iBytesPerSampleGroup))
-					{
-						buf.Flags = XAUDIO2_END_OF_STREAM;
-						break;
-					}
-
-					buf.AudioBytes += m_iChannelCount * ((size_t)m_iBitsPerSample / 8);
-				}
-
-				buf.pAudioData = m_pBufferData + m_iBufferCurrentBlock * m_iBlockSize;
-				m_pVoice->SubmitSourceBuffer(&buf);
-
-				m_iBlocksFree--;
-				m_iBufferCurrentBlock++;
-				m_iBufferCurrentBlock %= m_iBufferBlocks;
-
-				if (buf.Flags == XAUDIO2_END_OF_STREAM)
-					break;
-			}
-		}
-
-		m_pVoice->Stop();
-		m_pVoice->FlushSourceBuffers();
-		m_pVoice->DestroyVoice();
-		m_pVoice = nullptr;
-
-		if (m_b3D)
-		{
-			m_pVoiceMono->DestroyVoice();
-			m_pVoiceMono = nullptr;
-			m_pVoiceSurround->DestroyVoice();
-			m_pVoiceSurround = nullptr;
-		}
-
-		delete[] m_pBufferData;
-		m_pBufferData = nullptr;
-
-		OnShutdown();
-	}
-
-	IAudioStream::Callback::Callback(IAudioStream* stream, std::mutex& mux,
-		std::condition_variable& cv) : m_pStream(stream), m_mux(mux), m_cv(cv) {}
-
-	void IAudioStream::Callback::OnBufferEnd(void* pBufferContext)
-	{
-		m_pStream->m_iBlocksFree++;
-		std::unique_lock<std::mutex> lm(m_mux);
-		m_cv.notify_one();
-	}
-
-	void IAudioStream::Callback::OnStreamEnd() { m_pStream->stop(); }
-
-
-
-
-
-
-
-
-
-
 	/***********************************************************************************************
 	class AudioEngine
 	***********************************************************************************************/
@@ -803,6 +380,494 @@ namespace rl
 
 		lm.unlock();
 	}
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class Sound
+	***********************************************************************************************/
+
+	//----------------------------------------------------------------------------------------------
+	// CONSTRUCTORS, DESTRUCTORS
+
+	Sound::Sound(AudioEngine& engine, WaveformData data, bool ManageData) :
+		m_oEngine(engine), m_oData(data), m_bManage(ManageData)
+	{
+		m_oData = data;
+		m_bManage = ManageData;
+		engine.registerSound(this);
+	}
+
+	Sound::~Sound()
+	{
+		stopAll();
+		while (m_iThreadCount > 0); // wait for all threads to finish
+		if (m_bManage)
+			delete[] m_oData.pData;
+
+		m_oEngine.unregisterSound(this);
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	void Sound::play(float volume)
+	{
+		std::thread trd(&rl::Sound::threadPlay, this, volume);
+		trd.detach();
+	}
+
+	void Sound::pauseAll()
+	{
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		for (auto p : m_oVoices)
+			p->pause();
+		muxVector.unlock();
+	}
+
+	void Sound::resumeAll()
+	{
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		for (auto p : m_oVoices)
+			p->resume();
+		muxVector.unlock();
+	}
+
+	void Sound::stopAll()
+	{
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		for (auto p : m_oVoices)
+			p->stop();
+		muxVector.unlock();
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PRIVATE METHODS
+
+	void Sound::threadPlay(float volume)
+	{
+		m_iThreadCount++;
+		std::mutex mux;
+		std::unique_lock<std::mutex> lm(mux);
+		std::condition_variable cv;
+		Voice voice(m_oEngine, mux, cv, m_oData, volume);
+
+		std::unique_lock<std::mutex> muxVector(m_muxVector);
+		m_oVoices.push_back(&voice);
+		muxVector.unlock();
+
+		cv.wait(lm); // wait for voice to stop
+
+		muxVector.lock();
+		m_oVoices.erase(std::find(m_oVoices.begin(), m_oVoices.end(), &voice));
+		muxVector.unlock();
+
+		m_iThreadCount--;
+
+		// RAII will destroy the voice
+	}
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class Sound::Voice
+	***********************************************************************************************/
+
+	//----------------------------------------------------------------------------------------------
+	// CONSTRUCTORS, DESTRUCTORS
+
+	Sound::Voice::Voice(AudioEngine& engine, std::mutex& mux, std::condition_variable& cv,
+		WaveformData& data, float volume) : m_mux(mux), m_cv(cv)
+	{
+		uint8_t i = data.iBitsPerSample / 8;
+		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
+			throw std::exception("rl::SoundVoice: Invalid bitrate");
+
+		WAVEFORMATEX wavformat =
+			CreateWaveFmt(data.iBitsPerSample, data.iChannelCount, data.iSampleRate);
+
+		if (FAILED(engine.getEngine()->CreateSourceVoice(&m_pVoice, &wavformat, 0,
+			XAUDIO2_DEFAULT_FREQ_RATIO, this)))
+			throw std::exception("rl::SoundVoice: Couldn't create source voice");
+
+		if (volume != 1.0)
+			m_pVoice->SetVolume(volume);
+
+		XAUDIO2_BUFFER buf{};
+		buf.AudioBytes = (UINT32)data.bytes;
+		buf.Flags = XAUDIO2_END_OF_STREAM;
+		buf.pAudioData = (BYTE*)data.pData;
+		m_pVoice->SubmitSourceBuffer(&buf);
+		m_pVoice->Start();
+	}
+
+	Sound::Voice::~Voice()
+	{
+		m_pVoice->DestroyVoice();
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	void Sound::Voice::OnStreamEnd()
+	{
+		stop();
+	}
+
+	void Sound::Voice::pause()
+	{
+		if (m_bPaused)
+			return;
+
+		m_pVoice->Stop();
+		m_bPaused = true;
+	}
+
+	void Sound::Voice::resume()
+	{
+		if (!m_bPaused)
+			return;
+
+		m_pVoice->Start();
+		m_bPaused = false;
+	}
+
+	void Sound::Voice::stop()
+	{
+		m_pVoice->Stop();
+		m_pVoice->FlushSourceBuffers();
+
+		std::unique_lock<std::mutex> lm(m_mux);
+		m_cv.notify_one();
+		m_mux.unlock();
+		lm.release();
+	}
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class IAudioStream
+	***********************************************************************************************/
+
+	//----------------------------------------------------------------------------------------------
+	// CONSTRUCTORS, DESTRUCTORS
+
+	IAudioStream::IAudioStream(AudioEngine& engine) : m_oEngine(engine),
+		m_oCallback(this, m_mux, m_cv)
+	{
+		m_oEngine.registerStream(this);
+	}
+
+	IAudioStream::~IAudioStream()
+	{
+		stop();
+		m_oEngine.unregisterStream(this);
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	void IAudioStream::play(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
+		float volume, size_t BufferBlocks, size_t BufferBlockSamples)
+	{
+		stop();
+
+		if (BitsPerSample == 0 || BitsPerSample % 8 > 1 || BitsPerSample > 32 ||
+			ChannelCount == 0 || ChannelCount > XAUDIO2_MAX_AUDIO_CHANNELS ||
+			SampleRate % XAUDIO2_QUANTUM_DENOMINATOR > 0 ||
+			SampleRate < XAUDIO2_MIN_SAMPLE_RATE || SampleRate > XAUDIO2_MAX_SAMPLE_RATE ||
+			BufferBlocks < 2 || BufferBlockSamples < 1)
+			throw std::exception("rl::IAudioStream: Invalid launch parameters");
+
+		m_iBitsPerSample = BitsPerSample;
+		m_iChannelCount = ChannelCount;
+		m_iSampleRate = SampleRate;
+
+		m_iBufferBlocks = BufferBlocks;
+		m_iBufferBlockSamples = BufferBlockSamples;
+		m_iBlocksFree = BufferBlocks;
+
+		m_fVolume = volume;
+
+		m_iBlockSize = m_iBufferBlocks * m_iBufferBlockSamples * m_iChannelCount *
+			(m_iBitsPerSample / 8);
+
+		m_trd = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
+			SampleRate, volume);
+	}
+
+	void IAudioStream::play3D(Audio3DPos pos, uint8_t BitsPerSample, uint8_t ChannelCount,
+		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
+	{
+		stop();
+
+		m_b3D = true;
+		m_oPos = pos;
+		play(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks, BufferBlockSamples);
+	}
+
+	void IAudioStream::setPos(Audio3DPos pos, float volume)
+	{
+		if (!m_b3D)
+			return;
+
+		m_oPos = pos;
+		refresh3DOutput();
+		setVolume(volume);
+	}
+
+	void IAudioStream::pause()
+	{
+		if (!m_bRunning || m_bPaused)
+			return;
+
+		m_pVoice->Stop();
+		m_bPaused = true;
+	}
+
+	void IAudioStream::resume()
+	{
+		if (!m_bRunning || !m_bPaused)
+			return;
+
+		m_bPaused = false;
+		m_pVoice->Start();
+	}
+
+	void IAudioStream::stop()
+	{
+		if (!m_bRunning)
+			return;
+
+		m_bRunning = false;
+
+		if (m_trd.joinable())
+			m_trd.join(); // wait for thread to finish
+
+		m_bPaused = false;
+		m_b3D = false;
+	}
+
+	void IAudioStream::setVolume(float volume)
+	{
+		if (!m_bRunning)
+			return;
+
+		m_pVoice->SetVolume(volume);
+	}
+
+	void IAudioStream::refresh3DOutput()
+	{
+		if (!m_b3D)
+			return;
+
+		m_oEngine.get3DOutputVolume(m_oPos, m_f3DVolume);
+		m_pVoiceMono->SetOutputMatrix(m_pVoiceSurround, 1, 8, m_f3DVolume);
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PRIVATE METHODS
+
+	void IAudioStream::threadFunc(uint8_t iBitsPerSample, uint8_t iChannelCount,
+		uint32_t iSampleRate, float fVolume)
+	{
+		WAVEFORMATEX wavfmt = CreateWaveFmt(iBitsPerSample, iChannelCount, iSampleRate);
+		if (!m_b3D) // regular playback
+		{
+			m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
+				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback);
+		}
+		else // 3D mode
+		{
+			auto p = m_oEngine.getEngine();
+			XAUDIO2_SEND_DESCRIPTOR send = { 0 };
+			XAUDIO2_VOICE_SENDS sendlist = { 1, &send };
+
+			// 7.1 surround submix
+			p->CreateSubmixVoice(&m_pVoiceSurround, 8, iSampleRate, 0, 1);
+
+			// mono submix
+			send.pOutputVoice = m_pVoiceSurround;
+			p->CreateSubmixVoice(&m_pVoiceMono, 1, iSampleRate, 0, 0, &sendlist);
+
+			// source input
+			send.pOutputVoice = m_pVoiceMono;
+			p->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
+				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback, &sendlist);
+			refresh3DOutput();
+		}
+
+		if (fVolume != 1.0)
+			m_pVoice->SetVolume(fVolume);
+
+		const float fTimeBetweenCalls = 1.0f / m_iSampleRate;
+		const size_t iBytesPerSampleGroup = (size_t)m_iBitsPerSample / 8 * m_iChannelCount;
+		XAUDIO2_BUFFER buf = {};
+
+		m_pBufferData = new uint8_t[m_iBlockSize * m_iBufferBlocks];
+
+		OnStartup();
+
+		// fill buffer first time
+		for (size_t i = 0; i < m_iBufferBlocks; i++)
+		{
+			buf = {};
+			for (size_t j = 0; j < m_iBufferBlockSamples; j++)
+			{
+				if (!OnUpdate(fTimeBetweenCalls, m_pBufferData +
+					i * m_iBlockSize + j * iBytesPerSampleGroup))
+				{
+					buf.Flags = XAUDIO2_END_OF_STREAM;
+					m_iBlocksFree = 1;
+					break;
+				}
+
+				buf.AudioBytes += m_iChannelCount * ((size_t)m_iBitsPerSample / 8);
+			}
+
+			buf.pAudioData = m_pBufferData + i * m_iBlockSize;
+			m_pVoice->SubmitSourceBuffer(&buf);
+
+			if (buf.Flags == XAUDIO2_END_OF_STREAM)
+				break;
+		}
+		m_iBufferCurrentBlock = 0;
+		m_iBlocksFree = 0;
+		m_bRunning = true;
+
+		m_pVoice->Start();
+
+		while (m_bRunning)
+		{
+			// wait while buffer is filled
+			if (m_iBlocksFree == 0)
+			{
+				std::unique_lock<std::mutex> lm(m_mux);
+				m_cv.wait(lm);
+			}
+
+			// fill up buffer
+			while (m_iBlocksFree > 0)
+			{
+				buf = {};
+				for (size_t i = 0; i < m_iBufferBlockSamples; i++)
+				{
+					if (!OnUpdate(fTimeBetweenCalls, m_pBufferData +
+						m_iBufferCurrentBlock * m_iBlockSize + i * iBytesPerSampleGroup))
+					{
+						buf.Flags = XAUDIO2_END_OF_STREAM;
+						break;
+					}
+
+					buf.AudioBytes += m_iChannelCount * ((size_t)m_iBitsPerSample / 8);
+				}
+
+				buf.pAudioData = m_pBufferData + m_iBufferCurrentBlock * m_iBlockSize;
+				m_pVoice->SubmitSourceBuffer(&buf);
+
+				m_iBlocksFree--;
+				m_iBufferCurrentBlock++;
+				m_iBufferCurrentBlock %= m_iBufferBlocks;
+
+				if (buf.Flags == XAUDIO2_END_OF_STREAM)
+					break;
+			}
+		}
+
+		m_pVoice->Stop();
+		m_pVoice->FlushSourceBuffers();
+		m_pVoice->DestroyVoice();
+		m_pVoice = nullptr;
+
+		if (m_b3D)
+		{
+			m_pVoiceMono->DestroyVoice();
+			m_pVoiceMono = nullptr;
+			m_pVoiceSurround->DestroyVoice();
+			m_pVoiceSurround = nullptr;
+		}
+
+		delete[] m_pBufferData;
+		m_pBufferData = nullptr;
+
+		OnShutdown();
+	}
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class IAudioStream::Callback
+	***********************************************************************************************/
+
+	//----------------------------------------------------------------------------------------------
+	// CONSTRUCTORS, DESTRUCTORS
+
+	IAudioStream::Callback::Callback(IAudioStream* stream, std::mutex& mux,
+		std::condition_variable& cv) : m_pStream(stream), m_mux(mux), m_cv(cv) {}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	void IAudioStream::Callback::OnBufferEnd(void* pBufferContext)
+	{
+		m_pStream->m_iBlocksFree++;
+		std::unique_lock<std::mutex> lm(m_mux);
+		m_cv.notify_one();
+	}
+
+	void IAudioStream::Callback::OnStreamEnd() { m_pStream->stop(); }
 
 
 }

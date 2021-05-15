@@ -27,8 +27,8 @@
 
 
 #pragma once
-#ifndef ROBINLE_AUDIOSTREAM
-#define ROBINLE_AUDIOSTREAM
+#ifndef ROBINLE_AUDIOENGINE
+#define ROBINLE_AUDIOENGINE
 
 
 
@@ -83,11 +83,12 @@ namespace rl
 	/// </summary>
 	struct SurroundVolume
 	{
-		float FrontLeft = 1.0f, FrontRight = 1.0f;
-		float FrontCenter = 1.0;
-		float SideLeft = 1.0f, SideRight = 1.0f;
-		float BackLeft = 1.0f, BackRight = 1.0f;
-		float LFE = 1.0f; // subwoofer
+		float FrontLeft, FrontRight;
+		float FrontCenter;
+		float SideLeft, SideRight;
+		float BackLeft, BackRight;
+		float BackCenter;
+		float LFE; // subwoofer
 	};
 
 
@@ -153,6 +154,8 @@ namespace rl
 		/// Play a new instance of this sound
 		/// </summary>
 		void play(float volume = 1.0);
+
+		// TODO: play3D (idea: create a class "SoundInstance" for this)
 
 		/// <summary>
 		/// Pause all instances of this sound
@@ -280,8 +283,25 @@ namespace rl
 		/// <summary>
 		/// Start the audio stream
 		/// </summary>
-		void run(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate = 44100,
+		void play(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate = 44100,
 			float volume = 1.0f, size_t BufferBlocks = 8, size_t BufferBlockSamples = 512);
+
+		/// <summary>
+		/// Start the audio stream mixed down to mono at a certain 3D position
+		/// </summary>
+		/// <param name="x">= left/right position (0.0 = center, -1.0 = left, 1.0 = right)</param>
+		/// <param name="z">= front/back position (0.0 = front, 0.5 = center, 1.0 = back)</param>
+		void play3D(float x, float z, uint8_t BitsPerSample, uint8_t ChannelCount,
+			uint32_t SampleRate = 44100, float volume = 1.0f, size_t BufferBlocks = 8,
+			size_t BufferBlockSamples = 512);
+
+		/// <summary>
+		/// If this stream is running in 3D mode, change the playback position
+		/// </summary>
+		/// <param name="x">= left/right position (0.0 = center, -1.0 = left, 1.0 = right)</param>
+		/// <param name="z">= front/back position (0.0 = front, 0.5 = center, 1.0 = back)</param>
+		/// <param name="volume">= pseudo y position</param>
+		void setPos(float x, float z, float volume = 1.0f);
 
 		/// <summary>
 		/// Pause this stream
@@ -308,6 +328,18 @@ namespace rl
 		/// Is this stream currently paused?
 		/// </summary>
 		inline bool isPaused() { return m_bPaused; }
+
+		/// <summary>
+		/// Is this stream running in 3D mode?
+		/// </summary>
+		inline bool is3D() { return m_b3D; }
+
+		/// <summary>
+		/// Recalculate the 3D output volume matrix<para/>
+		/// Has to be called when playing back in 3D mode, after recreating the mastering voice
+		/// with a different channel count
+		/// </summary>
+		void refresh3DOutput();
 
 
 	protected: // methods
@@ -367,6 +399,7 @@ namespace rl
 		std::atomic<bool> m_bPaused = false;
 
 		IXAudio2SourceVoice* m_pVoice = nullptr;
+		IXAudio2SubmixVoice* m_pMonoVoice = nullptr;
 
 		std::mutex m_mux;
 		std::condition_variable m_cv;
@@ -380,6 +413,14 @@ namespace rl
 		std::atomic<size_t> m_iBlockSize = 0;
 
 		uint8_t* m_pBufferData = nullptr;
+
+		bool m_b3D = false;
+		float m_fPosX = 0.0f;
+		float m_fPosZ = 0.0f;
+		float m_fVolume = 0.0f;
+
+		uint8_t m_i3DDestChannelCount = 0; // for handling engine reconstructions
+		float* m_f3DVolume = nullptr;
 
 	};
 
@@ -433,6 +474,15 @@ namespace rl
 		inline IXAudio2MasteringVoice* getMasterVoice() { return m_pMaster; }
 
 		/// <summary>
+		/// Get the current channel count
+		/// </summary>
+		/// <returns>
+		/// When running --> Channel count of the mastering voice<para/>
+		/// Else --> 0
+		/// </returns>
+		inline uint8_t getChannelCount() { return m_iChannelCount; }
+
+		/// <summary>
 		/// Is there a mastering voice currently running?
 		/// </summary>
 		/// <returns></returns>
@@ -465,6 +515,13 @@ namespace rl
 
 
 		/// <summary>
+		/// Create a 3D volume matrix based on 2D coordinates
+		/// </summary>
+		void get3DOutputVolume(float x, float z, float** OutputMatrix);
+
+
+
+		/// <summary>
 		/// Get the current version of <c>rl::AudioEngine</c>
 		/// </summary>
 		void getVersion(uint8_t(&dest)[4]);
@@ -488,6 +545,7 @@ namespace rl
 		static std::mutex m_muxStreams;
 
 		static std::atomic<bool> m_bRunning;
+		static uint8_t m_iChannelCount;
 
 	};
 
@@ -497,6 +555,4 @@ namespace rl
 
 
 
-// #undefs
-
-#endif // ROBINLE_AUDIOSTREAM
+#endif // ROBINLE_AUDIOENGINE

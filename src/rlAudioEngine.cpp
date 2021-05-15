@@ -1,5 +1,7 @@
 #include "rlAudioEngine.hpp"
 
+#undef min
+#undef max
 #include <exception>
 #include <mutex>
 #include <objbase.h>
@@ -281,7 +283,7 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
-	void IAudioStream::run(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
+	void IAudioStream::play(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
 		float volume, size_t BufferBlocks, size_t BufferBlockSamples)
 	{
 		stop();
@@ -301,11 +303,35 @@ namespace rl
 		m_iBufferBlockSamples = BufferBlockSamples;
 		m_iBlocksFree = BufferBlocks;
 
+		m_fVolume = volume;
+
 		m_iBlockSize = m_iBufferBlocks * m_iBufferBlockSamples * m_iChannelCount *
 			(m_iBitsPerSample / 8);
 
 		m_trd = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
 			SampleRate, volume);
+	}
+
+	void IAudioStream::play3D(float x, float z, uint8_t BitsPerSample, uint8_t ChannelCount,
+		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
+	{
+		stop();
+
+		m_b3D = true;
+		m_fPosX = x;
+		m_fPosZ = z;
+		play(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks, BufferBlockSamples);
+	}
+
+	void IAudioStream::setPos(float x, float z, float volume)
+	{
+		if (!m_b3D)
+			return;
+
+		m_fPosX = x;
+		m_fPosZ = z;
+		m_fVolume = volume;
+		refresh3DOutput();
 	}
 
 	void IAudioStream::pause()
@@ -335,6 +361,11 @@ namespace rl
 
 		if (m_trd.joinable())
 			m_trd.join(); // wait for thread to finish
+
+		delete[] m_f3DVolume;
+		m_f3DVolume = nullptr;
+		m_bPaused = false;
+		m_b3D = false;
 	}
 
 	void IAudioStream::setVolume(float volume)
@@ -343,6 +374,22 @@ namespace rl
 			return;
 
 		m_pVoice->SetVolume(volume);
+	}
+
+	void IAudioStream::refresh3DOutput()
+	{
+		if (!m_b3D)
+			return;
+
+		if (m_f3DVolume != nullptr)
+			delete[] m_f3DVolume;
+
+		m_oEngine.get3DOutputVolume(m_fPosX, m_fPosZ, &m_f3DVolume);
+
+
+		// apply
+		m_pMonoVoice->SetOutputMatrix(m_oEngine.getMasterVoice(), 1, m_oEngine.getChannelCount(),
+			m_f3DVolume);
 	}
 
 
@@ -356,8 +403,20 @@ namespace rl
 		uint32_t iSampleRate, float fVolume)
 	{
 		WAVEFORMATEX wavfmt = CreateWaveFmt(iBitsPerSample, iChannelCount, iSampleRate);
-		m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0, XAUDIO2_DEFAULT_FREQ_RATIO,
-			&m_oCallback);
+		if (!m_b3D) // regular playback
+		{
+			m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
+				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback);
+		}
+		else // 3D mode
+		{
+			m_oEngine.getEngine()->CreateSubmixVoice(&m_pMonoVoice, iChannelCount, iSampleRate);
+			XAUDIO2_SEND_DESCRIPTOR send = { 0, m_pMonoVoice };
+			XAUDIO2_VOICE_SENDS sendlist = { 1, &send };
+			m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
+				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback, &sendlist);
+			refresh3DOutput();
+		}
 
 		if (fVolume != 1.0)
 			m_pVoice->SetVolume(fVolume);
@@ -440,6 +499,12 @@ namespace rl
 		m_pVoice->FlushSourceBuffers();
 		m_pVoice->DestroyVoice();
 		m_pVoice = nullptr;
+
+		if (m_b3D)
+		{
+			m_pMonoVoice->DestroyVoice();
+			m_pMonoVoice = nullptr;
+		}
 
 		delete[] m_pBufferData;
 		m_pBufferData = nullptr;
@@ -532,6 +597,7 @@ namespace rl
 	std::vector<IAudioStream*> AudioEngine::m_pStreams;
 	std::mutex AudioEngine::m_muxStreams;
 	std::atomic<bool> AudioEngine::m_bRunning = false;
+	uint8_t AudioEngine::m_iChannelCount = 0;
 
 
 
@@ -597,7 +663,14 @@ namespace rl
 		HRESULT hr = m_pXAudio2->CreateMasteringVoice(&m_pMaster, ChannelCount, samplerate, 0,
 			szDeviceID);
 
+		// refresh 3D output in 3D streams
+		for (IAudioStream* stream : m_pStreams)
+		{
+			if (stream->is3D())
+				stream->refresh3DOutput();
+		}
 
+		m_iChannelCount = ChannelCount;
 		m_bRunning = true;
 
 		return true;
@@ -628,6 +701,7 @@ namespace rl
 			m_pMaster = nullptr;
 		}
 
+		m_iChannelCount = 0;
 		m_bRunning = false;
 	}
 
@@ -679,6 +753,139 @@ namespace rl
 		lm.unlock();
 	}
 
+	void AudioEngine::get3DOutputVolume(float x, float z, float** OutputMatrix)
+	{
+		*OutputMatrix = new float[m_iChannelCount];
+
+		SurroundVolume volume = {};
+		const bool bLFE = (m_iChannelCount == 3 || (m_iChannelCount >= 6 && m_iChannelCount <= 8));
+		const bool bFrontCenter = (m_iChannelCount >= 5 && m_iChannelCount <= 8);
+		const bool bBackCenter = (m_iChannelCount == 3);
+		const bool bSide = (m_iChannelCount >= 5 && m_iChannelCount <= 8);
+		const bool bBack = (m_iChannelCount == 4 || m_iChannelCount == 8);
+
+		const float fAbsX = abs(x);
+		const float fAbsZ = abs(z);
+
+		// relative volume
+		float fRelLeft, fRelCenter, fRelRight, fRelFront, fRelSide, fRelBack;
+
+		if (x >= -1.0f)
+			fRelLeft = 1.0f - std::min(1.0f, abs((x + 1.0f) / 2.0f));
+		else
+			fRelLeft = 1.0f - std::min(1.0f, abs(x + 1.0f));
+
+		if (x <= 1.0f)
+			fRelRight = 1.0f - std::min(1.0f, abs((x - 1.0f) / 2.0f));
+		else
+			fRelRight = 1.0f - std::min(1.0f, abs(x - 1.0f));
+
+		fRelCenter = 1.0f - std::min(1.0f, abs(x) / 1.5f);
+		fRelFront = 1.0f - std::min(1.0f, abs(z));
+		fRelSide = 1.0f - std::min(1.0f, abs(z - 0.5f));
+		fRelBack = 1.0f - std::min(1.0f, abs(z - 1.0f));
+
+
+
+		// front center
+		if (bFrontCenter)
+			volume.FrontCenter = fRelFront * fRelCenter;
+
+		// front left/right
+		if (m_iChannelCount > 1)
+		{
+			volume.FrontLeft = fRelFront * fRelLeft;
+			volume.FrontRight = fRelFront * fRelRight;
+		}
+
+		// back left/right
+		if (bBack || bSide)
+		{
+			volume.BackLeft = fRelBack * fRelLeft;
+			volume.BackRight = fRelBack * fRelRight;
+		}
+
+		// side left/right
+		if (bSide && bBack)
+		{
+			volume.BackLeft = volume.SideLeft;
+			volume.BackRight = volume.SideLeft;
+
+			volume.SideLeft = fRelSide * fRelLeft;
+			volume.SideRight = fRelSide * fRelRight;
+		}
+
+		// back center
+		if (bBackCenter)
+			volume.BackCenter = fRelBack * fRelCenter;
+
+
+
+		switch (m_iChannelCount)
+		{
+		default: // if more than 8 channels --> default back to mono
+		case 1: // mono
+			(*OutputMatrix)[0] = volume.FrontCenter;
+			break;
+
+		case 2: // stereo
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			break;
+
+		case 3: // 2.1
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			(*OutputMatrix)[2] = volume.LFE;
+			break;
+
+		case 4: // quadraphonic
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			(*OutputMatrix)[2] = volume.BackLeft;
+			(*OutputMatrix)[3] = volume.BackRight;
+			break;
+
+		case 5: // 5.0
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			(*OutputMatrix)[2] = volume.FrontCenter;
+			(*OutputMatrix)[3] = volume.SideLeft;
+			(*OutputMatrix)[4] = volume.SideRight;
+			break;
+
+		case 6: // 5.1
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			(*OutputMatrix)[2] = volume.FrontCenter;
+			(*OutputMatrix)[3] = volume.LFE;
+			(*OutputMatrix)[4] = volume.SideLeft;
+			(*OutputMatrix)[5] = volume.SideRight;
+			break;
+
+		case 7: // 6.1
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			(*OutputMatrix)[2] = volume.FrontCenter;
+			(*OutputMatrix)[3] = volume.LFE;
+			(*OutputMatrix)[4] = volume.SideLeft;
+			(*OutputMatrix)[5] = volume.SideRight;
+			(*OutputMatrix)[6] = volume.BackCenter;
+			break;
+
+		case 8: // 7.1
+			(*OutputMatrix)[0] = volume.FrontLeft;
+			(*OutputMatrix)[1] = volume.FrontRight;
+			(*OutputMatrix)[2] = volume.FrontCenter;
+			(*OutputMatrix)[3] = volume.LFE;
+			(*OutputMatrix)[4] = volume.BackLeft;
+			(*OutputMatrix)[5] = volume.BackRight;
+			(*OutputMatrix)[6] = volume.SideLeft;
+			(*OutputMatrix)[7] = volume.SideRight;
+			break;
+		}
+	}
+
 	void AudioEngine::getVersion(uint8_t(&dest)[4])
 	{
 		static uint8_t version[4] = { 0, 5, 0, 0 };
@@ -686,22 +893,5 @@ namespace rl
 		memcpy_s(dest, sizeof(dest), version, sizeof(version));
 	}
 
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PROTECTED METHODS
-
-	// protected methods
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	// private methods
 
 }

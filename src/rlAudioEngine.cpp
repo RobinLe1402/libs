@@ -705,6 +705,57 @@ namespace rl
 		m_bRunning = false;
 	}
 
+	void AudioEngine::get3DOutputVolume(Audio3DPos pos, float(&OutputMatrix)[8])
+	{
+		// references for simplification
+		float& fFrontLeft = OutputMatrix[0];
+		float& fFrontRight = OutputMatrix[1];
+		float& fFrontCenter = OutputMatrix[2];
+		float& fLFE = OutputMatrix[3];
+		float& fBackLeft = OutputMatrix[4];
+		float& fBackRight = OutputMatrix[5];
+		float& fSideLeft = OutputMatrix[6];
+		float& fSideRight = OutputMatrix[7];
+
+
+
+		// relative volume
+		float fRelLeft, fRelCenter, fRelRight, fRelFront, fRelSide, fRelBack;
+
+		fRelLeft = 1.0f - std::min(1.0f, abs((pos.x + 1.0f) / pos.radius));
+		fRelCenter = 1.0f - std::min(1.0f, abs(pos.x) / pos.radius);
+		fRelRight = 1.0f - std::min(1.0f, abs((pos.x - 1.0f) / pos.radius));
+		fRelFront = 1.0f - std::min(1.0f, abs(pos.z) / pos.radius);
+		fRelSide = 1.0f - std::min(1.0f, abs(pos.z - 1.0f) / pos.radius);
+		fRelBack = 1.0f - std::min(1.0f, abs(pos.z - 2.0f) / pos.radius);
+
+
+
+		// value calculation
+		fFrontLeft = fRelFront * fRelLeft;
+		fFrontRight = fRelFront * fRelRight;
+		fFrontCenter = fRelFront * fRelCenter;
+		fLFE = 0.0f;
+		fBackLeft = fRelBack * fRelLeft;
+		fBackRight = fRelBack * fRelRight;
+		fSideLeft = fRelSide * fRelLeft;
+		fSideRight = fRelSide * fRelRight;
+	}
+
+	void AudioEngine::getVersion(uint8_t(&dest)[4])
+	{
+		static uint8_t version[4] = { 0, 5, 0, 0 };
+
+		memcpy_s(dest, sizeof(dest), version, sizeof(version));
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PROTECTED METHODS
+
 	void AudioEngine::registerSound(Sound* snd)
 	{
 		if (!m_bRunning)
@@ -751,50 +802,6 @@ namespace rl
 			m_pStreams.erase(it);
 
 		lm.unlock();
-	}
-
-	void AudioEngine::get3DOutputVolume(Audio3DPos pos, float(&OutputMatrix)[8])
-	{
-		// references for simplification
-		float& fFrontLeft = OutputMatrix[0];
-		float& fFrontRight = OutputMatrix[1];
-		float& fFrontCenter = OutputMatrix[2];
-		float& fLFE = OutputMatrix[3];
-		float& fBackLeft = OutputMatrix[4];
-		float& fBackRight = OutputMatrix[5];
-		float& fSideLeft = OutputMatrix[6];
-		float& fSideRight = OutputMatrix[7];
-
-
-
-		// relative volume
-		float fRelLeft, fRelCenter, fRelRight, fRelFront, fRelSide, fRelBack;
-
-		fRelLeft = 1.0f - std::min(1.0f, abs((pos.x + 1.0f) / pos.radius));
-		fRelCenter = 1.0f - std::min(1.0f, abs(pos.x) / pos.radius);
-		fRelRight = 1.0f - std::min(1.0f, abs((pos.x - 1.0f) / pos.radius));
-		fRelFront = 1.0f - std::min(1.0f, abs(pos.z) / pos.radius);
-		fRelSide = 1.0f - std::min(1.0f, abs(pos.z - 1.0f) / pos.radius);
-		fRelBack = 1.0f - std::min(1.0f, abs(pos.z - 2.0f) / pos.radius);
-
-
-
-		// value calculation
-		fFrontLeft = fRelFront * fRelLeft;
-		fFrontRight = fRelFront * fRelRight;
-		fFrontCenter = fRelFront * fRelCenter;
-		fLFE = 0.0f;
-		fBackLeft = fRelBack * fRelLeft;
-		fBackRight = fRelBack * fRelRight;
-		fSideLeft = fRelSide * fRelLeft;
-		fSideRight = fRelSide * fRelRight;
-	}
-
-	void AudioEngine::getVersion(uint8_t(&dest)[4])
-	{
-		static uint8_t version[4] = { 0, 5, 0, 0 };
-
-		memcpy_s(dest, sizeof(dest), version, sizeof(version));
 	}
 
 

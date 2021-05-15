@@ -109,6 +109,146 @@ namespace rl
 
 
 
+
+
+	
+	// forward declarations
+	class Sound;
+	class IAudioStream;
+
+
+
+	/// <summary>
+	/// XAudio2-based audio engine, with 3D audio support
+	/// </summary>
+	class AudioEngine final
+	{
+	public: // methods
+
+		static AudioEngine& getInstance();
+
+		/// <summary>
+		/// Create the mastering voice<para/>
+		/// Destroys the current one, if present
+		/// </summary>
+		/// <param name="samplerate">
+		/// must be a multiple of <c>XAUDIO2_QUANTUM_DENOMINATOR</c> (100) and betweeen
+		/// <c>XAUDIO2_MIN_SAMPLE_RATE</c> (1000) and <c>XAUDIO2_MAX_SAMPLE_RATE</c> (200000)
+		/// </param>
+		/// <returns>Was the mastering voice successfully created?</returns>
+		bool create(const wchar_t* szDeviceID = NULL, uint8_t ChannelCount = 2,
+			uint32_t samplerate = 44100);
+
+		/// <summary>
+		/// Destroy the mastering voice
+		/// </summary>
+		/// <param name="StopVoices">= should all current voices be stopped?</param>
+		/// <param name="UnregisterSources">
+		/// = should all sources (<c>Sound</c> and <c>IAudioStream</c> objects) be unregistered?
+		/// (StopVoices will get ignored if this is <c>true</c>)
+		/// </param>
+		void destroy(bool StopSounds = true);
+
+
+		/// <summary>
+		/// Get a pointer to the current <c>IXAudio2</c> interface<para/>
+		/// Returns <c>nullptr</c> if there is currently no <c>IXAudio2</c> interface
+		/// </summary>
+		inline IXAudio2* getEngine() { return m_pXAudio2; }
+
+		/// <summary>
+		/// Get a pointer to the current <c>IXAudio2MasteringVoice</c> interface<para/>
+		/// Returns <c>nullptr</c> if there currently is no <c>IXAudio2MasteringVoice</c> interface
+		/// </summary>
+		inline IXAudio2MasteringVoice* getMasterVoice() { return m_pMaster; }
+
+		/// <summary>
+		/// Get the current channel count
+		/// </summary>
+		/// <returns>
+		/// When running --> Channel count of the mastering voice<para/>
+		/// Else --> 0
+		/// </returns>
+		inline uint8_t getChannelCount() { return m_iChannelCount; }
+
+		/// <summary>
+		/// Is there a mastering voice currently running?
+		/// </summary>
+		/// <returns></returns>
+		inline bool isRunning() { return m_bRunning; }
+
+
+
+		/// <summary>
+		/// Create a 3D volume matrix based on 2D coordinates
+		/// </summary>
+		void get3DOutputVolume(Audio3DPos pos, float (&OutputMatrix)[8]);
+
+
+
+		/// <summary>
+		/// Get the current version of <c>rl::AudioEngine</c>
+		/// </summary>
+		void getVersion(uint8_t(&dest)[4]);
+
+
+	protected:
+
+		/// <summary>
+		/// Add a sound to the list of played audio
+		/// </summary>
+		void registerSound(Sound* snd);
+
+
+		/// <summary>
+		/// Remove a sound from the list of played audio
+		/// </summary>
+		void unregisterSound(Sound* snd);
+
+
+
+		/// <summary>
+		/// Add an audio stream to the list of played audio
+		/// </summary>
+		void registerStream(IAudioStream* stream);
+
+		/// <summary>
+		/// Remove an audio stream from the list of played audio
+		/// </summary>
+		void unregisterStream(IAudioStream* stream);
+
+
+	private: // methods
+
+		AudioEngine(); // --> singleton
+		~AudioEngine();
+
+
+	private: // variables
+
+		static IXAudio2* m_pXAudio2; // XAudio2 object
+		static IXAudio2MasteringVoice* m_pMaster; // mastering voice
+
+		static std::vector<Sound*> m_pSounds;
+		static std::mutex m_muxSounds;
+
+		static std::vector<IAudioStream*> m_pStreams;
+		static std::mutex m_muxStreams;
+
+		static std::atomic<bool> m_bRunning;
+		static uint8_t m_iChannelCount;
+
+
+
+		friend class Sound;
+		friend class IAudioStream;
+
+	};
+
+
+
+
+
 	/// <summary>
 	/// Helper struct for short WAV sound clips that are fully loaded into memory
 	/// </summary>
@@ -120,11 +260,6 @@ namespace rl
 		uint8_t iChannelCount;
 		uint32_t iSampleRate; // samples per seconds (Hz)
 	};
-
-
-
-	// forward declaration
-	class AudioEngine;
 
 
 
@@ -419,130 +554,6 @@ namespace rl
 
 		uint8_t m_i3DDestChannelCount = 0; // for handling engine reconstructions
 		float m_f3DVolume[8] = {};
-
-	};
-
-
-
-
-
-	/// <summary>
-	/// XAudio2-based audio engine, with 3D audio support
-	/// </summary>
-	class AudioEngine final
-	{
-	public: // methods
-
-		static AudioEngine& getInstance();
-
-		/// <summary>
-		/// Create the mastering voice<para/>
-		/// Destroys the current one, if present
-		/// </summary>
-		/// <param name="samplerate">
-		/// must be a multiple of <c>XAUDIO2_QUANTUM_DENOMINATOR</c> (100) and betweeen
-		/// <c>XAUDIO2_MIN_SAMPLE_RATE</c> (1000) and <c>XAUDIO2_MAX_SAMPLE_RATE</c> (200000)
-		/// </param>
-		/// <returns>Was the mastering voice successfully created?</returns>
-		bool create(const wchar_t* szDeviceID = NULL, uint8_t ChannelCount = 2,
-			uint32_t samplerate = 44100);
-
-		/// <summary>
-		/// Destroy the mastering voice
-		/// </summary>
-		/// <param name="StopVoices">= should all current voices be stopped?</param>
-		/// <param name="UnregisterSources">
-		/// = should all sources (<c>Sound</c> and <c>IAudioStream</c> objects) be unregistered?
-		/// (StopVoices will get ignored if this is <c>true</c>)
-		/// </param>
-		void destroy(bool StopSounds = true);
-
-
-		/// <summary>
-		/// Get a pointer to the current <c>IXAudio2</c> interface<para/>
-		/// Returns <c>nullptr</c> if there is currently no <c>IXAudio2</c> interface
-		/// </summary>
-		inline IXAudio2* getEngine() { return m_pXAudio2; }
-
-		/// <summary>
-		/// Get a pointer to the current <c>IXAudio2MasteringVoice</c> interface<para/>
-		/// Returns <c>nullptr</c> if there currently is no <c>IXAudio2MasteringVoice</c> interface
-		/// </summary>
-		inline IXAudio2MasteringVoice* getMasterVoice() { return m_pMaster; }
-
-		/// <summary>
-		/// Get the current channel count
-		/// </summary>
-		/// <returns>
-		/// When running --> Channel count of the mastering voice<para/>
-		/// Else --> 0
-		/// </returns>
-		inline uint8_t getChannelCount() { return m_iChannelCount; }
-
-		/// <summary>
-		/// Is there a mastering voice currently running?
-		/// </summary>
-		/// <returns></returns>
-		inline bool isRunning() { return m_bRunning; }
-
-
-		/// <summary>
-		/// Add a sound to the list of played audio
-		/// </summary>
-		void registerSound(Sound* snd);
-
-
-		/// <summary>
-		/// Remove a sound from the list of played audio
-		/// </summary>
-		void unregisterSound(Sound* snd);
-
-
-
-		/// <summary>
-		/// Add an audio stream to the list of played audio
-		/// </summary>
-		void registerStream(IAudioStream* stream);
-
-		/// <summary>
-		/// Remove an audio stream from the list of played audio
-		/// </summary>
-		void unregisterStream(IAudioStream* stream);
-
-
-
-		/// <summary>
-		/// Create a 3D volume matrix based on 2D coordinates
-		/// </summary>
-		void get3DOutputVolume(Audio3DPos pos, float (&OutputMatrix)[8]);
-
-
-
-		/// <summary>
-		/// Get the current version of <c>rl::AudioEngine</c>
-		/// </summary>
-		void getVersion(uint8_t(&dest)[4]);
-
-
-	private: // methods
-
-		AudioEngine(); // --> singleton
-		~AudioEngine();
-
-
-	private: // variables
-
-		static IXAudio2* m_pXAudio2; // XAudio2 object
-		static IXAudio2MasteringVoice* m_pMaster; // mastering voice
-
-		static std::vector<Sound*> m_pSounds;
-		static std::mutex m_muxSounds;
-
-		static std::vector<IAudioStream*> m_pStreams;
-		static std::mutex m_muxStreams;
-
-		static std::atomic<bool> m_bRunning;
-		static uint8_t m_iChannelCount;
 
 	};
 

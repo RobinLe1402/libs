@@ -111,10 +111,12 @@ namespace rl
 
 
 
-	
+
 	// forward declarations
 	class Sound;
 	class IAudioStream;
+
+
 
 
 
@@ -136,25 +138,26 @@ namespace rl
 		/// <c>XAUDIO2_MIN_SAMPLE_RATE</c> (1000) and <c>XAUDIO2_MAX_SAMPLE_RATE</c> (200000)
 		/// </param>
 		/// <returns>Was the mastering voice successfully created?</returns>
-		bool create(const wchar_t* szDeviceID = NULL, uint8_t ChannelCount = 2,
+		bool create(const wchar_t* DeviceID = 0, uint8_t ChannelCount = 2,
 			uint32_t samplerate = 44100);
 
 		/// <summary>
 		/// Destroy the mastering voice
 		/// </summary>
-		/// <param name="StopVoices">= should all current voices be stopped?</param>
-		/// <param name="UnregisterSources">
-		/// = should all sources (<c>Sound</c> and <c>IAudioStream</c> objects) be unregistered?
-		/// (StopVoices will get ignored if this is <c>true</c>)
-		/// </param>
-		void destroy(bool StopSounds = true);
+		void destroy();
+
+
+		/// <summary>
+		/// Stop all audio output linked to this engine
+		/// </summary>
+		void stopAllAudio();
 
 
 		/// <summary>
 		/// Get a pointer to the current <c>IXAudio2</c> interface<para/>
 		/// Returns <c>nullptr</c> if there is currently no <c>IXAudio2</c> interface
 		/// </summary>
-		inline IXAudio2* getEngine() { return m_pXAudio2; }
+		IXAudio2* getEngine();
 
 		/// <summary>
 		/// Get a pointer to the current <c>IXAudio2MasteringVoice</c> interface<para/>
@@ -182,7 +185,7 @@ namespace rl
 		/// <summary>
 		/// Create a 3D volume matrix based on 2D coordinates
 		/// </summary>
-		void get3DOutputVolume(Audio3DPos pos, float (&OutputMatrix)[8]);
+		void get3DOutputVolume(Audio3DPos pos, float(&OutputMatrix)[8]);
 
 
 
@@ -223,20 +226,54 @@ namespace rl
 		AudioEngine(); // --> singleton
 		~AudioEngine();
 
+		void createEngine(); // create m_pEngine
+		void destroyEngine(); // destroy m_pEngine
+
+
+	private: // types
+
+		class Callback : public IXAudio2EngineCallback
+		{
+		public: // methods
+
+			Callback(AudioEngine& engine) : m_oEngine(engine) {}
+
+			void OnCriticalError(HRESULT Error) override;
+
+			inline void OnProcessingPassEnd() override {}
+			inline void OnProcessingPassStart() override {}
+
+
+		private: // variables
+
+			AudioEngine& m_oEngine;
+
+		};
+
 
 	private: // variables
 
-		static IXAudio2* m_pXAudio2; // XAudio2 object
-		static IXAudio2MasteringVoice* m_pMaster; // mastering voice
+		IXAudio2* m_pEngine = nullptr; // XAudio2 object
+		std::atomic<bool> m_bEngineExists = false;
 
-		static std::vector<Sound*> m_pSounds;
-		static std::mutex m_muxSounds;
+		IXAudio2MasteringVoice* m_pMaster = nullptr; // mastering voice
+		Callback m_oCallback;
 
-		static std::vector<IAudioStream*> m_pStreams;
-		static std::mutex m_muxStreams;
+		std::vector<Sound*> m_pSounds;
+		std::mutex m_muxSounds;
 
-		static std::atomic<bool> m_bRunning;
-		static uint8_t m_iChannelCount;
+		std::vector<IAudioStream*> m_pStreams;
+		std::mutex m_muxStreams;
+
+		std::atomic<bool> m_bRunning = false;
+		uint8_t m_iChannelCount = 0;
+
+		std::atomic<bool> m_bError = false; // true if a critical error lead to a destruction
+
+		std::thread::id m_oMainTrdID;
+		std::thread m_oTrdError;
+
+		std::vector<std::string> m_oExceptions;
 
 
 
@@ -354,8 +391,8 @@ namespace rl
 
 			std::mutex& m_mux; // for notifying owner thread
 			std::condition_variable& m_cv; // for notifying owner thread
-			IXAudio2SourceVoice* m_pVoice; // associated XAudio2 source voice interface
-			std::atomic<bool> m_bPaused; // is this voice currently paused?
+			IXAudio2SourceVoice* m_pVoice = nullptr; // associated XAudio2 source voice interface
+			std::atomic<bool> m_bPaused = false; // is this voice currently paused?
 
 		};
 
@@ -408,7 +445,7 @@ namespace rl
 
 	public: // methods
 
-		IAudioStream(AudioEngine& engine);
+		IAudioStream(AudioEngine& engine) : m_oEngine(engine), m_oCallback(this, m_mux, m_cv) {}
 		~IAudioStream();
 
 
@@ -486,6 +523,10 @@ namespace rl
 
 		void threadFunc(uint8_t iBitsPerSample, uint8_t iChannelCount, uint32_t iSampleRate,
 			float fVolume);
+
+
+		void playInternal(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate = 44100,
+			float volume = 1.0f, size_t BufferBlocks = 8, size_t BufferBlockSamples = 512);
 
 
 	private: // types

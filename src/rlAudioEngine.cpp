@@ -1,5 +1,7 @@
 #include "rlAudioEngine.hpp"
 
+#include "rlTools.hpp"
+
 #undef min
 #undef max
 #include <exception>
@@ -115,20 +117,6 @@ namespace rl
 	class AudioEngine
 	***********************************************************************************************/
 
-	/// <summary>
-	/// Write the hexadecimal representation of a <c>HRESULT</c> into a c-string
-	/// </summary>
-	/// <param name="str">= a c-string with a minimum length of 8</param>
-	void WriteHResultHexIntoString(HRESULT hr, char* str)
-	{
-		static char cHEX[] = "0123456789ABCDEF";
-
-		for (uint8_t i = 0; i < sizeof(hr) * 2; i++)
-		{
-			str[i] = cHEX[(hr >> ((7 - i) * 4)) & 0x0F];
-		}
-	}
-
 	class SoundCallback : public IXAudio2VoiceCallback
 	{
 	private: // variables
@@ -166,58 +154,24 @@ namespace rl
 
 
 	//==============================================================================================
-	// STATIC VARIABLES
-
-	IXAudio2* AudioEngine::m_pXAudio2 = nullptr;
-	IXAudio2MasteringVoice* AudioEngine::m_pMaster = nullptr;
-	std::vector<Sound*> AudioEngine::m_pSounds;
-	std::mutex AudioEngine::m_muxSounds;
-	std::vector<IAudioStream*> AudioEngine::m_pStreams;
-	std::mutex AudioEngine::m_muxStreams;
-	std::atomic<bool> AudioEngine::m_bRunning = false;
-	uint8_t AudioEngine::m_iChannelCount = 0;
-
-
-
-
-
-	//==============================================================================================
 	// METHODS
 
 
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	AudioEngine::AudioEngine()
+	AudioEngine::AudioEngine() : m_oCallback(*this), m_oMainTrdID(std::this_thread::get_id())
 	{
-		HRESULT hr;
-		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-		if (FAILED(hr))
-		{
-			char szException[] = "Couldn't initialize COM (error code: 0x00000000)";
-			WriteHResultHexIntoString(hr, &szException[39]);
-
-			throw std::exception(szException);
-		}
-
-		hr = XAudio2Create(&m_pXAudio2);
-		if (FAILED(hr))
-		{
-			char szException[] = "Couldn't create XAudio2 object (error code: 0x00000000)";
-			WriteHResultHexIntoString(hr, &szException[46]);
-
-			throw std::exception(szException);
-		}
+		createEngine();
 	}
 
 	AudioEngine::~AudioEngine()
 	{
 		destroy();
+		destroyEngine();
 
-		if (m_pXAudio2 != nullptr)
-			m_pXAudio2->Release();
-
-		CoUninitialize();
+		if (m_oTrdError.joinable())
+			m_oTrdError.join();
 	}
 
 
@@ -233,12 +187,22 @@ namespace rl
 		return engine;
 	}
 
-	bool AudioEngine::create(const wchar_t* szDeviceID, uint8_t ChannelCount, uint32_t samplerate)
+	bool AudioEngine::create(const wchar_t* DeviceID, uint8_t ChannelCount, uint32_t samplerate)
 	{
 		destroy();
 
-		HRESULT hr = m_pXAudio2->CreateMasteringVoice(&m_pMaster, ChannelCount, samplerate, 0,
-			szDeviceID);
+		if (m_oTrdError.joinable())
+			m_oTrdError.join();
+		if (!m_bEngineExists) // --> an error occured since creating the instance
+			createEngine();
+
+		HRESULT hr = m_pEngine->CreateMasteringVoice(&m_pMaster, ChannelCount, samplerate, 0,
+			DeviceID);
+
+		if (FAILED(hr))
+			ThrowHResultException(hr, "Couldn't create XAudio2 mastering voice:\n");
+
+		m_bError = false;
 
 		// refresh 3D output in 3D streams
 		for (IAudioStream* stream : m_pStreams)
@@ -253,33 +217,56 @@ namespace rl
 		return true;
 	}
 
-	void AudioEngine::destroy(bool StopSounds)
+	void AudioEngine::destroy()
 	{
 		if (!m_bRunning)
 			return;
 
 
+		stopAllAudio();
+
+		if (std::this_thread::get_id() != m_oMainTrdID)
+		{
+			m_oTrdError = std::thread(
+				[&]()
+				{
+					destroyEngine();
+				}
+			);
+		}
+		else
+		{
+			if (m_pMaster != nullptr)
+			{
+				m_pMaster->DestroyVoice();
+				m_pMaster = nullptr;
+			}
+
+			m_iChannelCount = 0;
+		}
+
+		m_bRunning = false;
+	}
+
+	void AudioEngine::stopAllAudio()
+	{
 		std::unique_lock<std::mutex> lmSounds(m_muxSounds);
 		std::unique_lock<std::mutex> lmStreams(m_muxStreams);
-		if (StopSounds)
-		{
-			for (Sound* pSnd : m_pSounds)
-				pSnd->stopAll();
-			for (IAudioStream* pStream : m_pStreams)
-				pStream->stop();
-		}
-		lmSounds.unlock();
-		lmStreams.unlock();
 
+		for (Sound* pSnd : m_pSounds)
+			pSnd->stopAll();
+		for (IAudioStream* pStream : m_pStreams)
+			pStream->stop();
 
-		if (m_pMaster != nullptr)
-		{
-			m_pMaster->DestroyVoice();
-			m_pMaster = nullptr;
-		}
+		// RAII will unlock
+	}
 
-		m_iChannelCount = 0;
-		m_bRunning = false;
+	IXAudio2* AudioEngine::getEngine()
+	{
+		if (m_bRunning)
+			return m_pEngine;
+		else
+			return nullptr;
 	}
 
 	void AudioEngine::get3DOutputVolume(Audio3DPos pos, float(&OutputMatrix)[8])
@@ -379,6 +366,72 @@ namespace rl
 			m_pStreams.erase(it);
 
 		lm.unlock();
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PRIVATE METHODS
+
+	void AudioEngine::createEngine()
+	{
+		HRESULT hr;
+		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+		if (FAILED(hr))
+			ThrowHResultException(hr, "Couldn't initialize COM:\n");
+
+		hr = XAudio2Create(&m_pEngine);
+
+		if (FAILED(hr))
+			ThrowHResultException(hr, "Couldn't create XAudio2 object:\n");
+
+		m_pEngine->RegisterForCallbacks(&m_oCallback);
+		m_bEngineExists = true;
+	}
+
+	void AudioEngine::destroyEngine()
+	{
+		if (m_pEngine != nullptr)
+			m_pEngine->Release();
+
+		m_pMaster = nullptr;
+
+		CoUninitialize();
+
+		m_bEngineExists = false;
+	}
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class AudioEngine::Callback
+	***********************************************************************************************/
+
+	//==============================================================================================
+	// METHODS
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	void AudioEngine::Callback::OnCriticalError(HRESULT Error)
+	{
+		/*std::string sError;
+		GenerateHResultString(sError, Error, "Critical error in rl::AudioEngine:\n");
+		MessageBoxA(NULL, sError.c_str(), "Exception", MB_ICONERROR | MB_SYSTEMMODAL);*/
+
+		m_oEngine.m_bError = true;
+
+		m_oEngine.destroy();
 	}
 
 
@@ -501,6 +554,9 @@ namespace rl
 	Sound::Voice::Voice(AudioEngine& engine, std::mutex& mux, std::condition_variable& cv,
 		WaveformData& data, float volume) : m_mux(mux), m_cv(cv)
 	{
+		if (!engine.isRunning())
+			return;
+
 		uint8_t i = data.iBitsPerSample / 8;
 		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
 			throw std::exception("rl::SoundVoice: Invalid bitrate");
@@ -542,7 +598,7 @@ namespace rl
 
 	void Sound::Voice::pause()
 	{
-		if (m_bPaused)
+		if (m_pVoice == nullptr || m_bPaused)
 			return;
 
 		m_pVoice->Stop();
@@ -560,6 +616,9 @@ namespace rl
 
 	void Sound::Voice::stop()
 	{
+		if (m_pVoice == nullptr)
+			return;
+
 		m_pVoice->Stop();
 		m_pVoice->FlushSourceBuffers();
 
@@ -585,17 +644,7 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	IAudioStream::IAudioStream(AudioEngine& engine) : m_oEngine(engine),
-		m_oCallback(this, m_mux, m_cv)
-	{
-		m_oEngine.registerStream(this);
-	}
-
-	IAudioStream::~IAudioStream()
-	{
-		stop();
-		m_oEngine.unregisterStream(this);
-	}
+	IAudioStream::~IAudioStream() { stop(); }
 
 
 
@@ -607,40 +656,26 @@ namespace rl
 	void IAudioStream::play(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
 		float volume, size_t BufferBlocks, size_t BufferBlockSamples)
 	{
+		if (!m_oEngine.isRunning())
+			return;
+
 		stop();
-
-		if (BitsPerSample == 0 || BitsPerSample % 8 > 1 || BitsPerSample > 32 ||
-			ChannelCount == 0 || ChannelCount > XAUDIO2_MAX_AUDIO_CHANNELS ||
-			SampleRate % XAUDIO2_QUANTUM_DENOMINATOR > 0 ||
-			SampleRate < XAUDIO2_MIN_SAMPLE_RATE || SampleRate > XAUDIO2_MAX_SAMPLE_RATE ||
-			BufferBlocks < 2 || BufferBlockSamples < 1)
-			throw std::exception("rl::IAudioStream: Invalid launch parameters");
-
-		m_iBitsPerSample = BitsPerSample;
-		m_iChannelCount = ChannelCount;
-		m_iSampleRate = SampleRate;
-
-		m_iBufferBlocks = BufferBlocks;
-		m_iBufferBlockSamples = BufferBlockSamples;
-		m_iBlocksFree = BufferBlocks;
-
-		m_fVolume = volume;
-
-		m_iBlockSize = m_iBufferBlocks * m_iBufferBlockSamples * m_iChannelCount *
-			(m_iBitsPerSample / 8);
-
-		m_trd = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
-			SampleRate, volume);
+		m_b3D = false;
+		playInternal(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks,
+			BufferBlockSamples);
 	}
 
 	void IAudioStream::play3D(Audio3DPos pos, uint8_t BitsPerSample, uint8_t ChannelCount,
 		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
 	{
-		stop();
+		if (!m_oEngine.isRunning())
+			return;
 
+		stop();
 		m_b3D = true;
 		m_oPos = pos;
-		play(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks, BufferBlockSamples);
+		playInternal(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks,
+			BufferBlockSamples);
 	}
 
 	void IAudioStream::setPos(Audio3DPos pos, float volume)
@@ -677,12 +712,20 @@ namespace rl
 			return;
 
 		m_bRunning = false;
+		if (std::this_thread::get_id() != m_oEngine.m_oMainTrdID)
+		{
+			std::unique_lock<std::mutex> lm(m_mux);
+			m_cv.notify_one();
+		}
 
 		if (m_trd.joinable())
 			m_trd.join(); // wait for thread to finish
 
 		m_bPaused = false;
 		m_b3D = false;
+
+		if (!m_oEngine.m_bError)
+			m_oEngine.unregisterStream(this);
 	}
 
 	void IAudioStream::setVolume(float volume)
@@ -712,6 +755,8 @@ namespace rl
 	void IAudioStream::threadFunc(uint8_t iBitsPerSample, uint8_t iChannelCount,
 		uint32_t iSampleRate, float fVolume)
 	{
+		m_bRunning = true;
+
 		WAVEFORMATEX wavfmt = CreateWaveFmt(iBitsPerSample, iChannelCount, iSampleRate);
 		if (!m_b3D) // regular playback
 		{
@@ -726,15 +771,37 @@ namespace rl
 
 			// 7.1 surround submix
 			p->CreateSubmixVoice(&m_pVoiceSurround, 8, iSampleRate, 0, 1);
+			if (m_pVoiceSurround == nullptr)
+			{
+				MessageBoxA(NULL, "rl::IAudioStream: Couldn't create surround submix voice",
+					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
+				return;
+			}
 
 			// mono submix
 			send.pOutputVoice = m_pVoiceSurround;
 			p->CreateSubmixVoice(&m_pVoiceMono, 1, iSampleRate, 0, 0, &sendlist);
+			if (m_pVoiceMono == nullptr)
+			{
+				m_pVoiceSurround->DestroyVoice();
+				MessageBoxA(NULL, "rl::IAudioStream: Couldn't create mono submix voice",
+					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
+				return;
+			}
 
 			// source input
 			send.pOutputVoice = m_pVoiceMono;
 			p->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
 				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback, &sendlist);
+			if (m_pVoiceMono == nullptr)
+			{
+				m_pVoiceMono->DestroyVoice();
+				m_pVoiceSurround->DestroyVoice();
+				MessageBoxA(NULL, "rl::IAudioStream: Couldn't create source voice",
+					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
+				return;
+			}
+
 			refresh3DOutput();
 		}
 
@@ -774,7 +841,6 @@ namespace rl
 		}
 		m_iBufferCurrentBlock = 0;
 		m_iBlocksFree = 0;
-		m_bRunning = true;
 
 		m_pVoice->Start();
 
@@ -815,13 +881,13 @@ namespace rl
 			}
 		}
 
-		m_pVoice->Stop();
-		m_pVoice->FlushSourceBuffers();
-		m_pVoice->DestroyVoice();
-		m_pVoice = nullptr;
-
-		if (m_b3D)
+		if (!m_oEngine.m_bError)
 		{
+			m_pVoice->Stop();
+			m_pVoice->FlushSourceBuffers();
+			m_pVoice->DestroyVoice();
+			m_pVoice = nullptr;
+
 			m_pVoiceMono->DestroyVoice();
 			m_pVoiceMono = nullptr;
 			m_pVoiceSurround->DestroyVoice();
@@ -832,6 +898,35 @@ namespace rl
 		m_pBufferData = nullptr;
 
 		OnShutdown();
+	}
+
+	void IAudioStream::playInternal(uint8_t BitsPerSample, uint8_t ChannelCount,
+		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
+	{
+		m_oEngine.registerStream(this);
+
+		if (BitsPerSample == 0 || BitsPerSample % 8 > 1 || BitsPerSample > 32 ||
+			ChannelCount == 0 || ChannelCount > XAUDIO2_MAX_AUDIO_CHANNELS ||
+			SampleRate % XAUDIO2_QUANTUM_DENOMINATOR > 0 ||
+			SampleRate < XAUDIO2_MIN_SAMPLE_RATE || SampleRate > XAUDIO2_MAX_SAMPLE_RATE ||
+			BufferBlocks < 2 || BufferBlockSamples < 1)
+			throw std::exception("rl::IAudioStream: Invalid launch parameters");
+
+		m_iBitsPerSample = BitsPerSample;
+		m_iChannelCount = ChannelCount;
+		m_iSampleRate = SampleRate;
+
+		m_iBufferBlocks = BufferBlocks;
+		m_iBufferBlockSamples = BufferBlockSamples;
+		m_iBlocksFree = BufferBlocks;
+
+		m_fVolume = volume;
+
+		m_iBlockSize = m_iBufferBlocks * m_iBufferBlockSamples * m_iChannelCount *
+			(m_iBitsPerSample / 8);
+
+		m_trd = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
+			SampleRate, volume);
 	}
 
 

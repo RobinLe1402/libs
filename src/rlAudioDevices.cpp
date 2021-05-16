@@ -48,10 +48,13 @@ namespace rl
 
 		IMMDevice* pDevice = NULL;
 		hr = m_pEnumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &pDevice);
-		LPWSTR szID = NULL;
-		hr = pDevice->GetId(&szID);
-		m_sDefaultDevice = szID;
-		pDevice->Release();
+		if (pDevice != nullptr)
+		{
+			LPWSTR szID = NULL;
+			hr = pDevice->GetId(&szID);
+			m_sDefaultDevice = szID;
+			pDevice->Release();
+		}
 
 		m_pEnumerator->RegisterEndpointNotificationCallback(&m_oNotificationClient);
 	}
@@ -141,16 +144,24 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PRIVATE METHODS
 
-	void AudioDeviceManager::OnDefaultDeviceChanged(std::wstring sDeviceID)
+	void AudioDeviceManager::OnDefaultDeviceChanged(LPCWSTR pwstrId)
 	{
-		m_sDefaultDevice = sDeviceID;
+		if (pwstrId != nullptr)
+		{
+			m_sDefaultDevice = pwstrId;
 
-		AudioDevice device = {};
-		getDevice(device, m_sDefaultDevice.c_str());
+			AudioDevice device = {};
+			getDevice(device, m_sDefaultDevice.c_str());
 
-		for (auto o : m_oCallbacks)
-			if (o.sDeviceID.empty())
-				o.pCallback->OnDeviceChanged(device);
+			for (auto o : m_oCallbacks)
+				if (o.sDeviceID.empty())
+					o.pCallback->OnDeviceChanged(device);
+		}
+		else
+		{
+			for (auto o : m_oCallbacks)
+				o.pCallback->OnNoDevice();
+		}
 	}
 
 	void AudioDeviceManager::OnDeviceRemoved(LPCWSTR pwstrId)

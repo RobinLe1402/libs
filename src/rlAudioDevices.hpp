@@ -126,7 +126,7 @@ namespace rl
 
 
 
-		void OnDefaultDeviceChanged(std::wstring sDeviceID);
+		void OnDefaultDeviceChanged(LPCWSTR pwstrId);
 		void OnDeviceRemoved(LPCWSTR pwstrId);
 		void OnDeviceAdded(LPCWSTR pwstrId);
 		void OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState);

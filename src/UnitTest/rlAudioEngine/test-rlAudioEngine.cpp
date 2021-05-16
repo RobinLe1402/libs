@@ -1,5 +1,6 @@
 #include "../../rlAudioEngine.hpp"
 #include "../../rlAudioDevices.hpp"
+#include "../../visualstyles.h"
 
 #include <exception>
 
@@ -81,7 +82,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		pos.radius = 1.0;
 
 		stream.play3D(pos, 32, 1);
-		Sleep(5000);
+		while (true)
+		{
+			if (!engine.isRunning())
+			{
+				try
+				{
+					engine.create(0, 6);
+					stream.play3D(pos, 32, 1);
+				}
+				catch (std::exception e) {}
+			}
+		}
 
 
 
@@ -135,7 +147,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	}
 	catch (std::exception e)
 	{
-		MessageBoxA(NULL, e.what(), "std::exception", MB_ICONERROR);
+		MessageBoxA(NULL, e.what(), "std::exception", MB_ICONERROR | MB_SYSTEMMODAL);
 	}
 
 	return 0;

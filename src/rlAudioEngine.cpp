@@ -1,6 +1,6 @@
 #include "rlAudioEngine.hpp"
 
-#include "rlTools.hpp"
+#include "rlGlobal.hpp"
 
 #undef min
 #undef max
@@ -114,43 +114,8 @@ namespace rl
 
 
 	/***********************************************************************************************
-	class AudioEngine
+	 class IAudio
 	***********************************************************************************************/
-
-	class SoundCallback : public IXAudio2VoiceCallback
-	{
-	private: // variables
-
-		IXAudio2SourceVoice* m_pVoice = nullptr;
-		std::mutex* m_mux = nullptr;
-		std::condition_variable* m_cv = nullptr;
-
-
-	public: // methods
-
-		void set(IXAudio2SourceVoice* src, std::mutex* mux, std::condition_variable* cv)
-		{
-			m_pVoice = src;
-			m_mux = mux;
-			m_cv = cv;
-		}
-
-
-		void __stdcall OnBufferEnd(void* pBufferContext) override {}
-		void __stdcall OnBufferStart(void* pBufferContext) override {}
-		void __stdcall OnLoopEnd(void* pBufferContext) override {}
-		void __stdcall OnStreamEnd() override
-		{
-			m_pVoice->Stop();
-			m_pVoice->FlushSourceBuffers();
-
-			std::unique_lock<std::mutex> lm(*m_mux);
-			m_cv->notify_one();
-		}
-		void __stdcall OnVoiceError(void* pBufferContext, HRESULT Error) override {}
-		void __stdcall OnVoiceProcessingPassEnd() override {}
-		void __stdcall OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
-	};
 
 
 	//==============================================================================================
@@ -160,7 +125,37 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	AudioEngine::AudioEngine() : m_oCallback(*this), m_oMainTrdID(std::this_thread::get_id())
+	IAudio::~IAudio() { unregisterAudio(); }
+
+
+	//----------------------------------------------------------------------------------------------
+	// PROTECTED METHODS
+
+	void IAudio::registerAudio() { m_oEngine.registerAudio(this); }
+
+	void IAudio::unregisterAudio() { m_oEngine.unregisterAudio(this); }
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class AudioEngine
+	***********************************************************************************************/
+
+	//==============================================================================================
+	// METHODS
+
+
+	//----------------------------------------------------------------------------------------------
+	// CONSTRUCTORS, DESTRUCTORS
+
+	AudioEngine::AudioEngine() : m_oCallback(*this)
 	{
 		createEngine();
 	}
@@ -170,8 +165,8 @@ namespace rl
 		destroy();
 		destroyEngine();
 
-		if (m_oTrdError.joinable())
-			m_oTrdError.join();
+		if (m_trdEngine.joinable())
+			m_trdEngine.join();
 	}
 
 
@@ -191,9 +186,10 @@ namespace rl
 	{
 		destroy();
 
-		if (m_oTrdError.joinable())
-			m_oTrdError.join();
-		if (!m_bEngineExists) // --> an error occured since creating the instance
+		if (m_trdEngine.joinable())
+			m_trdEngine.join();
+
+		if (!m_bEngineExists)
 			createEngine();
 
 		HRESULT hr = m_pEngine->CreateMasteringVoice(&m_pMaster, ChannelCount, samplerate, 0,
@@ -204,15 +200,17 @@ namespace rl
 
 		m_bError = false;
 
-		// refresh 3D output in 3D streams
-		for (IAudioStream* stream : m_pStreams)
+		// refresh output of 3D audio
+		for (IAudio* audio : m_pAudio)
 		{
-			if (stream->is3D())
-				stream->refresh3DOutput();
+			if (audio->is3D())
+				audio->refresh3DOutput();
 		}
 
 		m_iChannelCount = ChannelCount;
 		m_bRunning = true;
+
+		m_trdEngine = std::thread(&rl::AudioEngine::threadFunc, this);
 
 		return true;
 	}
@@ -222,43 +220,26 @@ namespace rl
 		if (!m_bRunning)
 			return;
 
-
-		stopAllAudio();
-
-		if (std::this_thread::get_id() != m_oMainTrdID)
-		{
-			m_oTrdError = std::thread(
-				[&]()
-				{
-					destroyEngine();
-				}
-			);
-		}
-		else
-		{
-			if (m_pMaster != nullptr)
-			{
-				m_pMaster->DestroyVoice();
-				m_pMaster = nullptr;
-			}
-
-			m_iChannelCount = 0;
-		}
-
-		m_bRunning = false;
+		std::unique_lock<std::mutex> lm(m_mux);
+		m_cv.notify_one();
 	}
 
 	void AudioEngine::stopAllAudio()
 	{
-		std::unique_lock<std::mutex> lmSounds(m_muxSounds);
-		std::unique_lock<std::mutex> lmStreams(m_muxStreams);
+		for (IAudio* pAudio : m_pAudio)
+			pAudio->stop();
+	}
 
-		for (Sound* pSnd : m_pSounds)
-			pSnd->stopAll();
-		for (IAudioStream* pStream : m_pStreams)
-			pStream->stop();
+	void AudioEngine::pauseAllAudio()
+	{
+		for (IAudio* pAudio : m_pAudio)
+			pAudio->pause();
+	}
 
-		// RAII will unlock
+	void AudioEngine::resumeAllAudio()
+	{
+		for (IAudio* pAudio : m_pAudio)
+			pAudio->resume();
 	}
 
 	IXAudio2* AudioEngine::getEngine()
@@ -320,50 +301,26 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PROTECTED METHODS
 
-	void AudioEngine::registerSound(Sound* snd)
+	void AudioEngine::registerAudio(IAudio* snd)
 	{
 		if (!m_bRunning)
 			return;
 
-		std::unique_lock<std::mutex> lm(m_muxSounds);
-		m_pSounds.push_back(snd);
+		std::unique_lock<std::mutex> lm(m_muxAudio);
+		m_pAudio.push_back(snd);
 		lm.unlock();
 	}
 
-	void AudioEngine::unregisterSound(Sound* snd)
+	void AudioEngine::unregisterAudio(IAudio* audio)
 	{
 		if (!m_bRunning)
 			return;
 
-		std::unique_lock<std::mutex> lm(m_muxSounds);
+		std::unique_lock<std::mutex> lm(m_muxAudio);
 
-		auto it = std::find(m_pSounds.begin(), m_pSounds.end(), snd);
-		if (it != m_pSounds.end())
-			m_pSounds.erase(it);
-
-		lm.unlock();
-	}
-
-	void AudioEngine::registerStream(IAudioStream* stream)
-	{
-		if (!m_bRunning)
-			return;
-
-		std::unique_lock<std::mutex> lm(m_muxStreams);
-		m_pStreams.push_back(stream);
-		lm.unlock();
-	}
-
-	void AudioEngine::unregisterStream(IAudioStream* stream)
-	{
-		if (!m_bRunning)
-			return;
-
-		std::unique_lock<std::mutex> lm(m_muxStreams);
-
-		auto it = std::find(m_pStreams.begin(), m_pStreams.end(), stream);
-		if (it != m_pStreams.end())
-			m_pStreams.erase(it);
+		auto it = std::find(m_pAudio.begin(), m_pAudio.end(), audio);
+		if (it != m_pAudio.end())
+			m_pAudio.erase(it);
 
 		lm.unlock();
 	}
@@ -393,14 +350,37 @@ namespace rl
 
 	void AudioEngine::destroyEngine()
 	{
+		if (!m_bEngineExists)
+			return;
+
+
 		if (m_pEngine != nullptr)
 			m_pEngine->Release();
-
-		m_pMaster = nullptr;
 
 		CoUninitialize();
 
 		m_bEngineExists = false;
+	}
+
+	void AudioEngine::threadFunc()
+	{
+		std::unique_lock<std::mutex> lm(m_mux);
+		m_cv.wait(lm);
+
+		stopAllAudio();
+		if (m_pMaster != nullptr)
+		{
+			m_pMaster->DestroyVoice();
+			m_pMaster = nullptr;
+		}
+
+		m_bRunning = false;
+
+		if (m_bError)
+		{
+			destroyEngine();
+			m_bError = false;
+		}
 	}
 
 
@@ -444,95 +424,156 @@ namespace rl
 
 
 	/***********************************************************************************************
-	class Sound
+	class IAudio
 	***********************************************************************************************/
 
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	Sound::Sound(AudioEngine& engine, WaveformData data, bool ManageData) :
-		m_oEngine(engine), m_oData(data), m_bManage(ManageData)
+	bool IAudio::createVoices(WAVEFORMATEX wavfmt, const char* szClassName)
 	{
-		m_oData = data;
-		m_bManage = ManageData;
-		engine.registerSound(this);
+		if (!m_b3D) // regular playback
+		{
+			HRESULT hr = m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
+				XAUDIO2_DEFAULT_FREQ_RATIO, m_pCallback);
+
+			if (FAILED(hr))
+			{
+				std::string sMsg;
+				GenerateHResultString(sMsg, hr, "rl::SoundInstance: Couldn't create source voice:\n");
+				MessageBoxA(NULL, sMsg.c_str(),
+					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
+				return false;
+			}
+		}
+		else // 3D mode
+		{
+			auto p = m_oEngine.getEngine();
+			XAUDIO2_SEND_DESCRIPTOR send = { 0 };
+			XAUDIO2_VOICE_SENDS sendlist = { 1, &send };
+
+			HRESULT hr;
+
+			// 7.1 surround submix
+			hr = p->CreateSubmixVoice(&m_pVoiceSurround, 8, wavfmt.nSamplesPerSec, 0, 1);
+			if (FAILED(hr))
+			{
+				std::string sMsg;
+				if (szClassName != nullptr)
+				{
+					sMsg.reserve(strlen(szClassName) + 2);
+					sMsg = szClassName;
+					sMsg += ": ";
+				}
+				GenerateHResultString(sMsg, hr,
+					(sMsg + "Couldn't create surround submix voice:\n").c_str());
+				MessageBoxA(NULL, sMsg.c_str(),
+					"Error", MB_ICONERROR | MB_SYSTEMMODAL);
+				return false;
+			}
+
+			// mono submix
+			send.pOutputVoice = m_pVoiceSurround;
+			hr = p->CreateSubmixVoice(&m_pVoiceMono, 1, wavfmt.nSamplesPerSec, 0, 0, &sendlist);
+			if (FAILED(hr))
+			{
+				m_pVoiceSurround->DestroyVoice();
+				m_pVoiceSurround = nullptr;
+
+				std::string sMsg;
+				if (szClassName != nullptr)
+				{
+					sMsg.reserve(strlen(szClassName) + 2);
+					sMsg = szClassName;
+					sMsg += ": ";
+				}
+				GenerateHResultString(sMsg, hr,
+					(sMsg + "Couldn't create mono submix voice:\n").c_str());
+				MessageBoxA(NULL, sMsg.c_str(),
+					"Error", MB_ICONERROR | MB_SYSTEMMODAL);
+				return false;
+			}
+
+			// source input
+			send.pOutputVoice = m_pVoiceMono;
+			hr = p->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
+				XAUDIO2_DEFAULT_FREQ_RATIO, m_pCallback, &sendlist);
+			if (FAILED(hr))
+			{
+				m_pVoiceMono->DestroyVoice();
+				m_pVoiceMono = nullptr;
+				m_pVoiceSurround->DestroyVoice();
+				m_pVoiceSurround = nullptr;
+
+				std::string sMsg;
+				if (szClassName != nullptr)
+				{
+					sMsg.reserve(strlen(szClassName) + 2);
+					sMsg = szClassName;
+					sMsg += ": ";
+				}
+				GenerateHResultString(sMsg, hr,
+					(sMsg + "Couldn't create mono source voice:\n").c_str());
+				MessageBoxA(NULL, sMsg.c_str(),
+					"Error", MB_ICONERROR | MB_SYSTEMMODAL);
+				return false;
+			}
+
+			refresh3DOutput();
+		}
+		return true;
 	}
 
-	Sound::~Sound()
+	void IAudio::destroyVoices()
 	{
-		stopAll();
-		while (m_iThreadCount > 0); // wait for all threads to finish
-		if (m_bManage)
-			delete[] m_oData.pData;
+		if (!m_oEngine.error())
+		{
+			m_bRunning = false;
+			m_pVoice->Stop();
+			m_pVoice->FlushSourceBuffers();
+			m_pVoice->DestroyVoice();
 
-		m_oEngine.unregisterSound(this);
+			if (m_b3D)
+			{
+				m_pVoiceMono->DestroyVoice();
+				m_pVoiceSurround->DestroyVoice();
+
+				m_b3D = false;
+			}
+		}
+
+		m_pVoice = nullptr;
+		m_pVoiceMono = nullptr;
+		m_pVoiceSurround = nullptr;
+
+		m_bRunning = false;
 	}
 
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
-
-	void Sound::play(float volume)
+	void IAudio::refresh3DOutput()
 	{
-		std::thread trd(&rl::Sound::threadPlay, this, volume);
-		trd.detach();
+		if (!m_b3D)
+			return;
+
+		m_oEngine.get3DOutputVolume(m_oPos, m_f3DVolume);
+		m_pVoiceMono->SetOutputMatrix(m_pVoiceSurround, 1, 8, m_f3DVolume);
 	}
 
-	void Sound::pauseAll()
+	void IAudio::setPos(Audio3DPos pos, float volume)
 	{
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		for (auto p : m_oVoices)
-			p->pause();
-		muxVector.unlock();
+		if (!m_bRunning || !m_b3D)
+			return;
+
+		m_oPos = pos;
+		refresh3DOutput();
+		m_pVoice->SetVolume(volume);
 	}
 
-	void Sound::resumeAll()
+	void IAudio::setVolume(float volume)
 	{
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		for (auto p : m_oVoices)
-			p->resume();
-		muxVector.unlock();
-	}
+		if (!m_bRunning)
+			return;
 
-	void Sound::stopAll()
-	{
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		for (auto p : m_oVoices)
-			p->stop();
-		muxVector.unlock();
-	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	void Sound::threadPlay(float volume)
-	{
-		m_iThreadCount++;
-		std::mutex mux;
-		std::unique_lock<std::mutex> lm(mux);
-		std::condition_variable cv;
-		Voice voice(m_oEngine, mux, cv, m_oData, volume);
-
-		std::unique_lock<std::mutex> muxVector(m_muxVector);
-		m_oVoices.push_back(&voice);
-		muxVector.unlock();
-
-		cv.wait(lm); // wait for voice to stop
-
-		muxVector.lock();
-		m_oVoices.erase(std::find(m_oVoices.begin(), m_oVoices.end(), &voice));
-		muxVector.unlock();
-
-		m_iThreadCount--;
-
-		// RAII will destroy the voice
+		m_pVoice->SetVolume(volume);
 	}
 
 
@@ -545,43 +586,17 @@ namespace rl
 
 
 	/***********************************************************************************************
-	class Sound::Voice
+	class SoundInstance
 	***********************************************************************************************/
 
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	Sound::Voice::Voice(AudioEngine& engine, std::mutex& mux, std::condition_variable& cv,
-		WaveformData& data, float volume) : m_mux(mux), m_cv(cv)
+	SoundInstance::~SoundInstance()
 	{
-		if (!engine.isRunning())
-			return;
-
-		uint8_t i = data.iBitsPerSample / 8;
-		if (i == 0 || i > 4 || data.iBitsPerSample % 8 > 0)
-			throw std::exception("rl::SoundVoice: Invalid bitrate");
-
-		WAVEFORMATEX wavformat =
-			CreateWaveFmt(data.iBitsPerSample, data.iChannelCount, data.iSampleRate);
-
-		if (FAILED(engine.getEngine()->CreateSourceVoice(&m_pVoice, &wavformat, 0,
-			XAUDIO2_DEFAULT_FREQ_RATIO, this)))
-			throw std::exception("rl::SoundVoice: Couldn't create source voice");
-
-		if (volume != 1.0)
-			m_pVoice->SetVolume(volume);
-
-		XAUDIO2_BUFFER buf{};
-		buf.AudioBytes = (UINT32)data.bytes;
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-		buf.pAudioData = (BYTE*)data.pData;
-		m_pVoice->SubmitSourceBuffer(&buf);
-		m_pVoice->Start();
-	}
-
-	Sound::Voice::~Voice()
-	{
-		m_pVoice->DestroyVoice();
+		stop();
+		if (m_trd.joinable())
+			m_trd.join();
 	}
 
 
@@ -591,42 +606,109 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
-	void Sound::Voice::OnStreamEnd()
+	void SoundInstance::play(WaveformData& data, float volume)
 	{
 		stop();
+
+		m_b3D = false;
+		playInternal(data, volume);
 	}
 
-	void Sound::Voice::pause()
+	void SoundInstance::play3D(WaveformData& data, Audio3DPos& pos, float volume)
 	{
-		if (m_pVoice == nullptr || m_bPaused)
+		stop();
+
+		m_b3D = true;
+		m_oPos = pos;
+
+		playInternal(data, volume);
+	}
+
+	void SoundInstance::pause()
+	{
+		if (!m_bRunning || m_bPaused)
 			return;
 
 		m_pVoice->Stop();
 		m_bPaused = true;
 	}
 
-	void Sound::Voice::resume()
+	void SoundInstance::resume()
 	{
-		if (!m_bPaused)
+		if (!m_bRunning || !m_bPaused)
 			return;
 
 		m_pVoice->Start();
 		m_bPaused = false;
 	}
 
-	void Sound::Voice::stop()
+	void SoundInstance::stop()
 	{
-		if (m_pVoice == nullptr)
+		if (!m_bRunning)
 			return;
-
-		m_pVoice->Stop();
-		m_pVoice->FlushSourceBuffers();
 
 		std::unique_lock<std::mutex> lm(m_mux);
 		m_cv.notify_one();
-		m_mux.unlock();
-		lm.release();
+
+		unregisterAudio();
 	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PRIVATE METHODS
+
+	void SoundInstance::playInternal(WaveformData& data, float fVolume)
+	{
+		WAVEFORMATEX wavfmt = CreateWaveFmt(data.iBitsPerSample, data.iChannelCount,
+			data.iSampleRate);
+		m_pCallback = &m_oCallback;
+		if (!createVoices(wavfmt, "rl::SoundInstance"))
+			return;
+
+		registerAudio();
+		if (fVolume != 1.0)
+			m_pVoice->SetVolume(fVolume);
+
+		XAUDIO2_BUFFER buf{};
+		buf.AudioBytes = (UINT32)data.bytes;
+		buf.Flags = XAUDIO2_END_OF_STREAM;
+		buf.pAudioData = (BYTE*)data.pData;
+		m_pVoice->SubmitSourceBuffer(&buf);
+		m_pVoice->Start();
+
+		m_trd = std::thread(&rl::SoundInstance::threadFunc, this);
+		m_bRunning = true;
+	}
+
+	void SoundInstance::threadFunc()
+	{
+		std::unique_lock<std::mutex> lm(m_mux);
+
+		m_cv.wait(lm); // wait for stop command
+
+		destroyVoices();
+	}
+
+
+
+
+
+
+
+
+
+
+	/***********************************************************************************************
+	class SoundInstance::Callback
+	***********************************************************************************************/
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	void SoundInstance::Callback::OnStreamEnd() { m_oSound.stop(); }
 
 
 
@@ -644,7 +726,13 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	IAudioStream::~IAudioStream() { stop(); }
+	IAudioStream::~IAudioStream()
+	{
+		stop();
+
+		if (m_trdStream.joinable())
+			m_trdStream.join(); // wait for thread to finish
+	}
 
 
 
@@ -659,7 +747,13 @@ namespace rl
 		if (!m_oEngine.isRunning())
 			return;
 
+
 		stop();
+
+		if (m_trdStream.joinable())
+			m_trdStream.join(); // wait for thread to finish
+
+
 		m_b3D = false;
 		playInternal(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks,
 			BufferBlockSamples);
@@ -676,16 +770,6 @@ namespace rl
 		m_oPos = pos;
 		playInternal(BitsPerSample, ChannelCount, SampleRate, volume, BufferBlocks,
 			BufferBlockSamples);
-	}
-
-	void IAudioStream::setPos(Audio3DPos pos, float volume)
-	{
-		if (!m_b3D)
-			return;
-
-		m_oPos = pos;
-		refresh3DOutput();
-		setVolume(volume);
 	}
 
 	void IAudioStream::pause()
@@ -712,37 +796,14 @@ namespace rl
 			return;
 
 		m_bRunning = false;
-		if (std::this_thread::get_id() != m_oEngine.m_oMainTrdID)
-		{
-			std::unique_lock<std::mutex> lm(m_mux);
-			m_cv.notify_one();
-		}
 
-		if (m_trd.joinable())
-			m_trd.join(); // wait for thread to finish
+		std::unique_lock<std::mutex> lm(m_mux);
+		m_cv.notify_one();
 
 		m_bPaused = false;
 		m_b3D = false;
 
-		if (!m_oEngine.m_bError)
-			m_oEngine.unregisterStream(this);
-	}
-
-	void IAudioStream::setVolume(float volume)
-	{
-		if (!m_bRunning)
-			return;
-
-		m_pVoice->SetVolume(volume);
-	}
-
-	void IAudioStream::refresh3DOutput()
-	{
-		if (!m_b3D)
-			return;
-
-		m_oEngine.get3DOutputVolume(m_oPos, m_f3DVolume);
-		m_pVoiceMono->SetOutputMatrix(m_pVoiceSurround, 1, 8, m_f3DVolume);
+		unregisterAudio();
 	}
 
 
@@ -755,55 +816,12 @@ namespace rl
 	void IAudioStream::threadFunc(uint8_t iBitsPerSample, uint8_t iChannelCount,
 		uint32_t iSampleRate, float fVolume)
 	{
-		m_bRunning = true;
-
 		WAVEFORMATEX wavfmt = CreateWaveFmt(iBitsPerSample, iChannelCount, iSampleRate);
-		if (!m_b3D) // regular playback
-		{
-			m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
-				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback);
-		}
-		else // 3D mode
-		{
-			auto p = m_oEngine.getEngine();
-			XAUDIO2_SEND_DESCRIPTOR send = { 0 };
-			XAUDIO2_VOICE_SENDS sendlist = { 1, &send };
+		m_pCallback = &m_oCallback;
+		if (!createVoices(wavfmt, "rl::IAudioStream"))
+			return;
 
-			// 7.1 surround submix
-			p->CreateSubmixVoice(&m_pVoiceSurround, 8, iSampleRate, 0, 1);
-			if (m_pVoiceSurround == nullptr)
-			{
-				MessageBoxA(NULL, "rl::IAudioStream: Couldn't create surround submix voice",
-					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
-				return;
-			}
-
-			// mono submix
-			send.pOutputVoice = m_pVoiceSurround;
-			p->CreateSubmixVoice(&m_pVoiceMono, 1, iSampleRate, 0, 0, &sendlist);
-			if (m_pVoiceMono == nullptr)
-			{
-				m_pVoiceSurround->DestroyVoice();
-				MessageBoxA(NULL, "rl::IAudioStream: Couldn't create mono submix voice",
-					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
-				return;
-			}
-
-			// source input
-			send.pOutputVoice = m_pVoiceMono;
-			p->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
-				XAUDIO2_DEFAULT_FREQ_RATIO, &m_oCallback, &sendlist);
-			if (m_pVoiceMono == nullptr)
-			{
-				m_pVoiceMono->DestroyVoice();
-				m_pVoiceSurround->DestroyVoice();
-				MessageBoxA(NULL, "rl::IAudioStream: Couldn't create source voice",
-					"Exception", MB_ICONERROR | MB_SYSTEMMODAL);
-				return;
-			}
-
-			refresh3DOutput();
-		}
+		m_bRunning = true;
 
 		if (fVolume != 1.0)
 			m_pVoice->SetVolume(fVolume);
@@ -881,18 +899,7 @@ namespace rl
 			}
 		}
 
-		if (!m_oEngine.m_bError)
-		{
-			m_pVoice->Stop();
-			m_pVoice->FlushSourceBuffers();
-			m_pVoice->DestroyVoice();
-			m_pVoice = nullptr;
-
-			m_pVoiceMono->DestroyVoice();
-			m_pVoiceMono = nullptr;
-			m_pVoiceSurround->DestroyVoice();
-			m_pVoiceSurround = nullptr;
-		}
+		destroyVoices();
 
 		delete[] m_pBufferData;
 		m_pBufferData = nullptr;
@@ -903,7 +910,7 @@ namespace rl
 	void IAudioStream::playInternal(uint8_t BitsPerSample, uint8_t ChannelCount,
 		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
 	{
-		m_oEngine.registerStream(this);
+		registerAudio();
 
 		if (BitsPerSample == 0 || BitsPerSample % 8 > 1 || BitsPerSample > 32 ||
 			ChannelCount == 0 || ChannelCount > XAUDIO2_MAX_AUDIO_CHANNELS ||
@@ -920,12 +927,12 @@ namespace rl
 		m_iBufferBlockSamples = BufferBlockSamples;
 		m_iBlocksFree = BufferBlocks;
 
-		m_fVolume = volume;
-
 		m_iBlockSize = m_iBufferBlocks * m_iBufferBlockSamples * m_iChannelCount *
 			(m_iBitsPerSample / 8);
 
-		m_trd = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
+		if (m_trdStream.joinable())
+			m_trdStream.join();
+		m_trdStream = std::thread(&rl::IAudioStream::threadFunc, this, BitsPerSample, ChannelCount,
 			SampleRate, volume);
 	}
 
@@ -941,16 +948,6 @@ namespace rl
 	/***********************************************************************************************
 	class IAudioStream::Callback
 	***********************************************************************************************/
-
-	//----------------------------------------------------------------------------------------------
-	// CONSTRUCTORS, DESTRUCTORS
-
-	IAudioStream::Callback::Callback(IAudioStream* stream, std::mutex& mux,
-		std::condition_variable& cv) : m_pStream(stream), m_mux(mux), m_cv(cv) {}
-
-
-
-
 
 	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS

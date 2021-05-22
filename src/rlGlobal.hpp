@@ -1,13 +1,13 @@
 /***************************************************************************************************
- FILE:	rlTools.hpp
+ FILE:	rlGlobal.hpp
  CPP:	<n/a>
- DESCR:	Some tool functions for internal use in CPP files
+ DESCR:	Some global functions for internal use in CPP files
 ***************************************************************************************************/
 
 
 #pragma once
-#ifndef ROBINLE_TOOLS
-#define ROBINLE_TOOLS
+#ifndef ROBINLE_GLOBAL
+#define ROBINLE_GLOBAL
 
 
 
@@ -70,4 +70,4 @@ namespace rl
 
 
 
-#endif // ROBINLE_TOOLS
+#endif // ROBINLE_GLOBAL

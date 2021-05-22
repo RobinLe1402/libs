@@ -112,9 +112,8 @@ namespace rl
 
 
 
-	// forward declarations
-	class Sound;
-	class IAudioStream;
+	// forward declaration
+	class IAudio;
 
 
 
@@ -148,9 +147,19 @@ namespace rl
 
 
 		/// <summary>
-		/// Stop all audio output linked to this engine
+		/// Stop all audio linked to this engine
 		/// </summary>
 		void stopAllAudio();
+
+		/// <summary>
+		/// Pauses all audio linked to this engine
+		/// </summary>
+		void pauseAllAudio();
+
+		/// <summary>
+		/// Unpauses all audio linked to this engine
+		/// </summary>
+		void resumeAllAudio();
 
 
 		/// <summary>
@@ -190,6 +199,13 @@ namespace rl
 
 
 		/// <summary>
+		/// Has an error occured that is forcing a shutdown right now?
+		/// </summary>
+		inline bool error() { return m_bError; }
+
+
+
+		/// <summary>
 		/// Get the current version of <c>rl::AudioEngine</c>
 		/// </summary>
 		void getVersion(uint8_t(&dest)[4]);
@@ -198,27 +214,15 @@ namespace rl
 	protected:
 
 		/// <summary>
-		/// Add a sound to the list of played audio
+		/// Add item to the list of played audio
 		/// </summary>
-		void registerSound(Sound* snd);
+		void registerAudio(IAudio* audio);
 
 
 		/// <summary>
-		/// Remove a sound from the list of played audio
+		/// Remove item from the list of played audio
 		/// </summary>
-		void unregisterSound(Sound* snd);
-
-
-
-		/// <summary>
-		/// Add an audio stream to the list of played audio
-		/// </summary>
-		void registerStream(IAudioStream* stream);
-
-		/// <summary>
-		/// Remove an audio stream from the list of played audio
-		/// </summary>
-		void unregisterStream(IAudioStream* stream);
+		void unregisterAudio(IAudio* audio);
 
 
 	private: // methods
@@ -229,6 +233,8 @@ namespace rl
 		void createEngine(); // create m_pEngine
 		void destroyEngine(); // destroy m_pEngine
 
+		void threadFunc();
+
 
 	private: // types
 
@@ -238,10 +244,10 @@ namespace rl
 
 			Callback(AudioEngine& engine) : m_oEngine(engine) {}
 
-			void OnCriticalError(HRESULT Error) override;
+			void __stdcall OnCriticalError(HRESULT Error) override;
 
-			inline void OnProcessingPassEnd() override {}
-			inline void OnProcessingPassStart() override {}
+			inline void __stdcall OnProcessingPassEnd() override {}
+			inline void __stdcall OnProcessingPassStart() override {}
 
 
 		private: // variables
@@ -259,28 +265,106 @@ namespace rl
 		IXAudio2MasteringVoice* m_pMaster = nullptr; // mastering voice
 		Callback m_oCallback;
 
-		std::vector<Sound*> m_pSounds;
-		std::mutex m_muxSounds;
-
-		std::vector<IAudioStream*> m_pStreams;
-		std::mutex m_muxStreams;
+		std::vector<IAudio*> m_pAudio;
+		std::mutex m_muxAudio;
 
 		std::atomic<bool> m_bRunning = false;
 		uint8_t m_iChannelCount = 0;
 
-		std::atomic<bool> m_bError = false; // true if a critical error lead to a destruction
-
-		std::thread::id m_oMainTrdID;
-		std::thread m_oTrdError;
+		std::thread m_trdEngine;
+		std::mutex m_mux;
+		std::condition_variable m_cv;
+		std::atomic<bool> m_bError = false; // true if a critical error has occured
 
 		std::vector<std::string> m_oExceptions;
 
-
-
-		friend class Sound;
-		friend class IAudioStream;
+		friend class IAudio;
 
 	};
+
+
+
+
+
+
+
+
+
+
+	/// <summary>
+	/// Interface for any audio played via the audio engine
+	/// </summary>
+	class IAudio
+	{
+	public: // methods
+
+		IAudio(AudioEngine& engine) : m_oEngine(engine) {}
+		virtual ~IAudio();
+
+		virtual void pause() = 0;
+		virtual void resume() = 0;
+		virtual void stop() = 0;
+
+
+
+		/// <summary>
+		/// Is this audio instance running in 3D mode?
+		/// </summary>
+		inline bool is3D() { return m_b3D; }
+
+		/// <summary>
+		/// Recalculate the 3D output volume matrix<para/>
+		/// Has to be called when playing back in 3D mode, after recreating the mastering voice
+		/// with a different channel count
+		/// </summary>
+		void refresh3DOutput();
+
+
+
+		/// <summary>
+		/// If this audio instance is running in 3D mode, change the playback position
+		/// </summary>
+		/// <param name="x">= left/right position (0.0 = center, -1.0 = left, 1.0 = right)</param>
+		/// <param name="z">= front/back position (0.0 = front, 0.5 = center, 1.0 = back)</param>
+		/// <param name="volume">= pseudo y position</param>
+		void setPos(Audio3DPos pos, float volume = 1.0f);
+
+		void setVolume(float volume);
+
+
+	protected: // methods
+
+		void registerAudio();
+		void unregisterAudio();
+
+		// creates the necessary XAudio2 voices. Return value: Succeeded?
+		bool createVoices(WAVEFORMATEX wavfmt, const char* szClassName = nullptr);
+
+		void destroyVoices();
+
+
+	protected: // variables
+
+		AudioEngine& m_oEngine;
+
+		IXAudio2SourceVoice* m_pVoice = nullptr;
+		IXAudio2SubmixVoice* m_pVoiceMono = nullptr;
+		IXAudio2SubmixVoice* m_pVoiceSurround = nullptr;
+
+		IXAudio2VoiceCallback* m_pCallback = nullptr;
+
+		std::atomic<bool> m_bRunning;
+		bool m_b3D = false;
+		Audio3DPos m_oPos = {};
+
+		float m_f3DVolume[8] = {};
+
+	};
+
+
+
+
+
 
 
 
@@ -300,111 +384,69 @@ namespace rl
 
 
 
+
+
 	/// <summary>
-	/// For playing short sound clips
+	/// For playing waveform data from RAM
 	/// </summary>
-	class Sound final
+	class SoundInstance final : public IAudio
 	{
 	public: // methods
 
-		/// <summary>
-		/// Create a <c>Sound</c> object, assign data
-		/// </summary>
-		/// <param name="ManageData">
-		/// = should the data pointed to by <c>data.pData</c> automatically be deleted on
-		/// destruction?
-		/// </param>
-		Sound(AudioEngine& engine, WaveformData data, bool ManageData = true);
+		SoundInstance(AudioEngine& engine) : IAudio(engine), m_oCallback(*this, m_mux, m_cv) {}
+		virtual ~SoundInstance();
 
-		~Sound();
+		void play(WaveformData& data, float volume = 1.0f);
+		void play3D(WaveformData& data, Audio3DPos& pos, float volume = 1.0f);
 
-
-
-		/// <summary>
-		/// Play a new instance of this sound
-		/// </summary>
-		void play(float volume = 1.0);
-
-		// TODO: play3D (idea: create a class "SoundInstance" for this)
-
-		/// <summary>
-		/// Pause all instances of this sound
-		/// </summary>
-		void pauseAll();
-
-		/// <summary>
-		/// Resume all paused instances of this sound
-		/// </summary>
-		void resumeAll();
-
-		/// <summary>
-		/// Stop all instances of this sound
-		/// </summary>
-		void stopAll();
+		void pause() override;
+		void resume() override;
+		void stop() override;
 
 
 	private: // methods
 
-		// function to run in threads
-		void threadPlay(float volume);
+		void playInternal(WaveformData& data, float fVolume);
+		void threadFunc();
 
 
 	private: // types
 
-		/// <summary>
-		/// Representation of a XAudio2 source voice
-		/// </summary>
-		class Voice : public IXAudio2VoiceCallback
+		class Callback : public IXAudio2VoiceCallback
 		{
 		public: // methods
 
-			Voice(AudioEngine& engine, std::mutex& mux, std::condition_variable& cv,
-				WaveformData& data, float volume = 1.0);
-			~Voice();
+			Callback(SoundInstance& sound, std::mutex& mux, std::condition_variable& cv) :
+				m_oSound(sound), m_mux(mux), m_cv(cv) {}
+			~Callback() {}
 
 			void __stdcall OnStreamEnd() override;
 
-			virtual inline void __stdcall OnBufferEnd(void* pBufferContext) override {}
+			inline void __stdcall OnBufferEnd(void* pBufferContext) override {}
 			inline void __stdcall OnBufferStart(void* pBufferContext) override {}
 			inline void __stdcall OnLoopEnd(void* pBufferContext) override {}
 			inline void __stdcall OnVoiceError(void* pBufferContext, HRESULT Error) override {}
 			inline void __stdcall OnVoiceProcessingPassEnd() override {}
 			inline void __stdcall OnVoiceProcessingPassStart(UINT32 BytesRequired) override {}
 
-			/// <summary>
-			/// Pause playback until <c>resume()</c> is called
-			/// </summary>
-			void pause();
-
-			/// <summary>
-			/// Resume playback after <c>pause()</c> has been called
-			/// </summary>
-			void resume();
-
-			/// <summary>
-			/// Stop playback, flush audio buffer
-			/// </summary>
-			void stop();
-
 
 		private: // variables
 
-			std::mutex& m_mux; // for notifying owner thread
-			std::condition_variable& m_cv; // for notifying owner thread
-			IXAudio2SourceVoice* m_pVoice = nullptr; // associated XAudio2 source voice interface
-			std::atomic<bool> m_bPaused = false; // is this voice currently paused?
+			std::mutex& m_mux;
+			std::condition_variable& m_cv;
+			SoundInstance& m_oSound;
 
 		};
 
 
 	private: // variables
 
-		AudioEngine& m_oEngine; // destination engine
-		WaveformData m_oData; // WAV audio
-		bool m_bManage; // delete WAV data on destruction?
-		std::vector<Voice*> m_oVoices; // all voices currently playing this sound
-		std::mutex m_muxVector; // for thread-safe access of m_oVoices
-		std::atomic<uint64_t> m_iThreadCount; // count of currently running threads
+		std::atomic<bool> m_bPaused = false;
+
+		std::mutex m_mux;
+		std::condition_variable m_cv;
+		std::thread m_trd;
+		Callback m_oCallback;
 
 	};
 
@@ -414,7 +456,7 @@ namespace rl
 	/// <summary>
 	/// For streaming audio data of unknown or very big length
 	/// </summary>
-	class IAudioStream
+	class IAudioStream : public IAudio
 	{
 	protected: // interface methods
 
@@ -445,7 +487,8 @@ namespace rl
 
 	public: // methods
 
-		IAudioStream(AudioEngine& engine) : m_oEngine(engine), m_oCallback(this, m_mux, m_cv) {}
+		IAudioStream(AudioEngine& engine) :
+			IAudio(engine), m_oCallback(this, m_mux, m_cv) {}
 		~IAudioStream();
 
 
@@ -466,50 +509,24 @@ namespace rl
 			size_t BufferBlockSamples = 512);
 
 		/// <summary>
-		/// If this stream is running in 3D mode, change the playback position
-		/// </summary>
-		/// <param name="x">= left/right position (0.0 = center, -1.0 = left, 1.0 = right)</param>
-		/// <param name="z">= front/back position (0.0 = front, 0.5 = center, 1.0 = back)</param>
-		/// <param name="volume">= pseudo y position</param>
-		void setPos(Audio3DPos pos, float volume = 1.0f);
-
-		/// <summary>
 		/// Pause this stream
 		/// </summary>
-		void pause();
+		void pause() override;
 
 		/// <summary>
 		/// Resume this stream if it is currently paused
 		/// </summary>
-		void resume();
+		void resume() override;
 
 		/// <summary>
 		/// Stop this stream
 		/// </summary>
-		void stop();
-
-		/// <summary>
-		/// Instantly set the volume to this value
-		/// </summary>
-		/// <param name="volume">= volume multiplier (>= 0, 1.0 = original volume)</param>
-		void setVolume(float volume);
+		void stop() override;
 
 		/// <summary>
 		/// Is this stream currently paused?
 		/// </summary>
 		inline bool isPaused() { return m_bPaused; }
-
-		/// <summary>
-		/// Is this stream running in 3D mode?
-		/// </summary>
-		inline bool is3D() { return m_b3D; }
-
-		/// <summary>
-		/// Recalculate the 3D output volume matrix<para/>
-		/// Has to be called when playing back in 3D mode, after recreating the mastering voice
-		/// with a different channel count
-		/// </summary>
-		void refresh3DOutput();
 
 
 	protected: // methods
@@ -525,20 +542,18 @@ namespace rl
 			float fVolume);
 
 
-		void playInternal(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate = 44100,
-			float volume = 1.0f, size_t BufferBlocks = 8, size_t BufferBlockSamples = 512);
+		void playInternal(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
+			float volume, size_t BufferBlocks, size_t BufferBlockSamples);
 
 
 	private: // types
 
-		/// <summary>
-		/// Representation of a XAudio2 source voice
-		/// </summary>
 		class Callback : public IXAudio2VoiceCallback
 		{
 		public: // methods
 
-			Callback(IAudioStream* stream, std::mutex& mux, std::condition_variable& cv);
+			Callback(IAudioStream* stream, std::mutex& mux, std::condition_variable& cv) :
+				m_pStream(stream), m_mux(mux), m_cv(cv) {}
 			~Callback() {}
 
 			void __stdcall OnBufferEnd(void* pBufferContext) override;
@@ -563,22 +578,15 @@ namespace rl
 
 	private: // variables
 
-		AudioEngine& m_oEngine; // destination engine
-
 		uint8_t m_iBitsPerSample = 0;
 		uint8_t m_iChannelCount = 0;
 		uint32_t m_iSampleRate = 0;
 
-		std::atomic<bool> m_bRunning = false;
 		std::atomic<bool> m_bPaused = false;
-
-		IXAudio2SourceVoice* m_pVoice = nullptr;
-		IXAudio2SubmixVoice* m_pVoiceMono = nullptr;
-		IXAudio2SubmixVoice* m_pVoiceSurround = nullptr;
 
 		std::mutex m_mux;
 		std::condition_variable m_cv;
-		std::thread m_trd;
+		std::thread m_trdStream;
 		Callback m_oCallback;
 
 		size_t m_iBufferCurrentBlock = 0;
@@ -588,13 +596,6 @@ namespace rl
 		std::atomic<size_t> m_iBlockSize = 0;
 
 		uint8_t* m_pBufferData = nullptr;
-
-		bool m_b3D = false;
-		Audio3DPos m_oPos = {};
-		float m_fVolume = 0.0f;
-
-		uint8_t m_i3DDestChannelCount = 0; // for handling engine reconstructions
-		float m_f3DVolume[8] = {};
 
 	};
 

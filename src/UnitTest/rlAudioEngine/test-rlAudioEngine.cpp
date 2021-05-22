@@ -76,6 +76,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		auto& engine = rl::AudioEngine::getInstance();
 		engine.create(device.sID.c_str(), 6);
 
+
+
+
+
 		ExampleStream stream(engine);
 
 		rl::Audio3DPos pos = { -1.0f, 0.0f };
@@ -94,6 +98,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				catch (std::exception e) {}
 			}
 		}
+
+
 
 
 
@@ -118,7 +124,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		snd.iBitsPerSample = sizeof(float) * 8;
 		snd.iChannelCount = 1;
 		snd.iSampleRate = 44100;
-		rl::Sound sound(engine, snd);
+		rl::SoundInstance sound(engine);
 
 		int iRhythm[] =
 		{
@@ -133,16 +139,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			100
 		};
 
-		sound.play(0.01f);
+		rl::Audio3DPos pos = {};
+		pos.x = -1.0f;
+
+		sound.play3D(snd, pos, 0.25f);
 
 		for (int i : iRhythm)
 		{
 			Sleep(i);
-			sound.pauseAll();
+			sound.pause();
 			Sleep(100);
-			sound.resumeAll();
+			sound.resume();
 		}
-		sound.stopAll();*/
+		sound.stop();*/
 
 	}
 	catch (std::exception e)

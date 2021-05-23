@@ -11,6 +11,9 @@
       <SubSystem>NotSet</SubSystem>
     </Link>
     <ClCompile />
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(GitHub_rl_libs)comps\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

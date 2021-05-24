@@ -21,9 +21,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{5b2c69ba-26c2-4528-83cc-7bcedf33ac54}</ProjectGuid>
-    <RootNamespace>General</RootNamespace>
+    <ProjectGuid>{36278131-5fa4-4994-8d41-c04db4713cfb}</ProjectGuid>
+    <RootNamespace>splashscreen</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>splashscreen</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -143,9 +144,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\graphics.opengl.texture.hpp" />
-    <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
-    <ClInclude Include="..\..\include\rl\input.keyboard.hpp" />
+    <ClCompile Include="..\..\include\rl\splashscreen.cpp" />
+    <ClCompile Include="main-splashscreen.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="..\..\include\rl\splashscreen.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -154,15 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico" />
-    <Image Include="..\..\..\res\SplashScreen.bmp" />
-    <Image Include="..\..\..\RobinLe-Logo.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\include\rl\graphics.opengl.texture.cpp" />
-    <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp" />
-    <ClCompile Include="..\..\include\rl\input.keyboard.cpp" />
-    <ClCompile Include="..\..\include\rl\splashscreen.cpp" />
-    <ClCompile Include="main.cpp" />
+    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlSplashScreen Test\boot.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

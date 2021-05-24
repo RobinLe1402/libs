@@ -15,20 +15,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test-rlSplashScreen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\rl\splashscreen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\rl\splashscreen.hpp">
+    <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main-graphics.opengl.window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">
@@ -36,7 +36,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlSplashScreen Test\boot.bmp">
+    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlOpenGLWin Test\texture.bmp">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico">

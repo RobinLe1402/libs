@@ -15,22 +15,32 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test-rlAudioEngine.cpp">
+    <ClCompile Include="main-splashscreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\rl\audio.engine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\rl\audio.devices.cpp">
+    <ClCompile Include="..\..\include\rl\splashscreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\audio.engine.hpp">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\rl\audio.devices.hpp">
+    <ClInclude Include="..\..\include\rl\splashscreen.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlSplashScreen Test\boot.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

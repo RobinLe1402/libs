@@ -21,9 +21,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{36278131-5fa4-4994-8d41-c04db4713cfb}</ProjectGuid>
-    <RootNamespace>rlSplashScreen</RootNamespace>
+    <ProjectGuid>{29adbe36-20e1-4513-8b4d-3fa479de1177}</ProjectGuid>
+    <RootNamespace>graphics.opengl.window</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>graphics.opengl.window</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -143,19 +144,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\include\rl\splashscreen.cpp" />
-    <ClCompile Include="test-rlSplashScreen.cpp" />
+    <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\splashscreen.hpp" />
-    <ClInclude Include="resource.h" />
+    <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp" />
+    <ClCompile Include="main-graphics.opengl.window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico" />
-    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlSplashScreen Test\boot.bmp" />
+    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlOpenGLWin Test\texture.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

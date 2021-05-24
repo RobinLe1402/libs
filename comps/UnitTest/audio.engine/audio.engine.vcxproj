@@ -21,9 +21,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{29adbe36-20e1-4513-8b4d-3fa479de1177}</ProjectGuid>
-    <RootNamespace>rlOpenGLWin</RootNamespace>
+    <ProjectGuid>{4c0702fb-48cc-4860-a3f9-af6caa059ab8}</ProjectGuid>
+    <RootNamespace>audio.engine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>audio.engine</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -143,19 +144,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
-    <ClInclude Include="resource.h" />
+    <ClCompile Include="..\..\include\rl\audio.devices.cpp" />
+    <ClCompile Include="..\..\include\rl\audio.engine.cpp" />
+    <ClCompile Include="main-audio.engine.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp" />
-    <ClCompile Include="test-rlOpenGLWin.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\..\..\..\..\Bilder\Design\_RobinLe-Logo\RobinLe-Logo.ico" />
-    <Image Include="..\..\..\..\..\..\OneDrive\Programmieren\_Allgemein\_Ressourcen\rlOpenGLWin Test\texture.bmp" />
+    <ClInclude Include="..\..\include\rl\audio.devices.hpp" />
+    <ClInclude Include="..\..\include\rl\audio.engine.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -147,6 +147,7 @@
     <ClInclude Include="..\..\include\rl\graphics.opengl.texture.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
     <ClInclude Include="..\..\include\rl\input.keyboard.hpp" />
+    <ClInclude Include="..\..\include\rl\input.mouse.hpp" />
     <ClInclude Include="..\..\include\rl\splashscreen.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -162,6 +163,7 @@
     <ClCompile Include="..\..\include\rl\graphics.opengl.texture.cpp" />
     <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp" />
     <ClCompile Include="..\..\include\rl\input.keyboard.cpp" />
+    <ClCompile Include="..\..\include\rl\input.mouse.cpp" />
     <ClCompile Include="..\..\include\rl\splashscreen.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

@@ -71,7 +71,7 @@ namespace rl
 		bool update(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/// <summary>
-		/// Process the current input data (has to be called in order for <c>getKey()</c> to work
+		/// Process the current input data (has to be called in order for <c>getKey()</c> to work)
 		/// </summary>
 		void processInput();
 

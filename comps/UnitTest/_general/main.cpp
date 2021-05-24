@@ -4,6 +4,7 @@
 #include <rl/graphics.opengl.window.hpp>
 #include <rl/graphics.opengl.texture.hpp>
 #include <rl/input.keyboard.hpp>
+#include <rl/input.mouse.hpp>
 
 #include <Windows.h>
 #include <gdiplus.h>
@@ -21,9 +22,12 @@ class GLTest : public rl::OpenGLWin
 private:
 
 	rl::Keyboard& kb = rl::Keyboard::getInstance();
+	rl::Mouse& mouse = rl::Mouse::getInstance();
 
 	bool OnCreate() override
 	{
+		mouse.setHWND(getHWND());
+
 		glEnable(GL_TEXTURE_2D);
 
 		HANDLE hFile = CreateFileW(LR"(logo.png)", GENERIC_READ, 0, NULL,
@@ -55,20 +59,30 @@ private:
 
 	bool OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override
 	{
-		return kb.update(uMsg, wParam, lParam);
+		return kb.update(uMsg, wParam, lParam) || mouse.update(uMsg, wParam, lParam);
 	}
 
 	void OnGainFocus() override { kb.reset(); }
 
-	void OnLoseFocus() override
-	{
-		MessageBoxA(NULL, "-You've killed me!\n\n-Good.", "Focus",
-			MB_ICONINFORMATION | MB_SYSTEMMODAL);
-	}
+	void OnLoseFocus() override { }
 
 	bool OnUpdate(float fElapsedTime) override
 	{
 		kb.processInput();
+		mouse.processInput();
+
+		if (kb.getKey('A').bHeld)
+			MessageBoxA(NULL, "Test", NULL, MB_ICONINFORMATION | MB_SYSTEMMODAL);
+
+		auto mousestate = mouse.getState();
+		if (mousestate.left.bReleased)
+		{
+			MessageBoxA(getHWND(), ("Clicked at (" + std::to_string(mousestate.x) + "|" + std::to_string(mousestate.y) + ")").c_str(), NULL, MB_ICONINFORMATION);
+		}
+		if (mousestate.iWheelRotation != 0)
+		{
+			MessageBoxA(getHWND(), ("Mouse wheel rotation: " + std::to_string(mousestate.iWheelRotation)).c_str(), NULL, MB_ICONINFORMATION);
+		}
 
 		glClearColor(0xFF, 0, 0, 0);
 		glClear(GL_COLOR_BUFFER_BIT);

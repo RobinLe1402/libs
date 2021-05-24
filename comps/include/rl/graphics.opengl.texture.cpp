@@ -244,7 +244,7 @@ namespace rl
 
 	void OpenGLTexture::draw(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom)
 	{
-		if (m_pData == nullptr)
+		if (m_pData == nullptr || m_iID == 0)
 			return;
 
 		glBindTexture(GL_TEXTURE_2D, m_iID);

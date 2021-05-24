@@ -239,6 +239,7 @@ namespace rl
 
 		/// <summary>
 		/// Draw the full texture<para/>
+		/// <c>upload()</c> must have been called before drawing<para/>
 		/// Values are OpenGL viewport coordinates
 		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
 		/// Calling thread must have a current OpenGL rendering context

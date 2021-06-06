@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
 void ShowSyntax()
 {
 	printf("\n"
-		"usage: analyzeFON InputPath\n"
+		"usage: analyzeFON <InputPath>\n"
 		"\n"
 		"  InputPath	Path of a .FON file\n"
 		"\n"

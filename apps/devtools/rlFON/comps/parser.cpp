@@ -675,16 +675,16 @@ namespace rl
 					VS_FIXEDFILEINFO oFI = *(VS_FIXEDFILEINFO*)(pData + iOffset);
 					iOffset += sizeof(VS_FIXEDFILEINFO);
 
-					m_oVI.FileVersion = (size_t(oFI.dwFileVersionMS) << (sizeof(DWORD) * 8)) |
+					m_oVI.FileVersion = (uint64_t(oFI.dwFileVersionMS) << (sizeof(DWORD) * 8)) |
 						oFI.dwFileVersionLS;
-					m_oVI.ProductVersion = (size_t(oFI.dwProductVersionMS) << (sizeof(DWORD) * 8)) |
+					m_oVI.ProductVersion = (uint64_t(oFI.dwProductVersionMS) << (sizeof(DWORD) * 8)) |
 						oFI.dwProductVersionLS;
 					m_oVI.FileFlagsMask = oFI.dwFileFlagsMask;
 					m_oVI.FileFlags = oFI.dwFileFlags;
 					m_oVI.FileOS = oFI.dwFileOS;
 					m_oVI.FileType = oFI.dwFileType;
 					m_oVI.FileSubtype = oFI.dwFileSubtype;
-					m_oVI.FileDate = (size_t(oFI.dwFileDateMS) << (sizeof(DWORD) * 8)) |
+					m_oVI.FileDate = (uint64_t(oFI.dwFileDateMS) << (sizeof(DWORD) * 8)) |
 						oFI.dwFileDateLS;
 
 					while (iOffset < oNode_VERSIONINFO.cbNode)

@@ -197,8 +197,8 @@ int main(int argc, char* argv[])
 	std::vector<rl::FONTDIRENTRY> oFontDir;
 	parser.getFontDir(oFontDir);
 
-	printf("Font data (\"\\FONT\") [showing raster fonts only]\nCount: %" PRIu64
-		"\n{\n", oFontDir.size());
+	printf("Font data (\"\\FONT\") [showing raster fonts only]\nCount: %i\n{\n",
+		(int)oFontDir.size());
 	for (auto& o : oFontDir)
 	{
 		printf("  [%d]\t\"%s\"\tFNT version 0x%04x\tCharSet %d\t%3dx%d\t\t%dPt\n",

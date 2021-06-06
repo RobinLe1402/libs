@@ -71,8 +71,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -89,12 +89,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "RobinLe"
             VALUE "FileDescription", "previewFON - A tool for generating preview bitmaps from Microsoft FON files"
-            VALUE "FileVersion", "1.0.0.0"
+            VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "previewFON.exe"
             VALUE "LegalCopyright", "© 2021 Robin Lemanska"
             VALUE "OriginalFilename", "previewFON.exe"
             VALUE "ProductName", "RobinLe DevTools"
-            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "ProductVersion", "1.0.0.1"
         END
     END
     BLOCK "VarFileInfo"

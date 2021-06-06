@@ -365,7 +365,9 @@ int wmain(int argc, wchar_t* argv[])
 void ShowSyntax()
 {
 	printf("\n"
-		"usage: previewFON <InputPath> [FontOrdinal | ? | *] <OutputPath>\n"
+		"usage: previewFON <InputPath> [/? | --help] [FontOrdinal | ? | *] <OutputPath>\n"
+		"\n"
+		"  /? | --help	Show syntax\n"
 		"\n"
 		"Paths\n"
 		"  InputPath	Path of a .FON file\n"	

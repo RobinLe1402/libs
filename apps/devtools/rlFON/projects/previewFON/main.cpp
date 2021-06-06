@@ -365,7 +365,7 @@ int wmain(int argc, wchar_t* argv[])
 void ShowSyntax()
 {
 	printf("\n"
-		"usage: previewFON <InputPath> [/? | --help] [FontOrdinal | ? | *] <OutputPath>\n"
+		"usage: previewFON [/? | --help] <InputPath> [FontOrdinal | ? | *] <OutputPath>\n"
 		"\n"
 		"  /? | --help	Show syntax\n"
 		"\n"

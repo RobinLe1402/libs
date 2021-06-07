@@ -28,22 +28,6 @@ void ShowSyntax();
 
 
 
-#ifdef _DEBUG
-#define RETURN_SUCCESS Con::ResetColor(); system("PAUSE"); return 0
-#else
-#define RETURN_SUCCESS return 0
-#endif
-
-#ifdef _DEBUG
-#define RETURN_FAILURE Con::ResetColor(); system("PAUSE"); return 1
-#else
-#define RETURN_FAILURE return 1
-#endif
-
-
-
-
-
 int main(int argc, char* argv[])
 {
 	SetConsoleTitleA("RobinLe's bitmap font analyzer");
@@ -54,13 +38,13 @@ int main(int argc, char* argv[])
 	if (argc == 1 + 1 && (strcmp(argv[1], "/?") == 0 || strcmp(argv[1], "--help") == 0))
 	{
 		ShowSyntax();
-		RETURN_SUCCESS; // no error occured
+		return 0; // no error occured
 	}
 
 	if (argc < 1 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 	const wchar_t* szCmd = GetCommandLineW();
@@ -80,7 +64,7 @@ int main(int argc, char* argv[])
 	{
 		uint8_t iError = parser.getParseError();
 		rl::WriteFONError(iError);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 	// show warnings
@@ -207,7 +191,7 @@ int main(int argc, char* argv[])
 	}
 	printf("}\n\n");
 
-	RETURN_SUCCESS;
+	return 0;
 }
 
 

@@ -35,22 +35,6 @@ bool GetEncoderCLSID(const wchar_t* ID, CLSID& dest);
 
 
 
-#ifdef _DEBUG
-#define RETURN_SUCCESS Con::ResetColor(); system("PAUSE"); return 0
-#else
-#define RETURN_SUCCESS return 0
-#endif
-
-#ifdef _DEBUG
-#define RETURN_FAILURE Con::ResetColor(); system("PAUSE"); return 1
-#else
-#define RETURN_FAILURE return 1
-#endif
-
-
-
-
-
 int wmain(int argc, wchar_t* argv[])
 {
 	SetConsoleTitleA("RobinLe's bitmap font preview image creator");
@@ -61,13 +45,13 @@ int wmain(int argc, wchar_t* argv[])
 	if (argc == 2 && (wcscmp(argv[1], L"/?") == 0 || wcscmp(argv[1], L"--help") == 0))
 	{
 		ShowSyntax();
-		RETURN_SUCCESS; // no error occured
+		return 0; // no error occured
 	}
 
 	if (argc < 3 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 
@@ -88,7 +72,7 @@ int wmain(int argc, wchar_t* argv[])
 		if (szPathFON[wcslen(szPathFON) - 1] != L'"')
 		{
 			rl::WriteHelpHint(szAppName);
-			RETURN_FAILURE;
+			return 1;
 		}
 
 		PathUnquoteSpacesW(szPathFON);
@@ -102,7 +86,7 @@ int wmain(int argc, wchar_t* argv[])
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 
@@ -112,7 +96,7 @@ int wmain(int argc, wchar_t* argv[])
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 	enum class FontOrdinalMode
@@ -138,7 +122,7 @@ int wmain(int argc, wchar_t* argv[])
 			if (szOrdinal[i] < L'0' || szOrdinal[i] > L'9')
 			{
 				rl::WriteHelpHint(szAppName);
-				RETURN_FAILURE;
+				return 1;
 			}
 		}
 
@@ -161,7 +145,7 @@ int wmain(int argc, wchar_t* argv[])
 		if (szPathBMP[wcslen(szPathBMP) - 1] != L'"')
 		{
 			rl::WriteHelpHint(szAppName);
-			RETURN_FAILURE;
+			return 1;
 		}
 
 		PathUnquoteSpacesW(szPathBMP);
@@ -175,7 +159,7 @@ int wmain(int argc, wchar_t* argv[])
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 
@@ -186,7 +170,7 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		uint8_t iError = parser.getParseError();
 		rl::WriteFONError(iError);
-		RETURN_FAILURE;
+		return 1;
 	}
 
 	// show warnings
@@ -303,7 +287,7 @@ int wmain(int argc, wchar_t* argv[])
 	if (!parser.getFont(wFontOrdinal, font))
 	{
 		rl::WriteError("Couldn't load FONT resource with this ID");
-		RETURN_FAILURE;
+		return 1;
 	}
 
 	// get the font's header (for maximum width)
@@ -351,14 +335,14 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		rl::WriteError("Couldn't save bitmap file");
 		delete bmp;
-		RETURN_FAILURE;
+		return 1;
 	}
 
 	printf("Successfully saved bitmap font preview to \"");
 	wprintf(szPathBMP);
 	printf("\"\n\n");
 	delete bmp;
-	RETURN_SUCCESS;
+	return 0;
 }
 
 

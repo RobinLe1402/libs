@@ -371,7 +371,7 @@ void ShowSyntax()
 		"\n"
 		"Paths\n"
 		"  InputPath	Path of a .FON file\n"	
-		"  OutputPath	Path for the output BPM\n"
+		"  OutputPath	Path for the output .BMP file\n"
 		"\n"
 		"Font resource identifier\n"
 		"  FontOrdinal\tUnique integer ID of the FONT resource in the file (get using analyzeFON)\n"

@@ -5,13 +5,13 @@ IF NOT EXIST ".\previewFON.exe" GOTO :NOEXE
 
 ECHO Input folder:
 SET /P "sSRC="
-SET "sSRC=%sSRC%:"=%
+SET sSRC=%sSRC:"=%
 
 ECHO.
 
 ECHO Output folder:
 SET /P "sDEST="
-SET "sDEST=%sDEST%:"=%
+SET sDEST=%sDEST:"=%
 
 FOR /R "%sSRC%" %%f IN (*.fon) DO (
 ECHO.

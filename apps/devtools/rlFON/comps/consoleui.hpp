@@ -30,12 +30,12 @@ namespace rl
 	/// <summary>
 	/// Write a warning to the console
 	/// </summary>
-	void WriteWarning(const char* szText);
+	void WriteWarning(const char* szText, ...);
 
 	/// <summary>
 	/// Write an error to the console
 	/// </summary>
-	void WriteError(const char* szText);
+	void WriteError(const char* szText, ...);
 
 	/// <summary>
 	/// Write a hint towards the "/?" or "--help" parameter after a syntax error has occured

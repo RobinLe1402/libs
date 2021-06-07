@@ -53,9 +53,7 @@ int main(int argc, char* argv[])
 	PathRemoveArgsW(szPath);
 	PathUnquoteSpacesW(szPath);
 
-	printf("Analyzing file \"");
-	wprintf(szPath);
-	printf("\"...\n\n");
+	printf("Analyzing file \"%ls\"...\n\n", szPath);
 
 	rl::MicrosoftFONParser parser;
 
@@ -138,7 +136,6 @@ int main(int argc, char* argv[])
 		}
 
 		printf("  FileType:\t\tVFT_FONT\n");
-
 		printf("  FileSubtype:\t\tVFT2_FONT_RASTER\n");
 
 
@@ -154,20 +151,20 @@ int main(int argc, char* argv[])
 
 			printf("String version info (\"\\StringFileInfo\\%s\")\n{\n", szLangID);
 #define PRINTSTR(s, sTabs)	if(o.second.##s.length() != 1 || o.second.##s[0] != 0) \
-								wprintf(L"  " #s L":" sTabs "%s\n", o.second.##s.c_str())
+								printf("  " #s ":" sTabs "%ls\n", o.second.##s.c_str())
 
-			PRINTSTR(Comments, L"\t\t");
-			PRINTSTR(CompanyName, L"\t\t");
-			PRINTSTR(FileDescription, L"\t");
-			PRINTSTR(FileVersion, L"\t\t");
-			PRINTSTR(InternalName, L"\t\t");
-			PRINTSTR(LegalCopyright, L"\t");
-			PRINTSTR(LegalTrademarks, L"\t");
-			PRINTSTR(OriginalFilename, L"\t");
-			PRINTSTR(ProductName, L"\t\t");
-			PRINTSTR(ProductVersion, L"\t");
-			PRINTSTR(PrivateBuild, L"\t\t");
-			PRINTSTR(SpecialBuild, L"\t\t");
+			PRINTSTR(Comments, "\t\t");
+			PRINTSTR(CompanyName, "\t\t");
+			PRINTSTR(FileDescription, "\t");
+			PRINTSTR(FileVersion, "\t\t");
+			PRINTSTR(InternalName, "\t\t");
+			PRINTSTR(LegalCopyright, "\t");
+			PRINTSTR(LegalTrademarks, "\t");
+			PRINTSTR(OriginalFilename, "\t");
+			PRINTSTR(ProductName, "\t\t");
+			PRINTSTR(ProductVersion, "\t");
+			PRINTSTR(PrivateBuild, "\t\t");
+			PRINTSTR(SpecialBuild, "\t\t");
 
 #undef PRINTSTR
 			printf("}\n\n");

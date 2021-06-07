@@ -13,21 +13,31 @@
 namespace rl
 {
 
-	void WriteWarning(const char* szText)
+	void WriteWarning(const char* szText, ...)
 	{
 		Console::PushColor(FG_YELLOW);
 		printf("Warning: ");
 		Console::PopColor();
-		printf(szText);
+
+		va_list args;
+		va_start(args, szText);
+		vprintf(szText, args);
+		va_end(args);
+
 		printf("\n");
 	}
 
-	void WriteError(const char* szText)
+	void WriteError(const char* szText, ...)
 	{
 		Console::PushColor(FG_RED);
 		printf("Error: ");
 		Console::PopColor();
-		printf(szText);
+
+		va_list args;
+		va_start(args, szText);
+		vprintf(szText, args);
+		va_end(args);
+
 		printf("\n");
 	}
 
@@ -86,17 +96,6 @@ namespace rl
 			WriteError("The file contains FNT data of an unknown version");
 			break;
 
-
-			/*
-
-#define RL_FONPARSER_E_NOERROR				0 // no error occured
-#define RL_FONPARSER_E_FILEERROR			1 // file doesn't exist or couldn't be read
-#define RL_FONPARSER_E_NOFONTFILE			2 // file is no font
-#define RL_FONPARSER_E_NORASTERFONTFILE		3 // file is a font, but no raster font
-#define RL_FONPARSER_E_NOFONTRESOURCE		4 // no FONT resource found
-#define RL_FONPARSER_E_UNKNOWNVERSION		5 // the FNT version was not 2
-
-			*/
 
 		default:
 			rl::WriteError("Unknown error");

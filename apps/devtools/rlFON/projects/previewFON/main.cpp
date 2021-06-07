@@ -286,7 +286,7 @@ int wmain(int argc, wchar_t* argv[])
 	rl::MicrosoftRasterFont font;
 	if (!parser.getFont(wFontOrdinal, font))
 	{
-		rl::WriteError("Couldn't load FONT resource with this ID");
+		rl::WriteError("Couldn't load FONT resource with ID %d", wFontOrdinal);
 		return 1;
 	}
 
@@ -333,14 +333,12 @@ int wmain(int argc, wchar_t* argv[])
 	GetEncoderCLSID(L"image/bmp", enc);
 	if (bmp->Save(szPathBMP, &enc) != Gdiplus::Ok)
 	{
-		rl::WriteError("Couldn't save bitmap file");
+		rl::WriteError("Couldn't write bitmap file \"%ls\"", szPathBMP);
 		delete bmp;
 		return 1;
 	}
 
-	printf("Successfully saved bitmap font preview to \"");
-	wprintf(szPathBMP);
-	printf("\"\n\n");
+	printf("Successfully saved bitmap font preview to \"%ls\"\n\n", szPathBMP);
 	delete bmp;
 	return 0;
 }

@@ -228,19 +228,35 @@ namespace rl
 
 	MicrosoftRasterFont::MicrosoftRasterFont(const uint8_t* pData, size_t size)
 	{
-		m_bData = true;
+		create(pData, size);
+	}
+
+	MicrosoftRasterFont::MicrosoftRasterFont(const MicrosoftRasterFont& other) { *this = other; }
+
+	MicrosoftRasterFont::~MicrosoftRasterFont() { clear(); }
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
+
+	bool MicrosoftRasterFont::create(const uint8_t* pData, size_t size)
+	{
+		clear();
+
 		size_t iOffset = 0;
 
-#define READ(pDest, len)								\
-		{												\
-			if (size - iOffset < len)					\
-			{											\
-				m_bData = false;						\
-				m_iError = RL_FONPARSER_E_FILEERROR;	\
-				return;									\
-			}											\
+#define READ(pDest, len)									\
+		{													\
+			if (size - iOffset < len)						\
+			{												\
+				m_iError = RL_FONPARSER_E_FILEERROR;		\
+				return false;								\
+			}												\
 			memcpy_s(pDest, len, pData + iOffset, len);	\
-			iOffset += len;								\
+			iOffset += len;									\
 		}
 #define READVAR(var) READ(&var, sizeof(var))
 
@@ -251,10 +267,13 @@ namespace rl
 		// cancel if vector font
 		if (m_oHeader.oHeader.dfType & 1)
 		{
-			m_bData = false;
 			m_iError = RL_FONPARSER_E_NORASTERFONTFILE;
-			return;
+			return false;
 		}
+
+		m_iDataSize = m_oHeader.oHeader.dfSize;
+		m_pData = new uint8_t[m_iDataSize];
+		memcpy_s(m_pData, m_iDataSize, pData, m_iDataSize);
 
 
 		size_t len;
@@ -265,7 +284,7 @@ namespace rl
 		case 0x0200: // FNT 2.0
 		{
 			// copy header strings
-			sz = (const char*)pData + m_oHeader.oHeader.dfDevice;
+			sz = (const char*)m_pData + m_oHeader.oHeader.dfDevice;
 			len = strlen(sz);
 			if (len > 0)
 			{
@@ -273,7 +292,7 @@ namespace rl
 				strcpy_s(&m_oHeader.sDeviceName[0], len, sz);
 			}
 
-			sz = (const char*)pData + m_oHeader.oHeader.dfFace;
+			sz = (const char*)m_pData + m_oHeader.oHeader.dfFace;
 			len = strlen(sz);
 			m_oHeader.sFaceName.resize(len);
 			strcpy_s(&m_oHeader.sFaceName[0], len + 1, sz);
@@ -307,7 +326,7 @@ namespace rl
 				const size_t len = (size_t)ceil(oChar.dfCharWidth / 8.0f) *
 					m_oHeader.oHeader.dfPixHeight;
 				uint8_t* pTMP = new uint8_t[len];
-				memcpy_s(pTMP, len, pData + oChar.dfBitmapOffset, len);
+				memcpy_s(pTMP, len, m_pData + oChar.dfBitmapOffset, len);
 				m_oChars.emplace(m_oHeader.oHeader.dfFirstChar + i,
 					MicrosoftRasterChar(oChar.dfCharWidth, m_oHeader.oHeader.dfPixHeight, pTMP,
 						len));
@@ -323,7 +342,7 @@ namespace rl
 		case 0x0300: // FNT 3.0
 		{
 			// copy header strings
-			sz = (const char*)pData + m_oHeader.oHeader.dfDevice;
+			sz = (const char*)m_pData + m_oHeader.oHeader.dfDevice;
 			len = strlen(sz);
 			if (len > 0)
 			{
@@ -331,7 +350,7 @@ namespace rl
 				strcpy_s(&m_oHeader.sDeviceName[0], len, sz);
 			}
 
-			sz = (const char*)pData + m_oHeader.oHeader.dfFace;
+			sz = (const char*)m_pData + m_oHeader.oHeader.dfFace;
 			len = strlen(sz);
 			m_oHeader.sFaceName.resize(len);
 			strcpy_s(&m_oHeader.sFaceName[0], len + 1, sz);
@@ -370,7 +389,7 @@ namespace rl
 				READVAR(oChar);
 				const size_t len = (size_t)ceil(oChar.dfCharWidth / 8.0f) * m_oHeader.oHeader.dfPixHeight;
 				uint8_t* pTMP = new uint8_t[len];
-				memcpy_s(pTMP, len, pData + oChar.dfBitmapOffset, len);
+				memcpy_s(pTMP, len, m_pData + oChar.dfBitmapOffset, len);
 				m_oChars.emplace(m_oHeader.oHeader.dfFirstChar + i, MicrosoftRasterChar(oChar.dfCharWidth,
 					m_oHeader.oHeader.dfPixHeight, pTMP, len));
 				delete[] pTMP;
@@ -383,29 +402,21 @@ namespace rl
 
 
 		default: // unknown version
-			m_bData = false;
 			m_iError = RL_FONPARSER_E_UNKNOWNVERSION;
-			return;
+			return false;
 		}
 
 #undef READVAR
 #undef READ
+
+
+		m_bData = true;
+		return true;
 	}
-
-	MicrosoftRasterFont::MicrosoftRasterFont(const MicrosoftRasterFont& other) { *this = other; }
-
-	MicrosoftRasterFont::~MicrosoftRasterFont() { clear(); }
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
 
 	void MicrosoftRasterFont::clear()
 	{
-		if (!hasData())
+		if (m_pData == nullptr)
 			return;
 
 
@@ -415,9 +426,23 @@ namespace rl
 		m_iHeight = 0;
 	}
 
+	bool MicrosoftRasterFont::hasData() const { return (m_pData != nullptr); }
+
+	bool MicrosoftRasterFont::getData(const uint8_t*& ptr, size_t& size) const
+	{
+		if (m_pData == nullptr)
+			return false;
+
+
+		ptr = m_pData;
+		size = m_iDataSize;
+
+		return true;
+	}
+
 	bool MicrosoftRasterFont::getChar(uint8_t ch, MicrosoftRasterChar& dest) const
 	{
-		if (!containsChar(ch))
+		if (m_pData == nullptr || !containsChar(ch))
 			return false;
 
 		dest = m_oChars.at(ch);
@@ -426,7 +451,7 @@ namespace rl
 
 	bool MicrosoftRasterFont::getHeader(FONTHDR_STRINGS& dest) const
 	{
-		if (!hasData())
+		if (m_pData == nullptr)
 			return false;
 
 		dest = m_oHeader;
@@ -435,20 +460,19 @@ namespace rl
 
 	bool MicrosoftRasterFont::containsChar(uint8_t ch) const
 	{
+		if (m_pData == nullptr)
+			return false;
+
 		return m_oChars.find(ch) != m_oChars.end();
 	}
 
 	MicrosoftRasterFont& MicrosoftRasterFont::operator=(const MicrosoftRasterFont& other)
 	{
 		clear();
-		if (!other.hasData())
+		if (other.m_pData == nullptr)
 			return *this;
 
-
-		m_bData = true;
-		m_oHeader = other.m_oHeader;
-		m_oChars = other.m_oChars;
-		m_iHeight = other.m_iHeight;
+		create(other.m_pData, other.m_iDataSize);
 
 		return *this;
 	}
@@ -908,9 +932,15 @@ namespace rl
 		for (const auto& oFont : m_oFonts)
 		{
 			o.fontOrdinal = oFont.first;
-			o.oHeader = oFont.second.m_oHeader.oHeader;
-			o.sDeviceName = oFont.second.m_oHeader.sDeviceName;
-			o.sFaceName = oFont.second.m_oHeader.sFaceName;
+
+
+			FONTHDR_STRINGS hdr = {};
+
+			oFont.second.getHeader(hdr);
+			o.oHeader = hdr.oHeader;
+			o.sDeviceName = hdr.sDeviceName;
+			o.sFaceName = hdr.sFaceName;
+
 
 			dest.push_back(o);
 		}

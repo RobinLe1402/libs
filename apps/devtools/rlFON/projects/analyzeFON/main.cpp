@@ -23,7 +23,6 @@ using Con = rl::Console;
 /// <summary>
 /// The command line syntax was not correct --> show the correct syntax
 /// </summary>
-/// <returns>1</returns>
 void ShowSyntax();
 
 
@@ -38,19 +37,30 @@ int main(int argc, char* argv[])
 	if (argc == 1 + 1 && (strcmp(argv[1], "/?") == 0 || strcmp(argv[1], "--help") == 0))
 	{
 		ShowSyntax();
-		return 0; // no error occured
+		return ERROR_SUCCESS; // no error occured
 	}
 
 	if (argc < 1 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
-		return 1;
+		return ERROR_BAD_ARGUMENTS;
 	}
 
 	const wchar_t* szCmd = GetCommandLineW();
 	wchar_t szPath[MAX_PATH + 1] = {};
-	wcscpy_s(szPath, PathGetArgsW(szCmd));
-	PathRemoveArgsW(szPath);
+
+	const wchar_t* szArgs = PathGetArgsW(szCmd);
+	if (PathGetArgsW(szArgs)[0] != 0) // params after path --> syntax error
+	{
+		rl::WriteHelpHint(szAppName);
+		return ERROR_BAD_ARGUMENTS;
+	}
+	if (wcslen(szArgs) > MAX_PATH)
+	{
+		rl::WriteError("Input path was too long.");
+		return ERROR_FILENAME_EXCED_RANGE;
+	}
+	wcscpy_s(szPath, szArgs);
 	PathUnquoteSpacesW(szPath);
 
 	printf("Analyzing file \"%ls\"...\n\n", szPath);
@@ -62,14 +72,14 @@ int main(int argc, char* argv[])
 	{
 		uint8_t iError = parser.getParseError();
 		rl::WriteFONError(iError);
-		return 1;
+		return -1;
 	}
 
 	// show warnings
 	uint8_t iWarnings = parser.getWarnings();
 	rl::WriteFONWarnings(iWarnings);
-	
-	
+
+
 	// print version info (if any)
 	rl::VERSIONINFO vi = {};
 	if (parser.getVersionInfo(vi))
@@ -188,7 +198,7 @@ int main(int argc, char* argv[])
 	}
 	printf("}\n\n");
 
-	return 0;
+	return ERROR_SUCCESS;
 }
 
 

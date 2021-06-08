@@ -280,18 +280,23 @@ namespace rl
 
 
 	/// <summary>
-	/// Microsoft raster font data<para/>
-	/// Must be obtained from a <c>MicrosoftFONParser</c> object
+	/// Microsoft raster font data
 	/// </summary>
 	class MicrosoftRasterFont final
 	{
-		friend class MicrosoftFONParser;
-
 	public: // methods
 
 		MicrosoftRasterFont() {}
+		MicrosoftRasterFont(const uint8_t* pData, size_t size);
 		MicrosoftRasterFont(const MicrosoftRasterFont& other);
 		~MicrosoftRasterFont();
+
+
+		/// <summary>
+		/// Create from raw data
+		/// </summary>
+		/// <returns>Did the method succeed?</returns>
+		bool create(const uint8_t* pData, size_t size);
 
 		/// <summary>
 		/// Delete this font's data
@@ -301,7 +306,15 @@ namespace rl
 		/// <summary>
 		/// Does this object hold any data?
 		/// </summary>
-		inline bool hasData() const { return m_bData; }
+		bool hasData() const;
+
+		/// <summary>
+		/// Get a pointer to this font's raw data
+		/// </summary>
+		/// <param name="ptr">= pointer that is supposed to point to the raw data afterwards</param>
+		/// <param name="size">= size (in bytes) of the data pointed to by <c>ptr</c></param>
+		/// <returns>Did the method succeed?</returns>
+		bool getData(const uint8_t*& ptr, size_t& size) const;
 
 
 
@@ -351,15 +364,11 @@ namespace rl
 		MicrosoftRasterFont& operator=(const MicrosoftRasterFont& other);
 
 
-	private: // methods
-
-		// --> objects with data must be obtained from MicrosoftFONParser
-		MicrosoftRasterFont(const uint8_t* pData, size_t size);
-
-
 	private: // variables
 
 		bool m_bData = false;
+		uint8_t* m_pData = nullptr;
+		size_t m_iDataSize = 0;
 		FONTHDR_STRINGS m_oHeader = {};
 		std::map<uint8_t, MicrosoftRasterChar> m_oChars;
 		uint16_t m_iHeight = 0;

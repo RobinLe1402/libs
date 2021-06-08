@@ -45,13 +45,13 @@ int wmain(int argc, wchar_t* argv[])
 	if (argc == 2 && (wcscmp(argv[1], L"/?") == 0 || wcscmp(argv[1], L"--help") == 0))
 	{
 		ShowSyntax();
-		return 0; // no error occured
+		return ERROR_SUCCESS; // no error occured
 	}
 
 	if (argc < 3 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
-		return 1;
+		return ERROR_BAD_ARGUMENTS;
 	}
 
 
@@ -66,13 +66,20 @@ int wmain(int argc, wchar_t* argv[])
 		do
 		{
 			iArgNo++;
+
+			if (wcslen(szPathFON) + wcslen(argv[iArgNo]) > MAX_PATH)
+			{
+				rl::WriteError("Input path was too long.");
+				return ERROR_FILENAME_EXCED_RANGE;
+			}
+
 			wcscat_s(szPathFON, argv[iArgNo]);
 		} while (iArgNo < argc && szPathFON[wcslen(szPathFON) - 1] != L'"');
 
 		if (szPathFON[wcslen(szPathFON) - 1] != L'"')
 		{
 			rl::WriteHelpHint(szAppName);
-			return 1;
+			return ERROR_BAD_PATHNAME;
 		}
 
 		PathUnquoteSpacesW(szPathFON);
@@ -80,13 +87,18 @@ int wmain(int argc, wchar_t* argv[])
 	else // no quotation marks
 	{
 		iArgNo++;
+		if (wcslen(argv[iArgNo]) > MAX_PATH)
+		{
+			rl::WriteError("Input path was too long.");
+			return ERROR_FILENAME_EXCED_RANGE;
+		}
 		wcscpy_s(szPathFON, argv[iArgNo]);
 	}
 
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
-		return 1;
+		return ERROR_BAD_ARGUMENTS;
 	}
 
 
@@ -96,7 +108,7 @@ int wmain(int argc, wchar_t* argv[])
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
-		return 1;
+		return ERROR_BAD_ARGUMENTS;
 	}
 
 	enum class FontOrdinalMode
@@ -122,7 +134,7 @@ int wmain(int argc, wchar_t* argv[])
 			if (szOrdinal[i] < L'0' || szOrdinal[i] > L'9')
 			{
 				rl::WriteHelpHint(szAppName);
-				return 1;
+				return ERROR_INVALID_PARAMETER;
 			}
 		}
 
@@ -139,13 +151,20 @@ int wmain(int argc, wchar_t* argv[])
 		do
 		{
 			iArgNo++;
+
+			if (wcslen(szPathBMP) + wcslen(argv[iArgNo]) > MAX_PATH)
+			{
+				rl::WriteError("Output path was too long.");
+				return ERROR_FILENAME_EXCED_RANGE;
+			}
+
 			wcscat_s(szPathBMP, argv[iArgNo]);
 		} while (iArgNo < argc && szPathBMP[wcslen(szPathBMP) - 1] != L'"');
 
 		if (szPathBMP[wcslen(szPathBMP) - 1] != L'"')
 		{
 			rl::WriteHelpHint(szAppName);
-			return 1;
+			return ERROR_BAD_PATHNAME;
 		}
 
 		PathUnquoteSpacesW(szPathBMP);
@@ -153,13 +172,18 @@ int wmain(int argc, wchar_t* argv[])
 	else // no quotation marks
 	{
 		iArgNo++;
+		if (wcslen(argv[iArgNo]) > MAX_PATH)
+		{
+			rl::WriteError("Output path was too long.");
+			return ERROR_FILENAME_EXCED_RANGE;
+		}
 		wcscpy_s(szPathBMP, argv[iArgNo]);
 	}
 
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
-		return 1;
+		return ERROR_INVALID_PARAMETER;
 	}
 
 
@@ -170,7 +194,7 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		uint8_t iError = parser.getParseError();
 		rl::WriteFONError(iError);
-		return 1;
+		return -1;
 	}
 
 	// show warnings
@@ -287,7 +311,7 @@ int wmain(int argc, wchar_t* argv[])
 	if (!parser.getFont(wFontOrdinal, font))
 	{
 		rl::WriteError("Couldn't load FONT resource with ID %d", wFontOrdinal);
-		return 1;
+		return -1;
 	}
 
 	// get the font's header (for maximum width)
@@ -335,12 +359,12 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		rl::WriteError("Couldn't write bitmap file \"%ls\"", szPathBMP);
 		delete bmp;
-		return 1;
+		return -1;
 	}
 
 	printf("Successfully saved bitmap font preview to \"%ls\"\n\n", szPathBMP);
 	delete bmp;
-	return 0;
+	return ERROR_SUCCESS;
 }
 
 

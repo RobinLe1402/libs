@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "analyzeFON", "projects\anal
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "previewFON", "projects\previewFON\previewFON.vcxproj", "{410F58E6-971F-47FA-88AB-9ED8F7C4254F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "extractFNT", "projects\extractFNT\extractFNT.vcxproj", "{2B38510E-39F6-4208-AF12-08CB51DD1E2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{410F58E6-971F-47FA-88AB-9ED8F7C4254F}.Release|x64.Build.0 = Release|x64
 		{410F58E6-971F-47FA-88AB-9ED8F7C4254F}.Release|x86.ActiveCfg = Release|Win32
 		{410F58E6-971F-47FA-88AB-9ED8F7C4254F}.Release|x86.Build.0 = Release|Win32
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Debug|x64.ActiveCfg = Debug|x64
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Debug|x64.Build.0 = Debug|x64
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Debug|x86.ActiveCfg = Debug|Win32
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Debug|x86.Build.0 = Debug|Win32
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Release|x64.ActiveCfg = Release|x64
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Release|x64.Build.0 = Release|x64
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Release|x86.ActiveCfg = Release|Win32
+		{2B38510E-39F6-4208-AF12-08CB51DD1E2C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

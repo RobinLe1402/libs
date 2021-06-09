@@ -5,13 +5,12 @@
 #include <rl/graphics.opengl.texture.hpp>
 #include <rl/input.keyboard.hpp>
 #include <rl/input.mouse.hpp>
+#include <rl/visualstyles.h>
 
+#include <string>
 #include <Windows.h>
 #include <gdiplus.h>
 #include <gl/GL.h>
-
-
-// ToDo: use glClearColor for NES engine background color
 
 
 
@@ -137,6 +136,7 @@ int WINAPI WinMain(
 	rl::OpenGLWin_Config openglconfig;
 	//config.bInitialFullscreen = true;
 	//openglconfig.hIconBig = LoadIconW(hInstance, MAKEINTRESOURCE(IDI_ROBINLE));
+	openglconfig.szInitialCaption = L"General unit test application";
 
 	openglconfig.bResizable = true;
 

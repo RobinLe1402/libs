@@ -9,14 +9,9 @@
 
 
 
-# Output directories - custom (lib)
-x64/
-x32/
-
-# Output directories - custom (test)
+# Output directories
 Build/
-Bin32/
-Bin64/
+bin/
 
 # Output directories - default
 #Debug/

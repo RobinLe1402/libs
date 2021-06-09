@@ -4,13 +4,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IntDir>Build\$(Configuration)\$(Platform)\</IntDir>
+	<OutDir Condition="'$(Platform)' == 'Win32'">$(SolutionDir)bin\$(Configuration)\x32\</OutDir>
+	<OutDir Condition="'$(Platform)' == 'x64'">$(SolutionDir)bin\$(Configuration)\x64\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <ClCompile />
-    <Link>
-      <SubSystem>NotSet</SubSystem>
-    </Link>
-    <ClCompile />
     <ClCompile>
       <AdditionalIncludeDirectories>$(GitHub_rl_libs)comps\include;$(GitHub_rl_libs)libs\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>

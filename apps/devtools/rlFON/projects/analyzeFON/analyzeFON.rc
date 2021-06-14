@@ -91,7 +91,7 @@ BEGIN
             VALUE "FileDescription", "analyzeFON - An analyzing tool for Microsoft FON files"
             VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "analyzeFON.exe"
-            VALUE "LegalCopyright", "© 2021 Robin Lemanska"
+            VALUE "LegalCopyright", "© 2021 RobinLe"
             VALUE "OriginalFilename", "analyzeFON.exe"
             VALUE "ProductName", "RobinLe DevTools"
             VALUE "ProductVersion", "1.0.0.1"

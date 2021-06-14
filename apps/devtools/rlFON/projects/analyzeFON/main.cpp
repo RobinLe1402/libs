@@ -21,20 +21,20 @@ using Con = rl::Console;
 
 
 /// <summary>
-/// The command line syntax was not correct --> show the correct syntax
+/// Show the correct syntax for the application
 /// </summary>
 void ShowSyntax();
 
 
 
-int main(int argc, char* argv[])
+int wmain(int argc, wchar_t* argv[])
 {
 	SetConsoleTitleA("RobinLe's bitmap font analyzer");
 	const char szAppName[] = "analyzeFON";
 	Con::PushColor(FG_GRAY | BG_BLACK); // set to default colors
 	Con::SetCodepage(1252); // set appropriate codepage to avoid corrupted output
 
-	if (argc == 1 + 1 && (strcmp(argv[1], "/?") == 0 || strcmp(argv[1], "--help") == 0))
+	if (argc == 1 + 1 && (wcscmp(argv[1], L"/?") == 0 || wcscmp(argv[1], L"--help") == 0))
 	{
 		ShowSyntax();
 		return ERROR_SUCCESS; // no error occured
@@ -46,22 +46,12 @@ int main(int argc, char* argv[])
 		return ERROR_BAD_ARGUMENTS;
 	}
 
-	const wchar_t* szCmd = GetCommandLineW();
 	wchar_t szPath[MAX_PATH + 1] = {};
-
-	const wchar_t* szArgs = PathGetArgsW(szCmd);
-	if (PathGetArgsW(szArgs)[0] != 0) // params after path --> syntax error
+	if (!rl::CmdGetPath(argc, argv, 0, 0, szPath))
 	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_BAD_ARGUMENTS;
+		rl::WriteError("Input path is invalid");
+		return ERROR_BAD_PATHNAME;
 	}
-	if (wcslen(szArgs) > MAX_PATH)
-	{
-		rl::WriteError("Input path was too long.");
-		return ERROR_FILENAME_EXCED_RANGE;
-	}
-	wcscpy_s(szPath, szArgs);
-	PathUnquoteSpacesW(szPath);
 
 	printf("Analyzing file \"%ls\"...\n\n", szPath);
 

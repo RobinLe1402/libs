@@ -323,7 +323,7 @@ namespace rl
 		/// The codepage has nothing to do with "modern" Windows codepages.<para/>
 		/// Return value is only valid if this object contains data
 		/// </summary>
-		inline uint8_t getCharSet() const { return m_oHeader.oHeader.dfCharSet; }
+		inline uint8_t getCharSet() const { return m_oHeader.dfCharSet; }
 
 		/// <summary>
 		/// Get the font's height<para/>
@@ -343,7 +343,19 @@ namespace rl
 		/// Get the font's header data
 		/// </summary>
 		/// <returns>Did the method succeed?</returns>
-		bool getHeader(FONTHDR_STRINGS& dest) const;
+		bool getHeader(FONTHDR& dest) const;
+
+		/// <summary>
+		/// Get the font's device name
+		/// </summary>
+		/// <returns><c>nullptr</c> if no data was parsed</returns>
+		const char* deviceName() const;
+
+		/// <summary>
+		/// Get the font's face name
+		/// </summary>
+		/// <returns><c>nullptr</c> if no data was parsed</returns>
+		const char* faceName() const;
 
 		/// <summary>
 		/// Does this font contain a certain character?
@@ -369,7 +381,7 @@ namespace rl
 		bool m_bData = false;
 		uint8_t* m_pData = nullptr;
 		size_t m_iDataSize = 0;
-		FONTHDR_STRINGS m_oHeader = {};
+		FONTHDR m_oHeader = {};
 		std::map<uint8_t, MicrosoftRasterChar> m_oChars;
 		uint16_t m_iHeight = 0;
 		uint8_t m_iError = RL_FONPARSER_E_NOERROR;

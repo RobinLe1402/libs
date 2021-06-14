@@ -88,11 +88,11 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "CompanyName", "RobinLe"
-            VALUE "FileDescription", "extractFNT - An extractor for FNT resources from Microsoft FON files"
+            VALUE "FileDescription", "analyzeFNT - A tool for analyzing Microsoft FNT files"
             VALUE "FileVersion", "1.0.0.0"
-            VALUE "InternalName", "extractFNT.exe"
+            VALUE "InternalName", "analyzeFNT.exe"
             VALUE "LegalCopyright", "© 2021 RobinLe"
-            VALUE "OriginalFilename", "extractFNT.exe"
+            VALUE "OriginalFilename", "analyzeFNT.exe"
             VALUE "ProductName", "RobinLe DevTools"
             VALUE "ProductVersion", "1.0.0.1"
         END

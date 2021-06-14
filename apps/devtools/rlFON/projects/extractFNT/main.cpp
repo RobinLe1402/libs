@@ -21,7 +21,7 @@ using Con = rl::Console;
 
 
 /// <summary>
-/// The command line syntax was not correct --> show the correct syntax
+/// Show the correct syntax for the application
 /// </summary>
 void ShowSyntax();
 
@@ -54,45 +54,20 @@ int wmain(int argc, wchar_t* argv[])
 
 
 	const uint8_t iResIDPadding = 5; // --> max "65535". constant can't be larger than one digit.
-	int iArgNo = 0;
+	int iArgNo = 1;
+	int iArgsRead = 0;
 
 
 	// get FON input path
 	wchar_t szPathFON[MAX_PATH + 1] = {};
-	if (argv[1][0] == L'"') // quotation marks
+	iArgsRead = rl::CmdGetPath(argc, argv, 0, 0, szPathFON);
+	if (iArgsRead == 0)
 	{
-		do
-		{
-			iArgNo++;
-
-			if (wcslen(szPathFON) + wcslen(argv[iArgNo]) > MAX_PATH)
-			{
-				rl::WriteError("Input path was too long.");
-				return ERROR_FILENAME_EXCED_RANGE;
-			}
-
-			wcscat_s(szPathFON, argv[iArgNo]);
-		} while (iArgNo < argc && szPathFON[wcslen(szPathFON) - 1] != L'"');
-
-		if (szPathFON[wcslen(szPathFON) - 1] != L'"')
-		{
-			rl::WriteHelpHint(szAppName);
-			return ERROR_BAD_PATHNAME;
-		}
-
-		PathUnquoteSpacesW(szPathFON);
+		rl::WriteError("Input path is invalid");
+		return ERROR_BAD_PATHNAME;
 	}
-	else // no quotation marks
-	{
-		iArgNo++;
-		if (wcslen(argv[iArgNo]) > MAX_PATH)
-		{
-			rl::WriteError("Input path was too long.");
-			return ERROR_FILENAME_EXCED_RANGE;
-		}
-		wcscpy_s(szPathFON, argv[iArgNo]);
-	}
-
+	iArgNo += iArgsRead;
+	
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
@@ -102,7 +77,6 @@ int wmain(int argc, wchar_t* argv[])
 
 
 	// get font ordinal
-	iArgNo++;
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
@@ -136,50 +110,20 @@ int wmain(int argc, wchar_t* argv[])
 		wFontOrdinal = (WORD)wcstoul(argv[iArgNo], nullptr, 10);
 		oOrdinalMode = FontOrdinalMode::Single;
 	}
+	iArgNo++;
 
 
 
 	// get output path
 	wchar_t szPathOutput[MAX_PATH + 1] = {};
-	if (argv[iArgNo + 1][0] == L'"') // quotation marks
+	iArgsRead = rl::CmdGetPath(argc, argv, iArgNo - 1, 0, szPathOutput);
+	if (iArgsRead == 0)
 	{
-		do
-		{
-			iArgNo++;
-
-			if (wcslen(szPathOutput) + wcslen(argv[iArgNo]) > MAX_PATH)
-			{
-				rl::WriteError("Output path was too long.");
-				return ERROR_FILENAME_EXCED_RANGE;
-			}
-
-			wcscat_s(szPathOutput, argv[iArgNo]);
-		} while (iArgNo < argc && szPathOutput[wcslen(szPathOutput) - 1] != L'"');
-
-		if (szPathOutput[wcslen(szPathOutput) - 1] != L'"')
-		{
-			rl::WriteHelpHint(szAppName);
-			return ERROR_BAD_ARGUMENTS;
-		}
-
-		PathUnquoteSpacesW(szPathOutput);
-	}
-	else // no quotation marks
-	{
-		iArgNo++;
-		if (wcslen(argv[iArgNo]) > MAX_PATH)
-		{
-			rl::WriteError("Output path was too long.");
-			return ERROR_FILENAME_EXCED_RANGE;
-		}
-		wcscpy_s(szPathOutput, argv[iArgNo]);
+		rl::WriteError("Output path is invalid");
+		return ERROR_BAD_PATHNAME;
 	}
 
-	if (iArgNo >= argc)
-	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_BAD_ARGUMENTS;
-	}
+
 
 	const wchar_t* const szSourceFilename = PathFindFileNameW(szPathFON);
 	if (oOrdinalMode == FontOrdinalMode::All)

@@ -91,7 +91,7 @@ BEGIN
             VALUE "FileDescription", "previewFON - A tool for generating preview bitmaps from Microsoft FON files"
             VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "previewFON.exe"
-            VALUE "LegalCopyright", "© 2021 Robin Lemanska"
+            VALUE "LegalCopyright", "© 2021 RobinLe"
             VALUE "OriginalFilename", "previewFON.exe"
             VALUE "ProductName", "RobinLe DevTools"
             VALUE "ProductVersion", "1.0.0.1"

@@ -22,7 +22,7 @@ using Con = rl::Console;
 
 
 /// <summary>
-/// The command line syntax was not correct --> show the correct syntax
+/// Show the correct syntax for the application
 /// </summary>
 void ShowSyntax();
 
@@ -56,44 +56,18 @@ int wmain(int argc, wchar_t* argv[])
 
 
 
-	int iArgNo = 0;
-
+	int iArgNo = 1;
+	int iArgsRead = 0;
 
 	// get FON input path
 	wchar_t szPathFON[MAX_PATH + 1] = {};
-	if (argv[1][0] == L'"') // quotation marks
+	iArgsRead = rl::CmdGetPath(argc, argv, 0, 0, szPathFON);
+	if (iArgsRead == 0)
 	{
-		do
-		{
-			iArgNo++;
-
-			if (wcslen(szPathFON) + wcslen(argv[iArgNo]) > MAX_PATH)
-			{
-				rl::WriteError("Input path was too long.");
-				return ERROR_FILENAME_EXCED_RANGE;
-			}
-
-			wcscat_s(szPathFON, argv[iArgNo]);
-		} while (iArgNo < argc && szPathFON[wcslen(szPathFON) - 1] != L'"');
-
-		if (szPathFON[wcslen(szPathFON) - 1] != L'"')
-		{
-			rl::WriteHelpHint(szAppName);
-			return ERROR_BAD_PATHNAME;
-		}
-
-		PathUnquoteSpacesW(szPathFON);
+		rl::WriteError("Input path is invalid");
+		return ERROR_BAD_PATHNAME;
 	}
-	else // no quotation marks
-	{
-		iArgNo++;
-		if (wcslen(argv[iArgNo]) > MAX_PATH)
-		{
-			rl::WriteError("Input path was too long.");
-			return ERROR_FILENAME_EXCED_RANGE;
-		}
-		wcscpy_s(szPathFON, argv[iArgNo]);
-	}
+	iArgNo += iArgsRead;
 
 	if (iArgNo >= argc)
 	{
@@ -104,7 +78,6 @@ int wmain(int argc, wchar_t* argv[])
 
 
 	// get font ordinal
-	iArgNo++;
 	if (iArgNo >= argc)
 	{
 		rl::WriteHelpHint(szAppName);
@@ -141,50 +114,19 @@ int wmain(int argc, wchar_t* argv[])
 		wFontOrdinal = (WORD)wcstoul(argv[iArgNo], nullptr, 10);
 		oOrdinalMode = FontOrdinalMode::Set;
 	}
+	iArgNo++;
 
 
 
 	// get BMP output path
 	wchar_t szPathBMP[MAX_PATH + 1] = {};
-	if (argv[iArgNo + 1][0] == L'"') // quotation marks
+	iArgsRead = rl::CmdGetPath(argc, argv, iArgNo - 1, 0, szPathBMP);
+	if (iArgsRead == 0)
 	{
-		do
-		{
-			iArgNo++;
-
-			if (wcslen(szPathBMP) + wcslen(argv[iArgNo]) > MAX_PATH)
-			{
-				rl::WriteError("Output path was too long.");
-				return ERROR_FILENAME_EXCED_RANGE;
-			}
-
-			wcscat_s(szPathBMP, argv[iArgNo]);
-		} while (iArgNo < argc && szPathBMP[wcslen(szPathBMP) - 1] != L'"');
-
-		if (szPathBMP[wcslen(szPathBMP) - 1] != L'"')
-		{
-			rl::WriteHelpHint(szAppName);
-			return ERROR_BAD_PATHNAME;
-		}
-
-		PathUnquoteSpacesW(szPathBMP);
+		rl::WriteError("Output path is invalid");
+		return ERROR_BAD_PATHNAME;
 	}
-	else // no quotation marks
-	{
-		iArgNo++;
-		if (wcslen(argv[iArgNo]) > MAX_PATH)
-		{
-			rl::WriteError("Output path was too long.");
-			return ERROR_FILENAME_EXCED_RANGE;
-		}
-		wcscpy_s(szPathBMP, argv[iArgNo]);
-	}
-
-	if (iArgNo >= argc)
-	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_INVALID_PARAMETER;
-	}
+	iArgNo += iArgsRead;
 
 
 	rl::MicrosoftFONParser parser;
@@ -315,12 +257,12 @@ int wmain(int argc, wchar_t* argv[])
 	}
 
 	// get the font's header (for maximum width)
-	rl::FONTHDR_STRINGS hdr = {};
+	rl::FONTHDR hdr = {};
 	font.getHeader(hdr);
 
 	const int iSeperatorSize = 1; // pixels between characters and outside padding
-	const int iWidth = hdr.oHeader.dfMaxWidth * 16 + iSeperatorSize * 17;
-	const int iHeight = hdr.oHeader.dfPixHeight * 16 + iSeperatorSize * 17;
+	const int iWidth = hdr.dfMaxWidth * 16 + iSeperatorSize * 17;
+	const int iHeight = hdr.dfPixHeight * 16 + iSeperatorSize * 17;
 
 	rl::GDIPlus gdip;
 	Gdiplus::Bitmap* bmp = new Gdiplus::Bitmap(iWidth, iHeight, PixelFormat1bppIndexed);
@@ -337,8 +279,8 @@ int wmain(int argc, wchar_t* argv[])
 
 		const uint8_t iCol = i % 16;
 		const uint8_t iRow = i / 16;
-		const int iXStart = iCol * hdr.oHeader.dfMaxWidth + (iCol + 1) * iSeperatorSize;
-		const int iYStart = iRow * hdr.oHeader.dfPixHeight + (iRow + 1) * iSeperatorSize;
+		const int iXStart = iCol * hdr.dfMaxWidth + (iCol + 1) * iSeperatorSize;
+		const int iYStart = iRow * hdr.dfPixHeight + (iRow + 1) * iSeperatorSize;
 		rl::MicrosoftRasterChar ch;
 		font.getChar((uint8_t)i, ch);
 

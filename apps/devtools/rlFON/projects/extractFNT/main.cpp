@@ -141,7 +141,7 @@ int wmain(int argc, wchar_t* argv[])
 			return ERROR_BAD_PATHNAME;
 		}
 
-		// destination path length: + "\", + "-XXX" (XXX = padded resource ID)
+		// destination path length: + "\", + szSourceFilename "-XXXXX" (XXXXX = padded resource ID)
 		if (MAX_PATH - wcslen(szPathOutput) < 1 + wcslen(szSourceFilename) + 1 + iResIDPadding)
 		{
 			rl::WriteError("Output path was too long.");
@@ -193,7 +193,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		std::vector<rl::FONTDIRENTRY> oFontDir;
 		parser.getFontDir(oFontDir);
-		wcscat_s(szPathOutput, PathFindFileNameW(szPathFON));
+		wcscat_s(szPathOutput, szSourceFilename);
 		if (_wcsicmp(PathFindExtensionW(szPathOutput), L".fon") == 0)
 			PathRemoveExtensionW(szPathOutput);
 		wcscat_s(szPathOutput, L"-00000.fnt"); // dependent on iResIDPadding

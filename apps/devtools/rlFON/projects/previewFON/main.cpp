@@ -33,6 +33,8 @@ void ShowSyntax();
 /// <returns>Did the function succeed?</returns>
 bool GetEncoderCLSID(const wchar_t* ID, CLSID& dest);
 
+int CreatePreview(const rl::MicrosoftRasterFont& font, const wchar_t* szBMP);
+
 
 
 int wmain(int argc, wchar_t* argv[])
@@ -56,6 +58,7 @@ int wmain(int argc, wchar_t* argv[])
 
 
 
+	const uint8_t iResIDPadding = 5; // --> max "65535". constant can't be larger than one digit.
 	int iArgNo = 1;
 	int iArgsRead = 0;
 
@@ -88,7 +91,8 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		Set, // wFontOrdinal must be used
 		First, // "?" --> first in file
-		Default // "~" --> width >= 8 if available
+		Default, // "~" --> width >= 8 if available
+		All // "*" --> all
 	} oOrdinalMode;
 
 
@@ -97,6 +101,8 @@ int wmain(int argc, wchar_t* argv[])
 		oOrdinalMode = FontOrdinalMode::First;
 	else if (wcscmp(argv[iArgNo], L"~") == 0) // ordinal parameter "~" --> default font (width >= 8)
 		oOrdinalMode = FontOrdinalMode::Default;
+	else if (wcscmp(argv[iArgNo], L"*") == 0) // ordinal parameter "*" --> all fonts
+		oOrdinalMode = FontOrdinalMode::All;
 	else
 	{
 		const wchar_t* szOrdinal = argv[iArgNo];
@@ -250,62 +256,74 @@ int wmain(int argc, wchar_t* argv[])
 
 	// try to get font data, on failure show error + exit
 	rl::MicrosoftRasterFont font;
-	if (!parser.getFont(wFontOrdinal, font))
+
+	if (oOrdinalMode == FontOrdinalMode::All)
 	{
-		rl::WriteError("Couldn't load FONT resource with ID %d", wFontOrdinal);
-		return -1;
-	}
+		PathAddBackslashW(szPathBMP);
+		const wchar_t* const szSourceFilename = PathFindFileNameW(szPathFON);
 
-	// get the font's header (for maximum width)
-	rl::FONTHDR hdr = {};
-	font.getHeader(hdr);
-
-	const int iSeperatorSize = 1; // pixels between characters and outside padding
-	const int iWidth = hdr.dfMaxWidth * 16 + iSeperatorSize * 17;
-	const int iHeight = hdr.dfPixHeight * 16 + iSeperatorSize * 17;
-
-	rl::GDIPlus gdip;
-	Gdiplus::Bitmap* bmp = new Gdiplus::Bitmap(iWidth, iHeight, PixelFormat1bppIndexed);
-
-	// fill image with white color
-	Gdiplus::Graphics* mem = Gdiplus::Graphics::FromImage(bmp);
-	Gdiplus::SolidBrush brushBG(Gdiplus::Color::White);
-	mem->FillRectangle(&brushBG, 0, 0, bmp->GetWidth(), bmp->GetHeight());
-
-	for (uint16_t i = 0; i < 256; i++)
-	{
-		if (!font.containsChar((uint8_t)i))
-			continue;
-
-		const uint8_t iCol = i % 16;
-		const uint8_t iRow = i / 16;
-		const int iXStart = iCol * hdr.dfMaxWidth + (iCol + 1) * iSeperatorSize;
-		const int iYStart = iRow * hdr.dfPixHeight + (iRow + 1) * iSeperatorSize;
-		rl::MicrosoftRasterChar ch;
-		font.getChar((uint8_t)i, ch);
-
-		for (uint32_t iX = 0; iX < ch.getWidth(); iX++)
+		// destination path length: + "\", + szSourceFilename "-XXXXX" (XXXXX = padded resource ID)
+		if (MAX_PATH - wcslen(szPathBMP) < 1 + wcslen(szSourceFilename) + 1 + iResIDPadding)
 		{
-			for (uint32_t iY = 0; iY < ch.getHeight(); iY++)
+			rl::WriteError("Output path was too long.");
+			return ERROR_FILENAME_EXCED_RANGE;
+		}
+
+		std::vector<rl::FONTDIRENTRY> oFontDir;
+		parser.getFontDir(oFontDir);
+		wcscat_s(szPathBMP, szSourceFilename);
+		if (_wcsicmp(PathFindExtensionW(szPathBMP), L".fon") == 0)
+			PathRemoveExtensionW(szPathBMP);
+		wcscat_s(szPathBMP, L"-00000.bmp"); // dependent on iResIDPadding
+		const size_t iResIDOffset = wcslen(szPathBMP) - 9;
+
+		wchar_t szPaddedOrdinal[iResIDPadding + 1] = {};
+
+		size_t iSuccessCount = 0;
+		for (auto& o : oFontDir)
+		{
+			szPaddedOrdinal[0] = 0;
+			swprintf_s(szPaddedOrdinal, L"%05d", o.fontOrdinal); // dependent on iResIDPadding
+			memcpy_s(szPathBMP + iResIDOffset, iResIDPadding * sizeof(wchar_t), szPaddedOrdinal,
+				iResIDPadding * sizeof(wchar_t));
+
+			rl::MicrosoftRasterFont font;
+			parser.getFont(o.fontOrdinal, font);
+
+			int i = CreatePreview(font, szPathBMP);
+
+			if (i != ERROR_SUCCESS)
+				rl::WriteError("Couldn't save bitmap file \"%ls\"", szPathBMP);
+			else
 			{
-				Gdiplus::Color col;
-				col.SetValue(ch.getPixel(iX, iY) ? 0xFF000000 : 0xFFFFFFFF);
-				bmp->SetPixel(iXStart + iX, iYStart + iY, col);
+				printf("Successfully saved bitmap font preview to \"%ls\"\n", szPathBMP);
+				iSuccessCount++;
 			}
 		}
-	}
+		printf("\n"
+			"%llu/%llu successfully saved\n\n\n", (uint64_t)iSuccessCount, (uint64_t)oFontDir.size());
 
-	CLSID enc;
-	GetEncoderCLSID(L"image/bmp", enc);
-	if (bmp->Save(szPathBMP, &enc) != Gdiplus::Ok)
+		if (iSuccessCount == 0)
+			return -1;
+	}
+	else
 	{
-		rl::WriteError("Couldn't write bitmap file \"%ls\"", szPathBMP);
-		delete bmp;
-		return -1;
+		if (!parser.getFont(wFontOrdinal, font))
+		{
+			rl::WriteError("Couldn't load FONT resource with ID %d", wFontOrdinal);
+			return -1;
+		}
+
+		int iResult = CreatePreview(font, szPathBMP);
+		if (iResult != ERROR_SUCCESS)
+		{
+			rl::WriteError("Couldn't write bitmap file \"%ls\"", szPathBMP);
+			return iResult;
+		}
+		else
+			printf("Successfully saved bitmap font preview to \"%ls\"\n\n\n", szPathBMP);
 	}
 
-	printf("Successfully saved bitmap font preview to \"%ls\"\n\n", szPathBMP);
-	delete bmp;
 	return ERROR_SUCCESS;
 }
 
@@ -363,4 +381,56 @@ bool GetEncoderCLSID(const wchar_t* ID, CLSID& dest)
 
 	free(pCodecInfo);
 	return false;
+}
+
+int CreatePreview(const rl::MicrosoftRasterFont& font, const wchar_t* szBMP)
+{
+	// get the font's header (for maximum width)
+	rl::FONTHDR hdr = {};
+	font.getHeader(hdr);
+
+	const int iSeperatorSize = 1; // pixels between characters and outside padding
+	const int iWidth = hdr.dfMaxWidth * 16 + iSeperatorSize * 17;
+	const int iHeight = hdr.dfPixHeight * 16 + iSeperatorSize * 17;
+
+	rl::GDIPlus gdip;
+	Gdiplus::Bitmap* bmp = new Gdiplus::Bitmap(iWidth, iHeight, PixelFormat1bppIndexed);
+
+	// fill image with white color
+	Gdiplus::Graphics* mem = Gdiplus::Graphics::FromImage(bmp);
+	Gdiplus::SolidBrush brushBG(Gdiplus::Color::White);
+	mem->FillRectangle(&brushBG, 0, 0, bmp->GetWidth(), bmp->GetHeight());
+
+	for (uint16_t i = 0; i < 256; i++)
+	{
+		if (!font.containsChar((uint8_t)i))
+			continue;
+
+		const uint8_t iCol = i % 16;
+		const uint8_t iRow = i / 16;
+		const int iXStart = iCol * hdr.dfMaxWidth + (iCol + 1) * iSeperatorSize;
+		const int iYStart = iRow * hdr.dfPixHeight + (iRow + 1) * iSeperatorSize;
+		rl::MicrosoftRasterChar ch;
+		font.getChar((uint8_t)i, ch);
+
+		for (uint32_t iX = 0; iX < ch.getWidth(); iX++)
+		{
+			for (uint32_t iY = 0; iY < ch.getHeight(); iY++)
+			{
+				Gdiplus::Color col;
+				col.SetValue(ch.getPixel(iX, iY) ? 0xFF000000 : 0xFFFFFFFF);
+				bmp->SetPixel(iXStart + iX, iYStart + iY, col);
+			}
+		}
+	}
+
+	int iResult = ERROR_SUCCESS;
+	CLSID enc;
+	GetEncoderCLSID(L"image/bmp", enc);
+	if (bmp->Save(szBMP, &enc) != Gdiplus::Ok)
+		iResult = -1;
+
+	delete bmp;
+
+	return iResult;
 }

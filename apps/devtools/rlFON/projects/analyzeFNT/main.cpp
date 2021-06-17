@@ -96,9 +96,35 @@ int wmain(int argc, wchar_t* argv[])
 		"  FNT version:\t0x%04x\n"
 		"  CharSet:\t%d\n"
 		"  Points:\t%d\n"
+		"  Weight:\t%d",
+		font.faceName(), hdr.dfVersion, hdr.dfCharSet, hdr.dfPoints, hdr.dfWeight
+	);
+#undef max
+
+	// No name for less than 100; else weight names are rounded downwards
+	uint16_t iRoundedWeight = std::max(1, hdr.dfWeight / 100) * 100;
+	switch (iRoundedWeight)
+	{
+#define PRINTWEIGHT(s) case rl::FontWeight::##s: printf(" (" #s ")"); break
+	
+		PRINTWEIGHT(Thin);
+		PRINTWEIGHT(ExtraLight);
+		PRINTWEIGHT(Light);
+		PRINTWEIGHT(Regular);
+		PRINTWEIGHT(Medium);
+		PRINTWEIGHT(SemiBold);
+		PRINTWEIGHT(Bold);
+		PRINTWEIGHT(ExtraBold);
+		PRINTWEIGHT(Black);
+
+#undef PRINTWEIGHT
+	}
+	printf("\n"
+		"  Italic:\t%s\n"
 		"  \n"
 		"  Height:\t%d\n",
-		font.faceName(), hdr.dfVersion, hdr.dfCharSet, hdr.dfPoints, hdr.dfPixHeight);
+		(hdr.dfItalic ? "TRUE" : "FALSE"), hdr.dfPixHeight
+	);
 
 	if (hdr.dfPixWidth > 0) // global width
 		printf("  Width:\t%d\n", hdr.dfPixWidth);

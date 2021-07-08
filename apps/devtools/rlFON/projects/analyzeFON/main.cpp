@@ -40,16 +40,18 @@ int wmain(int argc, wchar_t* argv[])
 		return ERROR_SUCCESS; // no error occured
 	}
 
-	if (argc < 1 + 1)
+	if (argc != 1 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
 		return ERROR_BAD_ARGUMENTS;
 	}
 
 	wchar_t szPath[MAX_PATH + 1] = {};
-	if (!rl::CmdGetPath(argc, argv, 0, 0, szPath))
+	if (wcslen(argv[1]) <= MAX_PATH)
+		wcscpy_s(szPath, argv[1]);
+	else
 	{
-		rl::WriteError("Input path is invalid");
+		rl::WriteError("Input path was too long");
 		return ERROR_BAD_PATHNAME;
 	}
 

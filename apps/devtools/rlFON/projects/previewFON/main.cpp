@@ -50,7 +50,7 @@ int wmain(int argc, wchar_t* argv[])
 		return ERROR_SUCCESS; // no error occured
 	}
 
-	if (argc < 3 + 1)
+	if (argc != 3 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
 		return ERROR_BAD_ARGUMENTS;
@@ -58,34 +58,21 @@ int wmain(int argc, wchar_t* argv[])
 
 
 
-	const uint8_t iResIDPadding = 5; // --> max "65535". constant can't be larger than one digit.
-	int iArgNo = 1;
-	int iArgsRead = 0;
+	const uint8_t iResIDPadding = 5; // --> max "65535". constant can't be larger than five digits.
 
 	// get FON input path
 	wchar_t szPathFON[MAX_PATH + 1] = {};
-	iArgsRead = rl::CmdGetPath(argc, argv, 0, 0, szPathFON);
-	if (iArgsRead == 0)
+	if (wcslen(argv[1]) <= MAX_PATH)
+		wcscpy_s(szPathFON, argv[1]);
+	else
 	{
-		rl::WriteError("Input path is invalid");
+		rl::WriteError("Input path was too long");
 		return ERROR_BAD_PATHNAME;
-	}
-	iArgNo += iArgsRead;
-
-	if (iArgNo >= argc)
-	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_BAD_ARGUMENTS;
 	}
 
 
 
 	// get font ordinal
-	if (iArgNo >= argc)
-	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_BAD_ARGUMENTS;
-	}
 
 	enum class FontOrdinalMode
 	{
@@ -95,17 +82,16 @@ int wmain(int argc, wchar_t* argv[])
 		All // "*" --> all
 	} oOrdinalMode;
 
-
 	WORD wFontOrdinal = 0;
-	if (wcscmp(argv[iArgNo], L"?") == 0) // ordinal parameter "?" --> choose first one in file
+	if (wcscmp(argv[2], L"?") == 0) // ordinal parameter "?" --> choose first one in file
 		oOrdinalMode = FontOrdinalMode::First;
-	else if (wcscmp(argv[iArgNo], L"~") == 0) // ordinal parameter "~" --> default font (width >= 8)
+	else if (wcscmp(argv[2], L"~") == 0) // ordinal parameter "~" --> default font (width >= 8)
 		oOrdinalMode = FontOrdinalMode::Default;
-	else if (wcscmp(argv[iArgNo], L"*") == 0) // ordinal parameter "*" --> all fonts
+	else if (wcscmp(argv[2], L"*") == 0) // ordinal parameter "*" --> all fonts
 		oOrdinalMode = FontOrdinalMode::All;
 	else
 	{
-		const wchar_t* szOrdinal = argv[iArgNo];
+		const wchar_t* szOrdinal = argv[2];
 
 		// check if valid integer
 		for (size_t i = 0; i < wcslen(szOrdinal); i++)
@@ -117,22 +103,21 @@ int wmain(int argc, wchar_t* argv[])
 			}
 		}
 
-		wFontOrdinal = (WORD)wcstoul(argv[iArgNo], nullptr, 10);
+		wFontOrdinal = (WORD)wcstoul(argv[2], nullptr, 10);
 		oOrdinalMode = FontOrdinalMode::Set;
 	}
-	iArgNo++;
 
 
 
 	// get BMP output path
 	wchar_t szPathBMP[MAX_PATH + 1] = {};
-	iArgsRead = rl::CmdGetPath(argc, argv, iArgNo - 1, 0, szPathBMP);
-	if (iArgsRead == 0)
+	if (wcslen(argv[3]) <= MAX_PATH)
+		wcscpy_s(szPathBMP, argv[3]);
+	else
 	{
-		rl::WriteError("Output path is invalid");
+		rl::WriteError("Output path was too long");
 		return ERROR_BAD_PATHNAME;
 	}
-	iArgNo += iArgsRead;
 
 
 	rl::MicrosoftFONParser parser;
@@ -158,7 +143,7 @@ int wmain(int argc, wchar_t* argv[])
 		parser.getFontDir(oFontDir);
 		wFontOrdinal = oFontDir[0].fontOrdinal;
 	}
-		break;
+	break;
 
 	case FontOrdinalMode::Default:
 	{
@@ -251,7 +236,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		wFontOrdinal = oFontDir[iIndex].fontOrdinal;
 	}
-		break;
+	break;
 	}
 
 	// try to get font data, on failure show error + exit
@@ -336,7 +321,7 @@ void ShowSyntax()
 		"  /? | --help	Show syntax\n"
 		"\n"
 		"Paths\n"
-		"  InputPath	Path of a .FON file\n"	
+		"  InputPath	Path of a .FON file\n"
 		"  OutputPath	Path for the output .BMP file\n"
 		"\n"
 		"Font resource identifier\n"

@@ -45,7 +45,7 @@ int wmain(int argc, wchar_t* argv[])
 		return ERROR_SUCCESS; // no error occured
 	}
 
-	if (argc < 3 + 1)
+	if (argc != 3 + 1)
 	{
 		rl::WriteHelpHint(szAppName);
 		return ERROR_BAD_ARGUMENTS;
@@ -53,36 +53,23 @@ int wmain(int argc, wchar_t* argv[])
 
 
 
-	const uint8_t iResIDPadding = 5; // --> max "65535". constant can't be larger than one digit.
-	int iArgNo = 1;
-	int iArgsRead = 0;
+	const uint8_t iResIDPadding = 5; // --> max "65535". constant can't be larger than five digits.
 
 
 	// get FON input path
 	wchar_t szPathFON[MAX_PATH + 1] = {};
-	iArgsRead = rl::CmdGetPath(argc, argv, 0, 0, szPathFON);
-	if (iArgsRead == 0)
+	if (wcslen(argv[1]) <= MAX_PATH)
+		wcscpy_s(szPathFON, argv[1]);
+	else
 	{
-		rl::WriteError("Input path is invalid");
+		rl::WriteError("Input path was too long");
 		return ERROR_BAD_PATHNAME;
-	}
-	iArgNo += iArgsRead;
-	
-	if (iArgNo >= argc)
-	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_BAD_ARGUMENTS;
 	}
 
 
 
 	// get font ordinal
-	if (iArgNo >= argc)
-	{
-		rl::WriteHelpHint(szAppName);
-		return ERROR_BAD_ARGUMENTS;
-	}
-
+	
 	enum class FontOrdinalMode
 	{
 		Single, // extract FONT <wFontOrdinal> only
@@ -91,11 +78,11 @@ int wmain(int argc, wchar_t* argv[])
 
 
 	WORD wFontOrdinal = 0;
-	if (wcscmp(argv[iArgNo], L"*") == 0) // ordinal parameter "*" --> extract all
+	if (wcscmp(argv[2], L"*") == 0) // ordinal parameter "*" --> extract all
 		oOrdinalMode = FontOrdinalMode::All;
 	else
 	{
-		const wchar_t* szOrdinal = argv[iArgNo];
+		const wchar_t* szOrdinal = argv[2];
 
 		// check if valid integer
 		for (size_t i = 0; i < wcslen(szOrdinal); i++)
@@ -107,20 +94,20 @@ int wmain(int argc, wchar_t* argv[])
 			}
 		}
 
-		wFontOrdinal = (WORD)wcstoul(argv[iArgNo], nullptr, 10);
+		wFontOrdinal = (WORD)wcstoul(argv[2], nullptr, 10);
 		oOrdinalMode = FontOrdinalMode::Single;
 	}
-	iArgNo++;
 
 
 
 	// get output path
 	wchar_t szPathOutput[MAX_PATH + 1] = {};
-	iArgsRead = rl::CmdGetPath(argc, argv, iArgNo - 1, 0, szPathOutput);
-	if (iArgsRead == 0)
+	if (wcslen(argv[3]) <= MAX_PATH)
+		wcscpy_s(szPathOutput, argv[3]);
+	else
 	{
-		rl::WriteError("Output path is invalid");
-		return ERROR_BAD_PATHNAME;
+		rl::WriteError("Output path was too long");
+			return ERROR_BAD_PATHNAME;
 	}
 
 

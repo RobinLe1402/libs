@@ -15,7 +15,6 @@ namespace rl
 	std::vector<uint8_t> Console::m_oColorStack;
 	uint8_t Console::m_iStartupColor = 0;
 	UINT Console::m_iStartupCP = 0;
-	bool Console::m_bPushed = false;
 
 	Console Console::m_oInstance;
 	HANDLE Console::m_hOut = 0;
@@ -57,15 +56,11 @@ namespace rl
 
 	void Console::PushColor(uint8_t color)
 	{
-		if (m_bPushed)
-		{
 			CONSOLE_SCREEN_BUFFER_INFO csbi;
 			GetConsoleScreenBufferInfo(m_hOut, &csbi);
 			m_oColorStack.push_back((uint8_t)csbi.wAttributes);
-		}
 
 		setColor(color);
-		m_bPushed = true;
 	}
 
 	void Console::PopColor()

@@ -137,7 +137,7 @@ namespace rl
 		std::map<LANGANDCODEPAGE, VERSIONINFO_STRINGS> LangStrings;
 	};
 
-#pragma pack(push, 1) // disable padding, as these structs are directly assigned binary data
+#pragma pack(push, 1) // disable padding, as this struct is directly assigned binary data
 	struct FONTHDR
 	{
 		WORD  dfVersion;

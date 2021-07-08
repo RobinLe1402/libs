@@ -104,7 +104,7 @@ namespace rl
 		static void SetCodepage(UINT cp);
 
 		/// <summary>
-		///  Reset the console's codepage to the startup value
+		/// Reset the console's codepage to the startup value
 		/// </summary>
 		static void ResetCodepage();
 
@@ -116,13 +116,12 @@ namespace rl
 
 		static void setColor(uint8_t color);
 
-		
+
 	private: // variables
 
 		static std::vector<uint8_t> m_oColorStack;
 		static uint8_t m_iStartupColor;
 		static UINT m_iStartupCP;
-		static bool m_bPushed;
 
 		static Console m_oInstance; // singleton
 		static HANDLE m_hOut;

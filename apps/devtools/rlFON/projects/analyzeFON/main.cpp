@@ -103,7 +103,16 @@ int wmain(int argc, wchar_t* argv[])
 				printf("VS_FFI_FILEFLAGSMASK");
 			else // custom combination
 			{
-#define PRINTSTR(s) if (iFF & s) { if (bFlag) printf(" | "); printf(#s); bFlag = true; }
+#define PRINTSTR(s)						\
+				if (iFF & s)			\
+				{						\
+					if (bFlag)			\
+						printf(" | ");	\
+					printf(#s);			\
+					bFlag = true;		\
+				}
+
+
 				bool bFlag = false; // has a flag already been written? (for "|")
 
 				PRINTSTR(VS_FF_DEBUG);

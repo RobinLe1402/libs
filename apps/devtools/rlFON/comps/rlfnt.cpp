@@ -3,6 +3,7 @@
 #include <exception>
 #include <memory.h> // memcpy
 #include <stdint.h>
+#include <vector>
 #include <Windows.h>
 
 
@@ -12,9 +13,9 @@
 namespace rl
 {
 
-	namespace BitmapFontFaceDefaultNames
+	namespace BitmapFontWeightStrings
 	{
-		constexpr const char* ByWeight(uint8_t weight) noexcept
+		const char* GetString(uint8_t weight) noexcept
 		{
 			if (weight < 10)
 			{
@@ -182,6 +183,16 @@ namespace rl
 		return *this;
 	}
 
+	bool BitmapFont::Char::operator==(const Char& other) const
+	{
+		if (!hasData() || !other.hasData())
+			return false; // uninitialized characters can't be compared
+
+		return (m_iBitsPerPixel == other.m_iBitsPerPixel && m_iWidth == other.m_iWidth &&
+			m_iHeight == other.m_iHeight &&
+			memcmp(m_pData, other.m_pData, DataSize(m_iBitsPerPixel, m_iWidth, m_iHeight)) == 0);
+	}
+
 
 
 
@@ -229,10 +240,25 @@ namespace rl
 
 	bool BitmapFont::Char::hasData() const { return m_pData != nullptr; }
 
+	bool BitmapFont::Char::isEmpty() const
+	{
+		checkData();
+
+		const size_t iSize = DataSize(m_iBitsPerPixel, m_iWidth, m_iHeight);
+
+		for (size_t i = 0; i < iSize; i++)
+		{
+			if (m_pData[i] != 0)
+				return false;
+		}
+		return true;
+	}
+
 	size_t BitmapFont::Char::getDataSize() const
 	{
-		const uint32_t iColBytes = m_iHeight / 8 + (m_iHeight % 8 ? 1 : 0);
+		checkData();
 
+		const uint32_t iColBytes = m_iHeight / 8 + (m_iHeight % 8 ? 1 : 0);
 		return (size_t)iColBytes * m_iWidth * m_iBitsPerPixel;
 	}
 
@@ -242,16 +268,17 @@ namespace rl
 		checkPos(x, y);
 
 		const uint16_t iColBytes = m_iHeight / 8 + (m_iHeight % 8 ? 1 : 0);
-		const size_t iBitPlaneSize = (size_t)iColBytes * m_iWidth * m_iBitsPerPixel;
-		const size_t iBitPlanePos = (size_t)iColBytes * x + y / 8 + (y % 8 ? 1 : 0);
+		const size_t iBitPlaneSize = (size_t)iColBytes * m_iWidth;
+		const size_t iCurrentByte = (size_t)x * iColBytes + y / 8;
+		const size_t iCurrentBit = y % 8;
 
 		uint32_t iResult = 0;
 
 
 		for (uint16_t i = 0; i < m_iBitsPerPixel; i++)
 		{
-			uint8_t iByte = m_pData[iBitPlaneSize * i + iBitPlanePos];
-			iByte >>= 7 - y % 8;
+			uint8_t iByte = m_pData[iBitPlaneSize * i + iCurrentByte];
+			iByte >>= 7 - iCurrentBit;
 			iByte &= 1;
 			iResult |= (uint32_t)iByte << i;
 		}
@@ -265,15 +292,18 @@ namespace rl
 		checkPos(x, y);
 
 		const uint16_t iColBytes = m_iHeight / 8 + (m_iHeight % 8 ? 1 : 0);
-		const size_t iBitPlaneSize = (size_t)iColBytes * m_iWidth * m_iBitsPerPixel;
-		const size_t iBitPlanePos = (size_t)iColBytes * x + y / 8 + (y % 8 ? 1 : 0);
+		const size_t iBitPlaneSize = (size_t)iColBytes * m_iWidth;
+		const size_t iCurrentByte = (size_t)x * iColBytes + y / 8;
+		const size_t iCurrentBit = y % 8;
 
 
 		for (uint16_t i = 0; i < m_iBitsPerPixel; i++)
 		{
-			uint8_t iByte = m_pData[iBitPlaneSize * i + iBitPlanePos];
-			iByte &= ~(!((val >> i) & 1) << i);
-			m_pData[iBitPlaneSize * i + iBitPlanePos] = iByte;
+			uint8_t iByte = m_pData[iBitPlaneSize * i + iCurrentByte];
+			iByte &= ~(1 << (7 - iCurrentBit)); // mask out old value
+			if (val)
+				iByte |= 1 << (7 - iCurrentBit); // set new value
+			m_pData[iBitPlaneSize * i + iCurrentByte] = iByte;
 		}
 	}
 
@@ -359,7 +389,190 @@ namespace rl
 
 
 	//----------------------------------------------------------------------------------------------
+	// OPERATORS
+
+	BitmapFont::Face& BitmapFont::Face::operator=(const Face& other)
+	{
+		destroy();
+		if (!other.m_bData) // other object has no data --> Assignment = destruction; no error
+			return *this;
+
+		create(other.m_iFixedWidth, other.m_iHeight, other.m_iBitsPerPixel, other.m_iPoints,
+			other.m_iWeight, other.m_iFlags, other.m_sFamilyName.c_str(), other.m_sFaceName.c_str(),
+			other.m_sCopyright.c_str());
+
+		m_iFallback = other.m_iFallback;
+
+		m_oChars = other.m_oChars; // copy character data
+
+		return *this;
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
+
+	BitmapFont::Face::FileStatus BitmapFont::Face::validate(const wchar_t* szFilename)
+	{
+		HANDLE hFile = CreateFileW(szFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+			NULL, NULL);
+
+		if (hFile == INVALID_HANDLE_VALUE)
+			return FileStatus::FileDoesntExist;
+
+
+		try // "throw [...]" = something was wrong with the file
+		{
+			DWORD dwRead = 0;
+			LARGE_INTEGER liFilePtr;
+#define READ(p, size)														\
+			if (!ReadFile(hFile, p, size, &dwRead, NULL) || dwRead != size)	\
+				throw FileStatus::UnexpectedEOF
+#define READVAR(var) READ(&var, sizeof(var))
+#define SAVEFILEPTR() SetFilePointerEx(hFile, {0}, &liFilePtr, FILE_CURRENT)
+
+
+			LARGE_INTEGER liFilesize;
+			GetFileSizeEx(hFile, &liFilesize);
+
+			// at minimum, the file must have the full header
+			if (liFilesize.QuadPart < sizeof(FontFaceHeader))
+				throw FileStatus::UnexpectedEOF; // file too small
+
+			// read file header
+			FontFaceHeader ffh = {};
+			READVAR(ffh);
+
+			if (memcmp(ffh.sMagicNo, "rlFONTFACE", 10) != 0)
+				throw FileStatus::WrongMagicNo; // wrong magic number
+
+			// check filetype version
+			switch (ffh.iFiletypeVersion[0])
+			{
+			case 1: // 1.X
+				switch (ffh.iFiletypeVersion[1])
+				{
+				case 0: // 1.0
+				{
+					// offsets checked later
+
+					if (ffh.iBitsPerPixel == 0 || ffh.iBitsPerPixel > 24)
+						throw FileStatus::InvalidBPP;
+
+					if (ffh.iCharHeight == 0)
+						throw FileStatus::ZeroHeight;
+
+					if ((ffh.iWeight > 0 && ffh.iWeight < 10) || ffh.iWeight > 99)
+						throw FileStatus::InvalidWeight;
+
+					if (ffh.iFlags & 0xFC)
+						throw FileStatus::UnknownFlags;
+
+					SAVEFILEPTR();
+					if (liFilesize.QuadPart - liFilePtr.QuadPart < sizeof(uint32_t) + 3)
+						throw FileStatus::UnexpectedEOF;
+
+					uint32_t iCharCount = 0;
+					READVAR(iCharCount);
+
+					std::vector<uint32_t> oCodepoints;
+
+					uint32_t iPrevCodepoint = 0;
+					uint32_t iCodepoint;
+					uint32_t iCharWidth = ffh.iFixedCharWidth;
+					bool bFallbackFound = false;
+					for (uint64_t i = 0; i < iCharCount; i++)
+					{
+						READVAR(iCodepoint);
+
+						if (std::find(oCodepoints.begin(), oCodepoints.end(), iCodepoint) !=
+							oCodepoints.end())
+							throw FileStatus::DuplicateChar;
+
+						if (iCodepoint < iPrevCodepoint)
+							throw FileStatus::NotAscending;
+
+						if (!bFallbackFound && iCodepoint == ffh.iFallback)
+							bFallbackFound = true;
+
+						iPrevCodepoint = iCodepoint;
+
+						oCodepoints.push_back(iCodepoint);
+
+						if (ffh.iFixedCharWidth == 0)
+							READVAR(iCharWidth);
+
+						SAVEFILEPTR();
+						size_t iDataSize = Char::DataSize(ffh.iBitsPerPixel, iCharWidth,
+							ffh.iCharHeight);
+						if ((uint64_t)liFilesize.QuadPart - (uint64_t)liFilePtr.QuadPart <
+							iDataSize + 3)
+							throw FileStatus::UnexpectedEOF;
+
+						liFilePtr.QuadPart = iDataSize;
+						SetFilePointerEx(hFile, liFilePtr, NULL, FILE_CURRENT); // skip data
+					}
+
+					if (!bFallbackFound)
+						throw FileStatus::InvalidFallback;
+
+					uint8_t ch = 0;
+
+					// check string: FamilyName
+					SAVEFILEPTR();
+					if (liFilePtr.QuadPart != ffh.iFamilyNameOffset)
+						throw FileStatus::InvalidOffset_Family;
+					do
+					{
+						READVAR(ch);
+					} while (ch != 0);
+
+					// check string: FaceName
+					SAVEFILEPTR();
+					if (liFilePtr.QuadPart != ffh.iFaceNameOffset)
+						throw FileStatus::InvalidOffset_Face;
+					do
+					{
+						READVAR(ch);
+					} while (ch != 0);
+
+					// check string: Copyright
+					SAVEFILEPTR();
+					if (liFilePtr.QuadPart != ffh.iCopyrightOffset)
+						throw FileStatus::InvalidOffset_Copyright;
+					do
+					{
+						READVAR(ch);
+					} while (ch != 0);
+				}
+				break;
+
+				default:
+					throw FileStatus::UnknownFiletypeVer; // unknown minor filetype version
+				}
+				break;
+
+			default:
+				throw FileStatus::UnknownFiletypeVer; // unknown major filetype version
+			}
+
+
+			CloseHandle(hFile);
+			return FileStatus::OK;
+
+#undef SAVEFILEPTR
+#undef READVAR
+#undef READ
+		}
+		catch (FileStatus status)
+		{
+			CloseHandle(hFile);
+			return status;
+		}
+	}
 
 	bool BitmapFont::Face::create(uint16_t fixedwidth, uint16_t height, uint8_t BitsPerPixel,
 		uint16_t iPoints, uint8_t weight, uint8_t iFlags, const char* szFamilyName,
@@ -413,7 +626,7 @@ namespace rl
 		m_bData = false;
 	}
 
-	bool BitmapFont::Face::saveToFile(const wchar_t* szFilename)
+	bool BitmapFont::Face::saveToFile(const wchar_t* szFilename) const
 	{
 		if (!m_bData)
 			return false;
@@ -704,9 +917,66 @@ namespace rl
 
 	void BitmapFont::Face::setFallback(uint32_t NewFallback)
 	{
-		checkData();
 		checkCharSet(NewFallback);
 		m_iFallback = NewFallback;
+	}
+
+	void BitmapFont::Face::setFamilyName(const char* szFamilyName)
+	{
+		if (!m_bData)
+			return;
+
+		m_sFamilyName = szFamilyName;
+	}
+
+	void BitmapFont::Face::setFaceName(const char* szFaceName)
+	{
+		if (!m_bData)
+			return;
+
+		m_sFaceName = szFaceName;
+	}
+
+	void BitmapFont::Face::setCopyright(const char* szCopyright)
+	{
+		if (!m_bData)
+			return;
+
+		m_sCopyright = szCopyright;
+	}
+
+	void BitmapFont::Face::setPoints(uint32_t points)
+	{
+		if (!m_bData)
+			return;
+
+		m_iPoints = points;
+	}
+
+	void BitmapFont::Face::setVersion(uint8_t part1, uint8_t part2, uint8_t part3, uint8_t part4)
+	{
+		checkData();
+
+		m_oFileVersion[0] = part1;
+		m_oFileVersion[1] = part2;
+		m_oFileVersion[2] = part3;
+		m_oFileVersion[3] = part4;
+	}
+
+	void BitmapFont::Face::setFlags(uint8_t flags)
+	{
+		if (flags & 0x02)
+			throw std::exception("rl::BitmapFont::Face: Tried to set unknown flags");
+
+		m_iFlags = flags;
+	}
+
+	void BitmapFont::Face::getVersion(uint8_t(&dest)[4]) const
+	{
+		if (!m_bData)
+			return;
+
+		memcpy(dest, m_oFileVersion, 4);
 	}
 
 	void BitmapFont::Face::remove(uint32_t codepoint)

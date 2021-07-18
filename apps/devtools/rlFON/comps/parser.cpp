@@ -280,15 +280,7 @@ namespace rl
 		{
 		case 0x0200: // FNT 2.0
 		{
-#pragma pack(push, 1) // disable padding
-			struct FONTHDR_EX
-			{
-				DWORD dfBitsOffset;
-				BYTE  dfReserved;
-			};
-#pragma pack(pop)
-			FONTHDR_EX oHdrEx = {};
-			READVAR(oHdrEx);
+			READVAR(m_oHeaderEx2);
 
 
 			// holds the data of one element in the char table of a FONT resource
@@ -322,18 +314,6 @@ namespace rl
 		case 0x0300: // FNT 3.0
 		{
 #pragma pack(push, 1) // disable padding
-			struct FONTHDR_EX
-			{
-				DWORD dfBitsOffset;
-				BYTE  dfReserved;
-				DWORD dfFlags;
-				WORD  dfAspace;
-				WORD  dfBspace;
-				WORD  dfCspace;
-				DWORD dfColorPointer;
-				BYTE  dfReserved1[16];
-			};
-
 			// holds the data of one element in the char table of a FONT resource
 			struct FONTCHARENTRY
 			{
@@ -341,8 +321,7 @@ namespace rl
 				DWORD dfBitmapOffset;
 			};
 #pragma pack(pop)
-			FONTHDR_EX oHdrEx = {};
-			READVAR(oHdrEx);
+			READVAR(m_oHeaderEx3);
 
 			// "+ 1" because data is zero-based
 			const uint16_t iCharCount = m_oHeader.dfLastChar -
@@ -379,6 +358,34 @@ namespace rl
 		return true;
 	}
 
+	bool MicrosoftRasterFont::loadFromFile(const wchar_t* szPath)
+	{
+		HANDLE hFile = CreateFileW(szPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, NULL,
+			NULL);
+
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			m_iError = RL_FONPARSER_E_FILEERROR;
+			return false;
+		}
+
+		LARGE_INTEGER liFilesize;
+		GetFileSizeEx(hFile, &liFilesize);
+		uint8_t* pData = new uint8_t[liFilesize.QuadPart]{};
+		DWORD dwRead = 0;
+		if (!ReadFile(hFile, pData, (DWORD)liFilesize.QuadPart, &dwRead, NULL))
+		{
+			CloseHandle(hFile);
+			m_iError = RL_FONPARSER_E_FILEERROR;
+			return false;
+		}
+		CloseHandle(hFile);
+
+		bool bResult = create(pData, liFilesize.QuadPart);
+		delete[] pData;
+		return bResult;
+	}
+
 	void MicrosoftRasterFont::clear()
 	{
 		if (m_pData == nullptr)
@@ -388,7 +395,8 @@ namespace rl
 		m_bData = false;
 		m_oHeader = {};
 		m_oChars.clear();
-		m_iHeight = 0;
+		m_oHeaderEx2 = {};
+		m_oHeaderEx3 = {};
 	}
 
 	bool MicrosoftRasterFont::hasData() const { return (m_pData != nullptr); }
@@ -420,6 +428,24 @@ namespace rl
 			return false;
 
 		dest = m_oHeader;
+		return true;
+	}
+
+	bool MicrosoftRasterFont::getHeaderEx2(FONTHDR_EX2& dest) const
+	{
+		if (m_pData == nullptr || m_oHeader.dfVersion != 0x0002)
+			return false;
+
+		dest = m_oHeaderEx2;
+		return true;
+	}
+
+	bool MicrosoftRasterFont::getHeaderEx3(FONTHDR_EX3& dest) const
+	{
+		if (m_pData == nullptr || m_oHeader.dfVersion != 0x0003)
+			return false;
+
+		dest = m_oHeaderEx3;
 		return true;
 	}
 

@@ -26,6 +26,7 @@ typedef unsigned char uint8_t;
 #ifndef _MINWINDEF_
 #define MAX_PATH 260
 #endif // _MINWINDEF_
+typedef unsigned long DWORD;
 
 
 
@@ -43,6 +44,13 @@ namespace rl
 	/// Write an error to the console
 	/// </summary>
 	void WriteError(const char* szText, ...);
+
+	/// <summary>
+	/// Write a system error to the console
+	/// </summary>
+	/// <param name="dwError">= a system error code, as returned by <c>GetLastError()</c></param>
+	/// <returns>Was dwError an error?</returns>
+	bool WriteWin32Error(DWORD dwError);
 
 	/// <summary>
 	/// Write a hint towards the "/?" or "--help" parameter after a syntax error has occured

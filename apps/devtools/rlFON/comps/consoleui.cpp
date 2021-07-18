@@ -41,6 +41,33 @@ namespace rl
 		printf("\n");
 	}
 
+	bool WriteWin32Error(DWORD dwError)
+	{
+		if (!dwError) // no error --> cancel
+			return false;
+
+		LPVOID lpMsgBuf = NULL;
+		DWORD dwLen = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPTSTR)&lpMsgBuf, 0, NULL);
+
+		if (!dwLen) // unknown system error
+		{
+			Console::PushColor(FG_RED);
+			printf("Unknown Win32 error\n");
+			Console::PopColor();
+			return true;
+		}
+
+		Console::PushColor(FG_RED);
+		printf("Win32 error: ");
+		Console::PopColor();
+		printf("%s\n", (LPCSTR)lpMsgBuf);
+
+		LocalFree(lpMsgBuf);
+		return true;
+	}
+
 	void WriteHelpHint(const char* szExeFilename)
 	{
 		printf("Syntax error.\nFor help, type '");

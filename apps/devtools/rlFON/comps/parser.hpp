@@ -137,7 +137,10 @@ namespace rl
 		std::map<LANGANDCODEPAGE, VERSIONINFO_STRINGS> LangStrings;
 	};
 
-#pragma pack(push, 1) // disable padding, as this struct is directly assigned binary data
+#pragma pack(push, 1) // disable padding, as these structs are directly assigned binary data
+	/// <summary>
+	/// Base FNT header (for all versions)
+	/// </summary>
 	struct FONTHDR
 	{
 		WORD  dfVersion;
@@ -173,6 +176,30 @@ namespace rl
 		CHAR  szDeviceName; // must be represented by a std::string or a char*
 		CHAR  szFaceName; // must be represented by a std::string or a char*
 		*/
+	};
+
+	/// <summary>
+	/// Extended FNT header for v2.0
+	/// </summary>
+	struct FONTHDR_EX2
+	{
+		DWORD dfBitsOffset;
+		BYTE  dfReserved;
+	};
+
+	/// <summary>
+	/// Extended FNT header for v3.0
+	/// </summary>
+	struct FONTHDR_EX3
+	{
+		DWORD dfBitsOffset;
+		BYTE  dfReserved;
+		DWORD dfFlags;
+		WORD  dfAspace;
+		WORD  dfBspace;
+		WORD  dfCspace;
+		DWORD dfColorPointer;
+		BYTE  dfReserved1[16];
 	};
 #pragma pack(pop)
 
@@ -303,6 +330,21 @@ namespace rl
 	/// </summary>
 	class MicrosoftRasterFont final
 	{
+	public: // types
+
+		using iterator = std::map<uint8_t, MicrosoftRasterChar>::iterator;
+		using const_iterator = std::map<uint8_t, MicrosoftRasterChar>::const_iterator;
+
+
+	public: // operators
+
+		inline iterator begin() { return m_oChars.begin(); }
+		inline const_iterator begin() const { return m_oChars.begin(); }
+
+		inline iterator end() { return m_oChars.end(); }
+		inline const_iterator end() const { return m_oChars.end(); }
+
+
 	public: // methods
 
 		MicrosoftRasterFont() {}
@@ -316,6 +358,12 @@ namespace rl
 		/// </summary>
 		/// <returns>Did the method succeed?</returns>
 		bool create(const uint8_t* pData, size_t size);
+
+		/// <summary>
+		/// Load from FNT file
+		/// </summary>
+		/// <returns>Did the method succeed?</returns>
+		bool loadFromFile(const wchar_t* szPath);
 
 		/// <summary>
 		/// Delete this font's data
@@ -345,12 +393,6 @@ namespace rl
 		inline uint8_t getCharSet() const { return m_oHeader.dfCharSet; }
 
 		/// <summary>
-		/// Get the font's height<para/>
-		/// Return value is only valid if this object contains data
-		/// </summary>
-		inline uint16_t getHeight() const { return m_iHeight; }
-
-		/// <summary>
 		/// Get a character's data
 		/// </summary>
 		/// <param name="ch">= charset ID of the searched char; not unicode!</param>
@@ -363,6 +405,20 @@ namespace rl
 		/// </summary>
 		/// <returns>Did the method succeed?</returns>
 		bool getHeader(FONTHDR& dest) const;
+
+		/// <summary>
+		/// Get the font's extended header data (for v2.0)<para/>
+		/// Fails if this font is not v2.0
+		/// </summary>
+		/// <returns>Did the method succeed?</returns>
+		bool getHeaderEx2(FONTHDR_EX2& dest) const;
+
+		/// <summary>
+		/// Get the font's extended header data (for v3.0)<para/>
+		/// Fails if this font is not v3.0
+		/// </summary>
+		/// <returns>Did the method succeed?</returns>
+		bool getHeaderEx3(FONTHDR_EX3& dest) const;
 
 		/// <summary>
 		/// Get the font's device name
@@ -383,10 +439,12 @@ namespace rl
 		bool containsChar(uint8_t ch) const;
 
 		/// <summary>
-		/// If there was an error, this method returns the correlating error code<para/>
-		/// The error can be evaluated by using the <c>RL_FONPARSER_E_</c> defines</c><para/>
-		/// Return value is <c>RL_FONPARSER_E_NOERROR</c> (0) if no error occured
+		/// If there was an error, this method returns the correlating error code
 		/// </summary>
+		/// <returns>
+		/// If no error occured: <c>RL_FONPARSER_E_NOERROR</c> (0)<para/>
+		/// Else: one of the <c>RL_FONPARSER_E</c> defines
+		/// </returns>
 		inline uint8_t getError() const { return m_iError; }
 
 
@@ -401,6 +459,8 @@ namespace rl
 		uint8_t* m_pData = nullptr;
 		size_t m_iDataSize = 0;
 		FONTHDR m_oHeader = {};
+		FONTHDR_EX2 m_oHeaderEx2 = {};
+		FONTHDR_EX3 m_oHeaderEx3 = {};
 		std::map<uint8_t, MicrosoftRasterChar> m_oChars;
 		uint16_t m_iHeight = 0;
 		uint8_t m_iError = RL_FONPARSER_E_NOERROR;

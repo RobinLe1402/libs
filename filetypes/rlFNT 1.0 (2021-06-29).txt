@@ -89,6 +89,7 @@ All binary data is saved as little endian
 │ (Repeated <iCharCount> times)                                                                    │
 ├───────┬────────────┬─────────────────────────────────────────────────────────────────────────────┤
 │ 4     │ uint32_t   │ iCodepoint: Raw unicode value of this character                             │
+│       │            │ Characters must be saved in ascending order                                 │
 │─ ─ ─ ─│─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
 ¦ 4     ¦ uint32_t   ¦ [ONLY IF iFixedCharWidth IS ZERO]                                           ¦
 ¦       ¦            ¦ iCharWidth: Width of the following character, in pixels                     ¦

@@ -11,7 +11,7 @@
 // OpenGL
 #include <GL/gl.h>
 #pragma comment(lib, "user32.lib")
-#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "OpenGL32.lib")
 
 // DWM

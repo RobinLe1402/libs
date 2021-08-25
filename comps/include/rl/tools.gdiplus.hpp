@@ -13,8 +13,16 @@
 
 
 
+#undef min
+#undef max
+
+#define NOMINMAX
 #include <Windows.h>
+#define min(a, b) (a < b ? a : b)
+#define max(a, b) (a > b ? a : b)
 #include <gdiplus.h>
+#undef min
+#undef max
 
 namespace rl
 {

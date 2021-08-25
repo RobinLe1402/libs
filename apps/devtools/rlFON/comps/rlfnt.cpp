@@ -128,6 +128,27 @@ namespace rl
 		}
 	}
 
+	/// <summary>
+	/// Read a zero-terminated string from RAM
+	/// </summary>
+	/// <returns>Did the method succeed?</returns>
+	bool RAMReadASCIISZ(const uint8_t* pData, size_t size, std::string& sDest)
+	{
+		sDest.clear();
+
+		// get the length
+		size_t len = 0;
+		while (len < size && pData[len] != 0)
+			++len;
+
+		if (len == size)
+			return false;
+
+		sDest.resize(len);
+		memcpy_s(&sDest[0], len, pData, len);
+		return true;
+	}
+
 
 
 
@@ -382,39 +403,6 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// STATIC METHODS
 
-	// static methods
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// OPERATORS
-
-	BitmapFont::Face& BitmapFont::Face::operator=(const Face& other)
-	{
-		destroy();
-		if (!other.m_bData) // other object has no data --> Assignment = destruction; no error
-			return *this;
-
-		create(other.m_iFixedWidth, other.m_iHeight, other.m_iBitsPerPixel, other.m_iPoints,
-			other.m_iWeight, other.m_iFlags, other.m_sFamilyName.c_str(), other.m_sFaceName.c_str(),
-			other.m_sCopyright.c_str());
-
-		m_iFallback = other.m_iFallback;
-
-		m_oChars = other.m_oChars; // copy character data
-
-		return *this;
-	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
-
 	BitmapFont::Face::FileStatus BitmapFont::Face::validate(const wchar_t* szFilename)
 	{
 		HANDLE hFile = CreateFileW(szFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
@@ -573,6 +561,37 @@ namespace rl
 			return status;
 		}
 	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// OPERATORS
+
+	BitmapFont::Face& BitmapFont::Face::operator=(const Face& other)
+	{
+		destroy();
+		if (!other.m_bData) // other object has no data --> Assignment = destruction; no error
+			return *this;
+
+		create(other.m_iFixedWidth, other.m_iHeight, other.m_iBitsPerPixel, other.m_iPoints,
+			other.m_iWeight, other.m_iFlags, other.m_sFamilyName.c_str(), other.m_sFaceName.c_str(),
+			other.m_sCopyright.c_str());
+
+		m_iFallback = other.m_iFallback;
+
+		m_oChars = other.m_oChars; // copy character data
+
+		return *this;
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PUBLIC METHODS
 
 	bool BitmapFont::Face::create(uint16_t fixedwidth, uint16_t height, uint8_t BitsPerPixel,
 		uint16_t iPoints, uint8_t weight, uint8_t iFlags, const char* szFamilyName,
@@ -737,157 +756,46 @@ namespace rl
 	bool BitmapFont::Face::loadFromFile(const wchar_t* szFilename)
 	{
 		destroy();
-		FontFaceHeader ffh;
+
 		HANDLE hFile = CreateFileW(szFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
 			NULL, NULL);
 		if (hFile == INVALID_HANDLE_VALUE)
 			return false;
 
-		try
-		{
-			m_bData = true;
-			LARGE_INTEGER liFileSize;
-			liFileSize.QuadPart = 0;
-			GetFileSizeEx(hFile, &liFileSize);
-			if (liFileSize.QuadPart <= sizeof(ffh))
-				throw 0;
+		DWORD dwFileSize = GetFileSize(hFile, NULL);
 
-			DWORD dwRead = 0;
-#define READ(p, size)										\
-			if (!ReadFile(hFile, p, size, &dwRead, NULL))	\
-				throw 0
-#define READVAR(var) READ(&var, (DWORD)sizeof(var))
+		uint8_t* pData = new uint8_t[dwFileSize];
+		DWORD dwRead = 0;
+		bool b = ReadFile(hFile, pData, dwFileSize, &dwRead, NULL) && dwRead == dwFileSize;
 
+		CloseHandle(hFile);
 
+		if (b)
+			b = loadFromRAM(pData, dwFileSize);
 
-			READVAR(ffh);
+		delete[] pData;
 
-			// check magic number
-			if (memcmp(ffh.sMagicNo, sBitmapFontFaceMagicNumber, 10) != 0)
-			{
-				MessageBoxA(NULL, "rl::BitmapFont::Face: Wrong magic number in rlFNT file",
-					"rlFNT file error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
-				throw 0;
-			}
+		return b;
+	}
 
-			// copy data
-			m_iBitsPerPixel = ffh.iBitsPerPixel;
-			m_iFallback = ffh.iFallback;
-			m_iFixedWidth = ffh.iFixedCharWidth;
-			m_iFlags = ffh.iFlags;
-			m_iHeight = ffh.iCharHeight;
-			m_iPoints = ffh.iPoints;
-			m_iWeight = ffh.iWeight;
-			memcpy_s(m_oFileVersion, 4, ffh.iFileVersion, 4);
-
-			LARGE_INTEGER liFilePtr;
-			SetFilePointerEx(hFile, { 0 }, &liFilePtr, FILE_CURRENT); // save current file pointer
-
-			// READ STRINGS ========================================================================
-			LARGE_INTEGER liJump;
-
-			// family name
-			liJump.QuadPart = ffh.iFamilyNameOffset;
-			SetFilePointerEx(hFile, liJump, NULL, FILE_BEGIN);
-			if (!FileReadASCIISZ(hFile, m_sFamilyName))
-				throw 0;
-
-			// face name
-			liJump.QuadPart = ffh.iFaceNameOffset;
-			SetFilePointerEx(hFile, liJump, NULL, FILE_BEGIN);
-			if (!FileReadASCIISZ(hFile, m_sFaceName))
-				throw 0;
-
-			// copyright
-			liJump.QuadPart = ffh.iCopyrightOffset;
-			SetFilePointerEx(hFile, liJump, NULL, FILE_BEGIN);
-			if (!FileReadASCIISZ(hFile, m_sCopyright))
-				throw 0;
-
-
-			SetFilePointerEx(hFile, liFilePtr, NULL, FILE_BEGIN); // reset file pointer
-
-
-
-			// READ DATA ===========================================================================
-			switch (ffh.iFiletypeVersion[0])
-			{
-			case 1: // 1.X
-				switch (ffh.iFiletypeVersion[1])
-				{
-				case 0: // 1.0
-				{
-					uint32_t iCharCount = 0;
-					READVAR(iCharCount);
-
-					uint32_t iCodepoint = 0;
-					uint32_t iCharWidth = ffh.iFixedCharWidth;
-					Char oCh;
-					size_t size = (iCharWidth > 0 ?
-						Char::DataSize(ffh.iBitsPerPixel, iCharWidth, ffh.iCharHeight) : 0);
-					uint8_t* pBuf = (iCharWidth > 0 ? new uint8_t[size] : nullptr);
-					for (uint64_t i = 0; i < iCharCount; i++)
-					{
-						READVAR(iCodepoint);
-
-						// check if codepoint is already in font face
-						if (m_oChars.find(iCodepoint) != m_oChars.end())
-							throw 0;
-
-						// do stuff for non-fixed-width faces
-						if (ffh.iFixedCharWidth == 0)
-						{
-							delete[] pBuf;
-							READVAR(iCharWidth);
-							size = Char::DataSize(ffh.iBitsPerPixel, iCharWidth, ffh.iCharHeight);
-							pBuf = new uint8_t[size];
-						}
-
-						READ(pBuf, (DWORD)size);
-
-						oCh.create(ffh.iBitsPerPixel, iCharWidth, ffh.iCharHeight, pBuf);
-
-						m_oChars.emplace(iCodepoint, oCh);
-					}
-					delete[] pBuf; // delete last/only buffer
-				}
-				break;
-
-
-
-				default:
-					MessageBoxA(NULL, "rl::BitmapFont::Face: Unknown minor version of rlFNT file",
-						"rlFNT file error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
-					throw 0;
-				}
-				break;
-
-
-
-			default:
-				MessageBoxA(NULL, "rl::BitmapFont::Face: Unknown major version of rlFNT file",
-					"rlFNT file error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
-				throw 0;
-			}
-
-
-
-#undef READVAR
-#undef READ
-
-			CloseHandle(hFile);
-
-			if (m_oChars.find(m_iFallback) == m_oChars.end())
-				return false;
-
-			return true;
-		}
-		catch (...)
-		{
-			CloseHandle(hFile);
-			destroy();
+	bool BitmapFont::Face::loadFromResource(HMODULE hModule, LPCWSTR lpName)
+	{
+		HRSRC hRsrc = FindResourceW(hModule, lpName, L"FONTFACE");
+		if (hRsrc == NULL)
 			return false;
-		}
+
+		HGLOBAL hGlobal = LoadResource(hModule, hRsrc);
+		if (hGlobal == NULL)
+			return false;
+
+		const uint8_t* pData = (const uint8_t*)LockResource(hGlobal);
+		if (pData == NULL)
+			return false;
+
+		size_t size = SizeofResource(hModule, hRsrc);
+
+
+		return loadFromRAM(pData, size);
 	}
 
 	BitmapFont::Char& BitmapFont::Face::add(uint32_t codepoint, uint16_t width)
@@ -1033,6 +941,144 @@ namespace rl
 	{
 		if (m_oChars.find(iCodepoint) == m_oChars.end())
 			throw std::exception("rl::BitmapFont::Face: The codepoint was not occupied");
+	}
+
+	bool BitmapFont::Face::loadFromRAM(const uint8_t* pData, size_t size)
+	{
+		destroy();
+		FontFaceHeader ffh;
+
+		m_bData = true;
+		try // throw 0 --> loading failed
+		{
+			if (size <= sizeof(ffh))
+				throw 0;
+
+			size_t iOffset = 0;
+
+			// DEFINE BEGIN
+#define READ(p, len)																			\
+			if (size - iOffset < len)															\
+				throw 0;																		\
+			memcpy_s(p, len, pData + iOffset, len);												\
+			iOffset += len
+			// DEFINE END
+#define READVAR(var) READ(&var, sizeof(var))
+
+
+
+			READVAR(ffh);
+
+			// check magic number
+			if (memcmp(ffh.sMagicNo, sBitmapFontFaceMagicNumber, 10) != 0)
+			{
+				MessageBoxA(NULL, "rl::BitmapFont::Face: Wrong magic number in rlFNT data",
+					"rlFNT data error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
+				throw 0;
+			}
+
+			// copy data
+			m_iBitsPerPixel = ffh.iBitsPerPixel;
+			m_iFallback = ffh.iFallback;
+			m_iFixedWidth = ffh.iFixedCharWidth;
+			m_iFlags = ffh.iFlags;
+			m_iHeight = ffh.iCharHeight;
+			m_iPoints = ffh.iPoints;
+			m_iWeight = ffh.iWeight;
+			memcpy_s(m_oFileVersion, 4, ffh.iFileVersion, 4);
+
+			// READ STRINGS ========================================================================
+
+			// family name
+			if (!RAMReadASCIISZ(pData + ffh.iFamilyNameOffset, size - ffh.iFamilyNameOffset,
+				m_sFamilyName))
+				throw 0;
+
+			// face name
+			if (!RAMReadASCIISZ(pData + ffh.iFaceNameOffset, size - ffh.iFamilyNameOffset,
+				m_sFaceName))
+				throw 0;
+
+			// copyright
+			if (!RAMReadASCIISZ(pData + ffh.iCopyrightOffset, size - ffh.iFamilyNameOffset,
+				m_sCopyright))
+				throw 0;
+
+
+
+			// READ DATA ===========================================================================
+			switch (ffh.iFiletypeVersion[0])
+			{
+			case 1: // 1.X
+				switch (ffh.iFiletypeVersion[1])
+				{
+				case 0: // 1.0
+				{
+					uint32_t iCharCount = 0;
+					READVAR(iCharCount);
+
+					uint32_t iCodepoint = 0;
+					uint32_t iCharWidth = ffh.iFixedCharWidth;
+					Char oCh;
+					size_t size = (iCharWidth > 0 ?
+						Char::DataSize(ffh.iBitsPerPixel, iCharWidth, ffh.iCharHeight) : 0);
+					uint8_t* pBuf = (iCharWidth > 0 ? new uint8_t[size] : nullptr);
+					for (uint64_t i = 0; i < iCharCount; i++)
+					{
+						READVAR(iCodepoint);
+
+						// check if codepoint is already in font face
+						if (m_oChars.find(iCodepoint) != m_oChars.end())
+							throw 0;
+
+						// do stuff for non-fixed-width faces
+						if (ffh.iFixedCharWidth == 0)
+						{
+							delete[] pBuf;
+							READVAR(iCharWidth);
+							size = Char::DataSize(ffh.iBitsPerPixel, iCharWidth, ffh.iCharHeight);
+							pBuf = new uint8_t[size];
+						}
+
+						READ(pBuf, (DWORD)size);
+
+						oCh.create(ffh.iBitsPerPixel, iCharWidth, ffh.iCharHeight, pBuf);
+
+						m_oChars.emplace(iCodepoint, oCh);
+					}
+					delete[] pBuf; // delete last/only buffer
+				}
+				break;
+
+
+
+				default:
+					MessageBoxA(NULL, "rl::BitmapFont::Face: Unknown minor version of rlFNT data",
+						"rlFNT data error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
+					throw 0;
+				}
+				break;
+
+
+
+			default:
+				MessageBoxA(NULL, "rl::BitmapFont::Face: Unknown major version of rlFNT data",
+					"rlFNT data error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
+				throw 0;
+			}
+
+
+
+#undef READVAR
+#undef READ
+		}
+		catch (...)
+		{
+			destroy();
+			return false;
+		}
+
+		return true;
 	}
 
 

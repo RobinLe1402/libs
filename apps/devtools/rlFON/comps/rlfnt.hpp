@@ -25,6 +25,7 @@ typedef unsigned int uint32_t;
 
 #include <map>
 #include <string>
+#include <Windows.h>
 
 
 
@@ -326,8 +327,14 @@ namespace rl
 			/// <summary>
 			/// Load the bitmap font face from a rlFNT file
 			/// </summary>
-			/// <returns>Was the file loaded successfully?</returns>
+			/// <returns>Was the font face loaded successfully?</returns>
 			bool loadFromFile(const wchar_t* szFilename);
+
+			/// <summary>
+			/// Load the bitmap font face from a <c>FONTFACE</c> resource
+			/// </summary>
+			/// <returns>Was the font face loaded successfully?</returns>
+			bool loadFromResource(HMODULE hModule, LPCWSTR lpName);
 			
 
 
@@ -535,6 +542,14 @@ namespace rl
 			/// Throws an <c>std::exception</c> if there is not
 			/// </summary>
 			void checkCharSet(uint32_t iCodepoint) const;
+
+			/// <summary>
+			/// Load the bitmap font face from memory
+			/// </summary>
+			/// <param name="pData">= a pointer to the data</param>
+			/// <param name="size">= the size, in bytes, of the data</param>
+			/// <returns>Was the font face loaded successfully?</returns>
+			bool loadFromRAM(const uint8_t* pData, size_t size);
 
 
 		private: // variables

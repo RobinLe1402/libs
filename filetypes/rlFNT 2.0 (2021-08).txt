@@ -1,0 +1,870 @@
+﻿Designed for desktop text editors
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+
+
+THE ROBINLE FONTFACE DATA FORMAT v2.0
+Robin Lemanska
+
+╔════════════════════════╗
+║                        ║
+║  ████████████▀ ██████  ║
+║  ████████████ ██████   ║
+║  █████▀▀▀▀▀▀ ▄█████▀   ║
+║  █████       ██████    ║
+║  █████      ██████     ║
+║  █████     ██████      ║
+║  █████    ▄█████▀      ║
+║  █████   ▄██████▄▄▄▄▄  ║
+║  █████   ████████████  ║
+║  █████  █████████████  ║
+║                        ║
+║ https://www.robinle.de ║
+╚════════════════════════╝
+
+
+
+
+
+
+
+
+
+
+Information in this document is subject to change without notice.
+
+© Copyright Robin Lemanska, 2021
+
+
+
+
+
+
+
+
+
+
+CONTENTS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+#   TITLE                                   LINE
+
+
+0   About This Document                     142
+
+1   Introduction                            190
+    1.1     Introduction                    206
+    1.2     General concept                 224
+    1.3     Usage concept                   262
+
+2   Data structure                          296
+    2.1     Introduction                    315
+    2.2     Overhead                        349
+    2.3     Header                          391
+    2.4     Character table                 616
+    2.5     Graphics data                   668
+    2.6     String table                    852
+
+
+
+
+
+
+
+
+
+
+STRUCT TABLE
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+NAME                                    LINE
+
+FontFaceOverhead                        368
+FontFaceHeader                          417
+FontFaceCharInfo                        617
+
+
+
+
+
+
+
+
+
+
+FLAG TABLE
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+NAME                                    LINE
+
+General font face flags                 542
+Font face padding flags                 576
+
+
+
+
+
+
+
+
+
+
+ENUM TABLE
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+NAME                                    LINE
+
+FontFaceBinaryFormat                    521,668
+FontFaceClassification                  529
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CHAPTER 0
+ABOUT THIS DOCUMENT
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+This document is designed to combine the storage efficiency of text files with the design options
+that the Unicode character set provides (mostly box drawing characters).
+
+As mentioned at the top, this file should be viewed in a desktop text editor - preferrably
+Notepad++, which I am also using to create this document. But in practice, every text file viewer
+that supports UTF-8 and uses monospaced fonts should work.
+Also, the minimum required width for this document's content to displayed as intended is 100
+characters. You can use the horizontal rulers all over this document for reference.
+
+The general layout and design of this document is based on Microsoft's documentations from the '80s
+(like the Microsoft Windows 1.03 SDK Programmer's Reference).
+
+
+For the listing of data fields, I'll use the types of the C standard:
+    char        A single-byte character
+    uint8_t     An unsigned 8-bit integer
+    uint16_t    An unsigned 16-bit integer
+    uint32_t    An unsigned 32-bit integer
+
+Hexadecimal values might be identified with the prefix "$" like so:
+    $7F
+
+Arrays might be represented by a comma-seperated list of values inside curly brackets, like so:
+    { $01, $1F }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CHAPTER 1
+INTRODUCTION
+────────────────────────────────────────────────────────────────────────────────────────────────────
+1.1     Introduction                    206
+1.2     General concept                 224
+1.3     Usage concept                   262
+
+
+
+
+
+
+
+
+
+
+1.1 INTRODUCTION
+
+
+
+This document describes the concept, structure and usage of the RobinLe FontFace data format,
+version 2.0 (version 1.0 was specified, but never used in any RobinLe end consumer software).
+
+Files containing such data have the file extension ".rlFNT".
+
+
+
+
+
+
+
+
+
+
+1.2 GENERAL CONCEPT
+
+
+
+The RobinLe FontFace format is a unicode-based raster font format for use in games, primarily
+designed for use within Microsoft Windows.
+Due to the option of both direct and indirect color, it is efficient both for modern, texture-based
+games, as well as retro graphics that are generated live, as seen on old 8- and 16-bit gaming
+consoles, like the NES or the SNES.
+
+Additionally, the data is structured in a way that makes fast loading and access of the data
+possible.
+
+If you want to use a font face generically, system-wide, please note that only certain formats are
+fitting for generic use, as some font faces have no standard interpretation of the graphics data -
+with these faces, the application itself determines how to actually display the font, based on
+unsigned integer values that represent the pixels.
+
+The following options exist for generic use:
+~ Font faces with 1 bit per pixel can be treated like a regular bitmap font, as there are only two
+  options per pixel: 0 (transparent) and 1 (opaque).
+~ If a font has a bit depth of 24 and <iBinaryFormat> is RGB, the integer values represent RGB data
+  (--> 2.5).
+~ If a font has a bit depth of 32 and <iBinaryFormat> is RGBA, the integer values represent RGBA
+  data (--> 2.5).
+
+Also, you might look out for the GENERICUSE flag. If it's not set, it might not be a good idea to
+try and use the face in your application for generic use.
+
+
+
+
+
+
+
+
+
+
+1.3 USAGE CONCEPT
+
+
+
+The RobinLe FontFace data format is designed to be usable in multiple different ways:
+
+~ It might come as a standalone file with the extension ".rlFNT" (overhead is mandatory --> 2.2)
+~ It might come as an application resource of type "FONTFACE" (overhead is mandatory --> 2.2)
+~ It might come as part of a font file that contains multiple faces
+  (see "rlFON" format specification)
+~ It might come as part of a single file representing multiple virtual files
+
+As the first data field represents the total count of bytes the face occupies (--> 2.3), it's quite
+simple to extract the core data necessary for usage.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CHAPTER 2
+DATA STRUCTURE
+────────────────────────────────────────────────────────────────────────────────────────────────────
+2.1     Introduction                    315
+2.2     Overhead                        349
+2.3     Header                          391
+2.4     Character table                 616
+2.5     Graphics data                   668
+2.6     String table                    852
+
+
+
+
+
+
+
+
+
+
+2.1 INTRODUCTION
+
+
+
+rlFNT files have a simple, block-based structure:
+
+┌───────┬─────────────────┐
+│ BYTES │ SEGMENT         │
+╞═══════╪═════════════════╡
+│ 12    │ Overhead        │
+├───────┼─────────────────┤
+│ 44    │ Header          │
+├───────┼─────────────────┤
+│ 16x?  │ Character table │
+├───────┼─────────────────┤
+│ ?     │ Graphics data   │
+├───────┼─────────────────┤
+│ 3+    │ String table    │
+└───────┴─────────────────┘
+
+Figure 1: The segments of a rlFNT file
+
+
+As this format is very Windows-oriented, all data is saved as little endian.
+
+
+
+
+
+
+
+
+
+
+2.2 OVERHEAD
+
+
+
+While it might be useful, the overhead is only mandatory for rlFNT files as well as resources of
+custom type "FONTFACE". Within other structures, this field might be missing in favor of a
+different identification method.
+
+
+     ╓────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+     ║ 00 │ 01 │ 02 │ 03 │ 04 │ 05 │ 06 │ 07 │ 08 │ 09 │ 0A │ 0B │ 0C │ 0D │ 0E │ 0F │
+╒════╬════╧════╧════╧════╧════╧════╧════╧════╧════╧════╪════╧════╪════╪════╪════╪════╡
+│ 00 ║ #0                                              │ #1      │    
+├────╫────┬────┬────┬────┬────┬────┬────┬────┬────┬────┼────┬────┼
+
+Figure 2: Overhead map
+
+
+┌───────┬───────┬────────────┬─────────────────────────────────────────────────────────────────────┐
+│ FIELD │ BYTES │ TYPE       │ DETAILS                                                             │
+╞═══════╪═══════╪════════════╪═════════════════════════════════════════════════════════════════════╡
+│ #0    │ 10    │ char[]     │ sMagicNo - The ASCII string "rlFONTFACE" (not null-terminated).     │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #1    │ 2     │ uint8_t[]  │ iFileTypeVersion - An array of two bytes representing the file      │
+│       │       │            │ format version; currently 2.0 --> { $02, $00 }.                     │
+└───────┴───────┴────────────┴─────────────────────────────────────────────────────────────────────┘
+
+Figure 3: FontFaceOverhead struct
+
+
+The overhead's only function is to confirm that the file is of the correct type (and version). It's
+values are constant and shall not be modified.
+
+
+
+
+
+
+
+
+
+
+2.3 HEADER
+
+
+
+The header contains all information necessary to parse the remaining data. It also contains some
+constants for the application, so that no calculation of these values is needed.
+
+All offsets given in the header are relative to the start of the header.
+
+
+     ╓────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+     ║ 00 │ 01 │ 02 │ 03 │ 04 │ 05 │ 06 │ 07 │ 08 │ 09 │ 0A │ 0B │ 0C │ 0D │ 0E │ 0F │
+╒════╬════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╪════╧════╧════╧════╡
+│ 00 ║ <OVERHEAD>                                                │ #1                │
+├────╫───────────────────┬───────────────────┬───────────────────┼───────────────────┤
+│ 10 ║ #2                │ #3                │ #4                │ #5                │
+├────╫───────────────────┼───────────────────┼───────────────────┼─────────┬─────────┤
+│ 20 ║ #6                │ #7                │ #8                │ #9      │ #10     │
+├────╫─────────┬─────────┼────┬────┬────┬────┼───────────────────┼────┬────┼────┬────┤
+│ 30 ║ #11     │ #12     │#13 │#14 │#15 │#16 │ #17               │
+├────╫────┬────┼────┬────┼────┼────┼────┼────┼────┬────┬────┬────┼
+
+Figure 4: Header map
+
+
+┌───────┬───────┬────────────┬─────────────────────────────────────────────────────────────────────┐
+│ FIELD │ BYTES │ TYPE       │ DETAILS                                                             │
+╞═══════╪═══════╪════════════╪═════════════════════════════════════════════════════════════════════╡
+│ #1    │ 4     │ uint32_t   │ iDataSize - The total size of the font face data, from the header   │
+│       │       │            │ to the string table (including both).                               │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #2    │ 4     │ uint32_t   │ iCharCount - The count of characters defined in this font face.     │
+│       │       │            │ This value cannot be zero, as every face needs at least one         │
+│       │       │            │ defined character.                                                  │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #3    │ 4     │ uint32_t   │ iFallbackChar - The unicode codepoint that should be used if a      │
+│       │       │            │ requested codepoint is not defined in this font face.               │
+│       │       │            │ This character must be defined in this face.                        │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #4    │ 4     │ uint32_t   │ iOffsetFontFamName - The offset of the first character of the font  │
+│       │       │            │ family name string (--> 2.6).                                       │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #5    │ 4     │ uint32_t   │ iOffsetFontFaceName - The offset of the first character of the font │
+│       │       │            │ face name string (--> 2.6).                                         │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #6    │ 4     │ uint32_t   │ iOffsetCopyright - The offset of the first character of the         │
+│       │       │            │ copyright string (--> 2.6).                                         │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #7    │ 4     │ uint32_t   │ iOffsetCharTable - The offset of the character table.               │
+│       │       │            │ In format version 2.0, this field is a constant with the value      │
+│       │       │            │ $00000030 (right after the header).                                 │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #8    │ 2     │ uint32_t   │ iBytesPerColumn - The count of bytes each pixel column occupies.    │
+│       │       │            │ This value is calculated like this, depending on <iBinaryFormat>:   │
+│       │       │            │                                                                     │
+│       │       │            │      BITPLANES   <iBitsPerPixel> * ceil(<iCharHeight> / 8)          │
+│       │       │            │                                                                     │
+│       │       │            │      FULLBYTES/  <iBitsPerPixel> / 8 * <iCharHeight>                │
+│       │       │            │      RGB/RGBA                                                       │
+│       │       │            │                                                                     │
+│       │       │            │ ["ceil(x)" is x, rounded to the next bigger integer]                │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #9    │ 2     │ uint16_t   │ iGlobalCharWidth - If the font is fixed-pitch, this field is        │
+│       │       │            │ nonzero and represents the global character width, in pixels.       │
+│       │       │            │ If the font is variable-pitch, this field is zero.                  │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #10   │ 2     │ uint16_t   │ iCharHeight - The height of all characters, in pixels.              │
+│       │       │            │ Cannot be zero.                                                     │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #11   │ 2     │ uint16_t   │ iWeight - The weight of the font.                                   │
+│       │       │            │ Standard values are (via Common Locale Data Repository):            │
+│       │       │            │      100     Thin                                                   │
+│       │       │            │      200     Ultra Light/Extra Light                                │
+│       │       │            │      300     Light                                                  │
+│       │       │            │      350     Semi Light                                             │
+│       │       │            │      380     Book                                                   │
+│       │       │            │      400     Regular                                                │
+│       │       │            │      500     Medium                                                 │
+│       │       │            │      600     Semi Bold/Demi Bold                                    │
+│       │       │            │      700     Bold                                                   │
+│       │       │            │      800     Extra Bold/Ultra Bold                                  │
+│       │       │            │      900     Heavy/Black                                            │
+│       │       │            │      950     Extra Black/Ultra Black/Ultra Heavy                    │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #12   │ 2     │ uint16_t   │ iFlags - Some flags regarding the look and character range of the   │
+│       │       │            │ face (see Figure 6 for the bit arrangement):                        │
+│       │       │            │                                                                     │
+│       │       │            │      MONOSPACED      The font is fixed-pitch. Field #9 must be      │
+│       │       │            │                      nonzero.                                       │
+│       │       │            │                                                                     │
+│       │       │            │      PADDED          The graphics have a padding for optical        │
+│       │       │            │                      character separation.                          │
+│       │       │            │                      <iPaddingFlags> is nonzero.                    │
+│       │       │            │                                                                     │
+│       │       │            │      UNPADDED        The graphics have no padding for optical       │
+│       │       │            │                      character separation.                          │
+│       │       │            │                      <iPaddingFlags> is zero.                       │
+│       │       │            │                                                                     │
+│       │       │            │      ITALIC          The face is cursive.                           │
+│       │       │            │                                                                     │
+│       │       │            │      DIRECTCOLOR     The pixel values represent direct color.       │
+│       │       │            │                      One of two cases must apply:                   │
+│       │       │            │                      ~ <iBitsPerPixel> is 24, the ALPHA flag is not │
+│       │       │            │                        set, <iBinaryFormat> is RGB                  │
+│       │       │            │                      ~ <iBitsPerPixel> is 32, the ALPHA flag is     │
+│       │       │            │                        set, <iBinaryFormat> is RGBA                 │
+│       │       │            │                                                                     │
+│       │       │            │      INDIRECTCOLOR   The pixel values represent a zero-based index  │
+│       │       │            │                      for coloring via a seperate color palette.     │
+│       │       │            │                      <iBinaryFormat> must be either BITPLANES or    │
+│       │       │            │                      FULLBYTES.                                     │
+│       │       │            │                                                                     │
+│       │       │            │      ALPHA           The pixel values include an alpha channel.     │
+│       │       │            │                      If this flag is set, the DIRECTCOLOR flag must │
+│       │       │            │                      also be set.                                   │
+│       │       │            │                                                                     │
+│       │       │            │      NONASCII        The font face covers characters beyond the     │
+│       │       │            │                      ASCII character set (international or non-text │
+│       │       │            │                      characters).                                   │
+│       │       │            │                                                                     │
+│       │       │            │      SYMBOLS         The font face covers non-text characters.      │
+│       │       │            │                      If this flag is set, the NONASCII flag must    │
+│       │       │            │                      also be set.                                   │
+│       │       │            │                                                                     │
+│       │       │            │      EMOJI           The font face covers emoji characters.         │
+│       │       │            │                      If this flag is set, the SYMBOLS flag must     │
+│       │       │            │                      also be set.                                   │
+│       │       │            │                                                                     │
+│       │       │            │      PRIVATEUSEAREA  The font face covers custom characters in the  │
+│       │       │            │                      private use area.                              │
+│       │       │            │                                                                     │
+│       │       │            │      GENERICUSE      The font face was created for generic use in   │
+│       │       │            │                      any application.                               │
+│       │       │            │                                                                     │
+│       │       │            │      SPECIALUSE      The font face was created for a certain use or │
+│       │       │            │                      application and can't be used generically.     │
+│       │       │            │                                                                     │
+│       │       │            │      HIGHRES         The font face has a high resolution as seen in │
+│       │       │            │                      modern games.                                  │
+│       │       │            │                                                                     │
+│       │       │            │      LOWRES          The font face has a low resolution as seen on  │
+│       │       │            │                      old gaming consoles like the NES or SNES, or   │
+│       │       │            │                      on MS-DOS/early Windows.                       │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #13   │ 1     │ uint8_t    │ iBitsPerPixel - The count of bits associated with a single pixel.   │
+│       │       │            │ A value between 1 and 32.                                           │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #14   │ 1     │ uint8_t    │ iBinaryFormat - The format the binary data should be stored in      │
+│       │       │            │ (--> 2.5):                                                          │
+│       │       │            │      $00     BITPLANES                                              │
+│       │       │            │      $01     FULLBYTES                                              │
+│       │       │            │      $02     RGB                                                    │
+│       │       │            │      $03     RGBA                                                   │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #15   │ 4     │ uint8_t    │ iPaddingFlags - Where are the graphics padded? (See Figure 7)       │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #16   │ 4     │ uint8_t    │ iClassification - What is the classification of this font face?     │
+│       │       │            │      $00     SANSSERIF   A normal font with no serifs.              │
+│       │       │            │      $01     SERIF       A normal font with serifs.                 │
+│       │       │            │      $02     SCRIPT      A font imitating handwriting of some sort. │
+│       │       │            │      $03     DECORATIVE  A font designed to look fancy.             │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #17   │ 4     │ uint8_t[]  │ iFaceVersion - An array of four bytes representing the version of   │
+│       │       │            │ the font face; default is 1.0.0.0 --> { $01, $00, $00, $00 }.       │
+└───────┴───────┴────────────┴─────────────────────────────────────────────────────────────────────┘
+
+Figure 5: FontFaceHeader struct
+
+
+
+┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┐
+│F │E │D │C │B │A │9 │8 │7 │6 │5 │4 │3 │2 │1 │0 │
+└──┴──┴┼─┴┼─┴┼─┴┼─┴┼─┴┼─┴──┴──┴┼─┴┼─┴──┴┼─┴┼─┴┼─┘
+       │  │  │  │  │  │        │  │     │  │  └── 1 if the face is MONOSPACED
+       │  │  │  │  │  │        │  │     │  │
+       │  │  │  │  │  │        │  │     │  └───── 1 if graphics are PADDED
+       │  │  │  │  │  │        │  │     │         0 if graphics are UNPADDED
+       │  │  │  │  │  │        │  │     │
+       │  │  │  │  │  │        │  │     └──────── 1 if the face is ITALIC
+       │  │  │  │  │  │        │  │
+       │  │  │  │  │  │        │  └────────────── 1 if pixel values are DIRECTCOLOR
+       │  │  │  │  │  │        │                  0 if pixel values are INDIRECTCOLOR
+       │  │  │  │  │  │        │
+       │  │  │  │  │  │        └───────────────── 1 if directcolor and ALPHA
+       │  │  │  │  │  │
+       │  │  │  │  │  └────────────────────────── 1 if the face includes NONASCII characters
+       │  │  │  │  │
+       │  │  │  │  └───────────────────────────── 1 if the face includes SYMBOLS like emojis
+       │  │  │  │
+       │  │  │  └──────────────────────────────── 1 if the face includes EMOJI
+       │  │  │
+       │  │  └─────────────────────────────────── 1 if the face includes PRIVATEUSEAREA characters
+       │  │
+       │  └────────────────────────────────────── 1 if the face is for GENERICUSE
+       │                                          0 if the face is for SPECIALUSE
+       │
+       └───────────────────────────────────────── 1 if the face is HIGHRES
+                                                  0 if the face is LOWRES
+
+Figure 6: General font face flags
+
+
+
+┌──┬──┬──┬──┬──┬──┬──┬──┐
+│7 │6 │5 │4 │3 │2 │1 │0 │
+└──┴──┴──┴──┴┼─┴┼─┴┼─┴┼─┘
+             │  │  │  └── 1 if padded LEFT
+             │  │  │
+             │  │  └───── 1 if padded TOP
+             │  │
+             │  └──────── 1 if padded RIGHT
+             │
+             └─────────── 1 if padded BOTTOM
+
+Figure 7: Font face padding flags
+
+
+
+
+
+
+
+
+
+
+2.4 CHARACTER TABLE
+
+
+
+Right after the header comes the character table.
+It contains <iCharCount> entries in the format described below.
+
+
+     ╓────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+     ║ 00 │ 01 │ 02 │ 03 │ 04 │ 05 │ 06 │ 07 │ 08 │ 09 │ 0A │ 0B │ 0C │ 0D │ 0E │ 0F │
+╒════╬════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╪════╧════╧════╧════╡
+│ ?? ║ <...>                                                     │ #1                │
+├────╫───────────────────┬───────────────────┬─────────┬─────────┼────┬────┬────┬────┤
+│ ?? ║ #2                │ #3                │ #4      │ #5      │
+├────╫────┬────┬────┬────┼────┬────┬────┬────┼────┬────┼────┬────┼
+
+Figure 8: Character table entry map
+
+
+┌───────┬───────┬────────────┬─────────────────────────────────────────────────────────────────────┐
+│ FIELD │ BYTES │ TYPE       │ DETAILS                                                             │
+╞═══════╪═══════╪════════════╪═════════════════════════════════════════════════════════════════════╡
+│ #1    │ 4     │ uint32_t   │ iCodepoint - The raw unicode value of the character                 │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #2    │ 4     │ uint32_t   │ iDataSize - The size, in bytes, of the graphics data for this       │
+│       │       │            │ character.                                                          │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #3    │ 4     │ uint32_t   │ iOffsetData - The offset, relative to the start of the header, of   │
+│       │       │            │ the graphics data for this character.                               │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #4    │ 2     │ uint16_t   │ iCharWidth - The width of this character. If the font face is       │
+│       │       │            │ fixed-pitch, this field must be the same as <iGlobalCharWidth>.     │
+│       │       │            │ Cannot be zero.                                                     │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #5    │ 2     │ uint16_t   │ iUnused - Padding to get back into DWORD alignment.                 │
+└───────┴───────┴────────────┴─────────────────────────────────────────────────────────────────────┘
+
+Figure 9: FontFaceCharInfo struct, representing a single character table entry
+
+
+Please note that the entries of the character table must be sorted by codepoint, in ascending order.
+Also, duplicate entries for a single codepoint value are illegal.
+
+
+
+
+
+
+
+
+
+
+2.5 GRAPHICS DATA
+
+
+
+The graphics data should be saved in the same order as the characters appeared in the character
+table (sorted by codepoint, ascending). Also, two characters cannot use the same graphics data.
+
+The format of the graphics data is dependant on both <iBitsPerPixel> and <iBinaryFormat>. But all
+formats share a few things:
+
+~ The data is saved per column, top to bottom pixel
+~ Each column's data ends with a full byte, all unused bits are set to zero
+~ Column data is saved from left to right column
+
+
+Now on to a detailed list of all possible formats, sorted by <iBinaryFormat>:
+
+
+    VALUE       DESCRIPTION
+
+    BITPLANES   This format was created for font faces with a value of <iBitsPePixel> that is not a
+                multiple of 8, but especially for low values (1 through 7).
+                It's very similar to how the SNES stored it's graphics.
+                
+                ~ The data is divided into <iBitsPerPixel> bitplanes per column.
+                ~ The n'th bitplane of a column consists of the n'th bits of all pixels in that 
+                  column, concatenated from top to bottom.
+                ~ The output bits are written from "left" (most significant bit) to "right"
+                  (least significant bit), which means that, if <iCharHeight> is not a multiple
+                  of eight, each bitplane must be padded with zeros on the right to reach byte
+                  alignment.
+                ~ The least significant bitplane is saved first.
+                
+                If this explanation is overwhelming to you, Figure 10 might help you understand this
+                format better.
+                
+                
+                EXAMPLE:
+                
+                                    ┌────────────┐
+                1. Image            │▒▒██████▒▒  │
+                   (2 bits per      │██      ██  │
+                    pixel;          │██          │
+                    "  " = 0,       │██          │
+                    "██" = 1,       │▒▒██████▒▒  │
+                    "▒▒" = 2)       │        ██  │
+                                    │        ██  │
+                                    │██      ██  │
+                                    │▒▒██████▒▒  │
+                                    │            │
+                                    └────────────┘
+                
+                2. Pixel values:    2 1 1 1 2 0
+                                    1 0 0 0 1 0
+                                    1 0 0 0 0 0
+                                    1 0 0 0 0 0
+                                    2 1 1 1 2 0
+                                    0 0 0 0 1 0
+                                    0 0 0 0 1 0
+                                    1 0 0 0 1 0
+                                    2 1 1 1 2 0
+                                    0 0 0 0 0 0
+                
+                
+                2. Binary values:   11 01 01 01 11 00
+                                    01 00 00 00 01 00
+                                    01 00 00 00 00 00
+                                    01 00 00 00 00 00
+                                    11 01 01 01 11 00
+                                    00 00 00 00 01 00
+                                    00 00 00 00 01 00
+                                    01 00 00 00 01 00
+                                    11 01 01 01 11 00
+                                    00 00 00 00 00 00               padding
+                                    ││ ││ ││ ││ ││ ││               vv vvvv            │
+                3. Bit layers    #0 │╘═╪╪═╪╪═╪╪═╪╪═╪╪═>1111 1001  1000 0000     = { $F9, $80 }
+                   (per column): #1 ╘══╪╪═╪╪═╪╪═╪╪═╪╪═>1000 1000  1000 0000     = { $88, $80 }
+                                       ││ ││ ││ ││ ││                                  │
+                                 #0    │╘═╪╪═╪╪═╪╪═╪╪═>1000 1000  1000 0000     = { $88, $80 }
+                                 #1    ╘══╪╪═╪╪═╪╪═╪╪═>0000 0000  0000 0000     = { $00, $00 }
+                                          ││ ││ ││ ││                                  │
+                                 #0       │╘═╪╪═╪╪═╪╪═>1000 1000  1000 0000     = { $88, $80 }
+                                 #1       ╘══╪╪═╪╪═╪╪═>0000 0000  0000 0000     = { $00, $00 }
+                                             ││ ││ ││                                  │
+                                 #0          │╘═╪╪═╪╪═>1000 1000  1000 0000     = { $88, $80 }
+                                 #1          ╘══╪╪═╪╪═>0000 0000  0000 0000     = { $00, $00 }
+                                                ││ ││                                  │
+                                 #0             │╘═╪╪═>1100 1111  1000 0000     = { $CF, $80 }
+                                 #1             ╘══╪╪═>1000 1000  1000 0000     = { $88, $80 }
+                                                   ││                                  │
+                                 #0                │╘═>0000 0000  0000 0000     = { $00, $00 }
+                                 #1                ╘══>0000 0000  0000 0000     = { $00, $00 }
+                                                                                       │
+                                    ┌──────────────────────────────────────────────────┘
+                                    │
+                4. Serialized data: └─> { $F9, $80, $88, $80, $88, $80, $00, $00,
+                                          $88, $80, $00, $00, $88, $80, $00, $00,
+                                          $CF, $80, $88, $80, $00, $00, $00, $00 }
+                
+                Figure 10: Bitplane format serialization
+    
+    
+    
+    FULLBYTES   While BITPLANES might be good for saving few bits per pixel, it requires quite some
+                computing to get the actual values out of the serialized data.
+                With <iBitsPerPixel> values that are a multiple of 8, or if you (really) prioritize
+                speed over storage efficiancy, you can use this format.
+                The pixel values are directly saved, padded to full bytes.
+                
+                The bytes are still saved from top to bottom pixel, from left to right column.
+                But now, the pixel values get saved directly, one after the other, as chains of full
+                bytes.
+                One thing to note is that the values get saved like an array of bytes, least
+                significant first - basically, it's like saving binary values to disk (still little
+                endian), but 24-bit integers are also saved without an empty padding byte.
+                
+                
+                
+                EXAMPLE:
+                
+                                    ┌────────────┐
+                1. Image            │▒▒██████▒▒  │
+                   (2 bits per      │██      ██  │
+                    pixel;          │██          │
+                    "  " = 0,       │▒▒██████▒▒  │
+                    "██" = 1,       │        ██  │
+                    "▒▒" = 2)       │██      ██  │
+                                    │▒▒██████▒▒  │
+                                    │            │
+                                    └────────────┘
+                
+                2. Pixel values:    2 1 1 1 2 0
+                                    1 0 0 0 1 0
+                                    1 0 0 0 0 0
+                                    2 1 1 1 2 0
+                                    0 0 0 0 1 0
+                                    1 0 0 0 1 0
+                                    2 1 1 1 2 0
+                                    0 0 0 0 0 0
+                                    │ │ │ │ │ │   {
+                3. Bytes saved:     ╘═╪═╪═╪═╪═╪═>   { $02, $01, $01, $02, $00, $01, $02, $00 },
+                                      ╘═╪═╪═╪═╪═>   { $01, $00, $00, $01, $00, $00, $01, $00 },
+                                        ╘═╪═╪═╪═>   { $01, $00, $00, $01, $00, $00, $01, $00 },
+                                          ╘═╪═╪═>   { $01, $00, $00, $01, $00, $00, $01, $00 },
+                                            ╘═╪═>   { $02, $01, $00, $02, $01, $01, $02, $00 },
+                                              ╘═>   { $00, $00, $00, $00, $00, $00, $00, $00 }
+                                                  }
+                                              
+                Figure 11: Full byte format serialization
+                
+                
+                This example is at the same time an example of how you shouldn't use this mode:
+                For a low count of bits. In this case, 6 out of the 8 bits of every pixel are always
+                zero as only 2 bits are used. This means that 75% of the storage are wasted.
+    
+    
+    
+    RGB         Basically the FULLBYTES mode, but can only be used if <iBitsPerPixel> is 24 and the
+                DIRECTCOLOR flag, but not the ALPHA flag is set.
+                
+                This mode guarantees that the three bytes per pixel are saved in the proper order,
+                <R><G><B>.
+                
+                Once again, pixels top to bottom, columns left to right.
+    
+    
+    
+    RGBA        Basically the FULLBYTES mode, but can only be used if <iBitsPerPixel> is 32 and the
+                DIRECTCOLOR flag as well as the ALPHA flag are set.
+                
+                This mode guarantees that the four bytes per pixel are saved in the proper order,
+                <R><G><B><A>.
+                
+                Once again, pixels top to bottom, columns left to right.
+
+
+
+
+
+
+
+
+
+
+2.6 STRING TABLE
+
+
+
+Right after the end of the graphics data comes the string table.
+The string table is simply a series of zero-terminated, ASCII-only character strings; type char[].
+Even if a string is not set, The terminating zero must be there.
+Multiple texts cannot be represented by the same data. If two strings are identical, there are
+still two instances of the string in the string table.
+
+The strings appear in the same order as in the header:
+    <Font family name>
+    <NULL>
+    <Font face name>
+    <NULL>
+    <Copyright string>
+    <NULL>
+
+The file must end after the last terminating zero.

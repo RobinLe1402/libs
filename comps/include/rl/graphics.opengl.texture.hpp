@@ -129,6 +129,35 @@ namespace rl
 	};
 
 	const Pixel BlankPixel = Pixel::ByRGBA(0);
+	namespace Color
+	{
+#define DECLARE_PIXEL(name, hex) const Pixel name = Pixel::ByRGB(0x##hex)
+
+		DECLARE_PIXEL(White, FFFFFF);
+		DECLARE_PIXEL(Black, 000000);
+
+#undef DECLARE_PIXEL
+	}
+
+
+	/// <summary>
+	/// Determine how two pixels should be added up
+	/// </summary>
+	enum class PixelAddMode
+	{
+		Copy, // overwrite bottom pixel, including alpha
+		OpaquePart, // overwrite bottom pixel if top pixel is at least partly visible
+		OpaqueFull, // overwrite bottom pixel if top pixel is opaque (alpha = 255)
+		Transparent // calculate new value, respecting both pixel's alpha values
+	};
+
+	/// <summary>
+	/// Add up two pixels
+	/// </summary>
+	/// <param name="bottom">= the original pixel</param>
+	/// <param name="top">= the pixel to be added</param>
+	/// <param name="mode">= how should the output pixel be calculated?</param>
+	Pixel AddPixels(Pixel bottom, Pixel top, PixelAddMode mode);
 
 
 
@@ -244,7 +273,27 @@ namespace rl
 		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
 		/// Calling thread must have a current OpenGL rendering context
 		/// </summary>
-		void draw(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom);
+		void drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom);
+
+
+
+		/// <summary>
+		/// Draw a texture onto this texture
+		/// </summary>
+		/// <param name="alpha">
+		/// Should the alpha values be considered?<para/>
+		/// <para/>
+		/// <c>true</c>: The new pixels will be calculated based on the alpha values<para/>
+		/// <c>false</c>: The new pixels will be copied 1:1 from the source texture, including alpha
+		/// </param>
+		void draw(OpenGLTexture texture, GLsizei x, GLsizei y, bool alpha);
+
+
+
+		/// <summary>
+		/// Clear the texture to a certain color
+		/// </summary>
+		void clear(Pixel val = BlankPixel);
 
 
 
@@ -261,6 +310,15 @@ namespace rl
 		/// Throws an <c>std:exception</c> if the coordinates are invalid or if there is no texture
 		/// </summary>
 		Pixel getPixel(GLsizei x, GLsizei y) const;
+
+
+		/// <summary>
+		/// Draw a pixel on top of a pixel (respects alpha values)<para/>
+		/// Throws an <c>std:exception</c> if the coordinates are invalid or if there is no
+		/// texture<para/>
+		/// Changes won't be displayed until <c>upload()</c> is called
+		/// </summary>
+		void drawPixel(GLsizei x, GLsizei y, Pixel val);
 
 
 

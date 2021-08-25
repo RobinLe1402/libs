@@ -1,3 +1,5 @@
+#define NOMINMAX
+
 #include "graphics.opengl.texture.hpp"
 #include "tools.gdiplus.hpp"
 
@@ -9,7 +11,7 @@
 #include <gl/GL.h>
 
 // GDI+
-#include <gdiplus.h>
+//#include <gdiplus.h> // --> graphics.opengl.texture.hpp
 
 // SHCreateMemStream
 #include <Shlwapi.h>
@@ -21,6 +23,53 @@
 
 namespace rl
 {
+
+
+	Pixel AddPixels(Pixel bottom, Pixel top, PixelAddMode mode)
+	{
+		Pixel oResult = bottom;
+
+		switch (mode)
+		{
+		case PixelAddMode::Copy:
+			oResult = top;
+			break;
+
+		case PixelAddMode::OpaquePart:
+			if (top.a > 0)
+				oResult = top;
+			break;
+
+		case PixelAddMode::OpaqueFull:
+			if (top.a == 0xFF)
+				oResult = top;
+			break;
+
+		case PixelAddMode::Transparent:
+		{
+			const float fTopVisible = top.a / 255.0f;
+			const float fBottomVisible = 1.0f - fTopVisible;
+
+			oResult.a = (uint8_t)std::min<uint16_t>(0xFF, (uint16_t)bottom.a + top.a);
+			oResult.r = (uint8_t)(round((double)fBottomVisible * bottom.r) +
+				round((double)fTopVisible * top.r));
+			oResult.g = (uint8_t)(round((double)fBottomVisible * bottom.g) +
+				round((double)fTopVisible * top.g));
+			oResult.b = (uint8_t)(round((double)fBottomVisible * bottom.b) +
+				round((double)fTopVisible * top.b));
+
+
+			break;
+		}
+
+
+		default: // should never be called
+			oResult = BlankPixel;
+		}
+
+		return oResult;
+	}
+
 
 	/***********************************************************************************************
 	struct Pixel
@@ -242,7 +291,7 @@ namespace rl
 		return true;
 	}
 
-	void OpenGLTexture::draw(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom)
+	void OpenGLTexture::drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom)
 	{
 		if (m_pData == nullptr || m_iID == 0)
 			return;
@@ -256,6 +305,68 @@ namespace rl
 			glTexCoord2f(1.0, 1.0);	glVertex3f(right, bottom, 0.0f);
 		}
 		glEnd();
+	}
+
+	void OpenGLTexture::draw(OpenGLTexture texture, GLsizei x, GLsizei y, bool alpha)
+	{
+		if (m_pData == nullptr)
+			return; // no data in destination texture
+
+		if (!texture.isValid())
+			return; // no data in source texture
+
+
+		const GLsizei iSrcWidth = texture.getWidth();
+		const GLsizei iSrcHeight = texture.getHeight();
+
+		if ((x < 0 && -x <= iSrcWidth) || (y < 0 && -y <= iSrcHeight) ||
+			x >= m_iWidth || y >= m_iHeight)
+			return; // outside of visible area
+
+
+		const GLsizei iStartX = std::max(0, x);
+		const GLsizei iStartY = std::max(0, y);
+		const GLsizei iStopX = std::min(m_iWidth - 1, x + iSrcWidth);
+		const GLsizei iStopY = std::min(m_iHeight - 1, y + iSrcHeight);
+
+		const GLsizei iOffsetX = std::max(0, -x);
+		const GLsizei iOffsetY = std::max(0, -y);
+
+		for (GLsizei iX = iStartX; iX <= iStopX; iX++)
+		{
+			for (GLsizei iY = iStartY; iY < iStopY; iY++)
+			{
+				Pixel px = texture.getPixel(iX - x, iY - y);
+				if (!alpha)
+					setPixel(iX, iY, px);
+				else
+					drawPixel(iX, iY, px);
+			}
+		}
+
+		for (GLsizei iX = x; iX < x + texture.getWidth(); iX++)
+		{
+			if (iX < 0)
+				continue;
+
+			if (iX >= m_iWidth)
+				break;
+
+
+			for (GLsizei iY = y; iY < y + texture.getHeight(); iY++)
+			{
+
+			}
+		}
+	}
+
+	void OpenGLTexture::clear(Pixel val)
+	{
+		if (m_pData == nullptr)
+			throw std::exception("OpenGLTexture: Invalid data writing request");
+
+		for (size_t i = 0; i < (size_t)m_iHeight * m_iWidth; ++i)
+			m_pData[i] = val;
 	}
 
 	void OpenGLTexture::setPixel(GLsizei x, GLsizei y, Pixel val)
@@ -272,6 +383,17 @@ namespace rl
 			throw std::exception("OpenGLTexture: Invalid data reading request");
 
 		return m_pData[y * m_iWidth + x];
+	}
+
+	void OpenGLTexture::drawPixel(GLsizei x, GLsizei y, Pixel val)
+	{
+		if (m_pData == nullptr || x < 0 || y < 0 || x >= m_iWidth || y >= m_iHeight)
+			throw std::exception("OpenGLTexture: Invalid data writing request");
+
+		const size_t index = (size_t)y * m_iWidth + x;
+		Pixel pxDest = m_pData[index];
+
+		m_pData[index] = AddPixels(pxDest, val, PixelAddMode::Transparent);
 	}
 
 	void OpenGLTexture::upload(bool transparency)

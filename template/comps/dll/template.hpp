@@ -1,6 +1,6 @@
 /***************************************************************************************************
  FILE:	template.hpp
- LIB:	template.lib
+ DLL:	template.dll
  DESCR:	Template for new library header files
 ***************************************************************************************************/
 
@@ -8,6 +8,12 @@
 #pragma once
 #ifndef ROBINLE_TEMPLATE
 #define ROBINLE_TEMPLATE
+
+#ifdef LIBRARY_EXPORTS
+#    define DLL_API __declspec(dllexport)
+#else
+#    define DLL_API __declspec(dllimport)
+#endif
 
 
 
@@ -29,9 +35,12 @@
 // DECLARATION
 namespace rl
 {
-	
-	// declarations
-	
+	namespace Template_dll
+	{
+
+		// declarations
+
+	}
 }
 
 

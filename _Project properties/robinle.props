@@ -4,13 +4,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IntDir>Build\$(Configuration)\$(Platform)\</IntDir>
-	<OutDir Condition="'$(Platform)' == 'Win32'">$(SolutionDir)bin\$(Configuration)\x32\</OutDir>
-	<OutDir Condition="'$(Platform)' == 'x64'">$(SolutionDir)bin\$(Configuration)\x64\</OutDir>
+    <OutDir Condition="'$(Platform)' == 'Win32'">$(SolutionDir)bin\$(Configuration)\x32\</OutDir>
+    <OutDir Condition="'$(Platform)' == 'x64'">$(SolutionDir)bin\$(Configuration)\x64\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(GitHub_rl_libs)comps\include;$(GitHub_rl_libs)libs\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Lib>
+    </Lib>
+    <Link>
+      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)libs\!bin\$(Configuration)\x32\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)libs\!bin\$(Configuration)\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

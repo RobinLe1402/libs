@@ -17,6 +17,9 @@ bin/
 #Debug/
 #Release/
 
+# Output directories - custom
+libs/!bin/
+
 
 # Visual Studio cache
 .vs/

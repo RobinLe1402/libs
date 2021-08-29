@@ -154,16 +154,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\comps\include\rl\console.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.h" />
     <ClInclude Include="..\..\..\..\..\comps\include\rl\tools.gdiplus.hpp" />
     <ClInclude Include="..\..\comps\consoleui.hpp" />
     <ClInclude Include="..\..\comps\parser.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.rc" />
     <ResourceCompile Include="previewFON.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\..\..\..\RobinLe-Logo.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

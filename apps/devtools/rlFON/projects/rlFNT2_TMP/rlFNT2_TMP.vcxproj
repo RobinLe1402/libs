@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{2b38510e-39f6-4208-af12-08cb51dd1e2c}</ProjectGuid>
-    <RootNamespace>extractFNT</RootNamespace>
+    <ProjectGuid>{9e592114-7540-4c0e-b9ef-fb5b95fe9389}</ProjectGuid>
+    <RootNamespace>rlFNT2TMP</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -92,7 +92,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,7 +106,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,7 +120,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,7 +134,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,21 +143,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\comps\include\rl\console.cpp" />
-    <ClCompile Include="..\..\comps\consoleui.cpp" />
-    <ClCompile Include="..\..\comps\parser.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl-dev\graphics.fonts.bitmap.creator.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\comps\include\rl\console.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl-dev\graphics.fonts.bitmap.creator.hpp" />
     <ClInclude Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.h" />
-    <ClInclude Include="..\..\comps\consoleui.hpp" />
-    <ClInclude Include="..\..\comps\parser.hpp" />
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.rc" />
-    <ResourceCompile Include="extractFNT.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

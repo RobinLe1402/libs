@@ -13,60 +13,48 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Resource Files\global">
-      <UniqueIdentifier>{522ca2b8-3790-482b-815f-8064ce029f9e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\general">
-      <UniqueIdentifier>{7b947efc-cb61-4e71-8fc1-cdc4925d1495}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\dev">
-      <UniqueIdentifier>{3b799b08-400b-4d96-b9cf-4c11f2538f8a}</UniqueIdentifier>
+      <UniqueIdentifier>{2df6c06e-7804-4a01-b2fb-85f37f12f20c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\general\global">
-      <UniqueIdentifier>{071b747d-a7fd-479a-9856-7b4830e2b185}</UniqueIdentifier>
+      <UniqueIdentifier>{b336ecde-21d2-4f9e-83b2-f1006dccbe60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\global">
+      <UniqueIdentifier>{e27c7545-bb8d-4ec2-b9dc-71fea1829001}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\general">
-      <UniqueIdentifier>{0edd5600-212e-4c60-a512-e921ed332b4c}</UniqueIdentifier>
+      <UniqueIdentifier>{b74150cf-75d1-4227-aa3c-b84b3a060729}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\dev">
-      <UniqueIdentifier>{dd863da9-9cd0-4b67-9de7-3fb1f71a457f}</UniqueIdentifier>
+      <UniqueIdentifier>{e8babf05-1488-4d8e-bbda-1d3d3e85d4fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\dev">
+      <UniqueIdentifier>{18ae8d86-3be7-424d-a8b5-abed0b120040}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\comps\parser.cpp">
-      <Filter>Source Files\dev</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\comps\consoleui.cpp">
-      <Filter>Source Files\dev</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\..\comps\include\rl\console.cpp">
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.cpp">
       <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\comps\include\rl-dev\graphics.fonts.bitmap.creator.cpp">
+      <Filter>Source Files\dev</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\comps\include\rl\console.hpp">
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.hpp">
       <Filter>Header Files\general</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\comps\consoleui.hpp">
-      <Filter>Header Files\dev</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\comps\parser.hpp">
-      <Filter>Header Files\dev</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.h">
       <Filter>Header Files\general\global</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\comps\include\rl-dev\graphics.fonts.bitmap.creator.hpp">
+      <Filter>Header Files\dev</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="analyzeFON.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
     <ResourceCompile Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.rc">
       <Filter>Resource Files\global</Filter>
     </ResourceCompile>

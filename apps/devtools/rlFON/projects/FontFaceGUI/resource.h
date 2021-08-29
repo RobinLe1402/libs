@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by extractFNT.rc
+// Used by FontFaceGUI.rc
 //
 
 // Next default values for new objects

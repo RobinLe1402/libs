@@ -62,9 +62,9 @@ CONTENTS
     2.1     Introduction                    315
     2.2     Overhead                        349
     2.3     Header                          391
-    2.4     Character table                 616
-    2.5     Graphics data                   668
-    2.6     String table                    852
+    2.4     Character table                 628
+    2.5     Graphics data                   678
+    2.6     String table                    862
 
 
 
@@ -80,9 +80,9 @@ STRUCT TABLE
 
 NAME                                    LINE
 
-FontFaceOverhead                        368
-FontFaceHeader                          417
-FontFaceCharInfo                        617
+FontFaceOverhead                        367
+FontFaceHeader                          416
+FontFaceCharInfo                        645
 
 
 
@@ -98,8 +98,8 @@ FLAG TABLE
 
 NAME                                    LINE
 
-General font face flags                 542
-Font face padding flags                 576
+General font face flags                 573
+Font face padding flags                 606
 
 
 
@@ -115,8 +115,8 @@ ENUM TABLE
 
 NAME                                    LINE
 
-FontFaceBinaryFormat                    521,668
-FontFaceClassification                  529
+FontFaceBinaryFormat                    552,696
+FontFaceClassification                  560
 
 
 
@@ -404,11 +404,11 @@ All offsets given in the header are relative to the start of the header.
 │ 00 ║ <OVERHEAD>                                                │ #1                │
 ├────╫───────────────────┬───────────────────┬───────────────────┼───────────────────┤
 │ 10 ║ #2                │ #3                │ #4                │ #5                │
-├────╫───────────────────┼───────────────────┼───────────────────┼─────────┬─────────┤
-│ 20 ║ #6                │ #7                │ #8                │ #9      │ #10     │
-├────╫─────────┬─────────┼────┬────┬────┬────┼───────────────────┼────┬────┼────┬────┤
-│ 30 ║ #11     │ #12     │#13 │#14 │#15 │#16 │ #17               │
-├────╫────┬────┼────┬────┼────┼────┼────┼────┼────┬────┬────┬────┼
+├────╫───────────────────┼───────────────────┼───────────────────┼───────────────────┤
+│ 20 ║ #6                │ #7                │ #8                │ #9                │
+├────╫─────────┬─────────┼─────────┬─────────┼────┬────┬────┬────┼───────────────────┤
+│ 30 ║ #10     │ #11     │ #12     │ #13     │#14 │#15 │#16 │#17 │ #18               │
+├────╫────┬────┼────┬────┼────┬────┼────┬────┼────┼────┼────┼────┼────┬────┬────┬────┼
 
 Figure 4: Header map
 
@@ -443,21 +443,33 @@ Figure 4: Header map
 │ #8    │ 2     │ uint32_t   │ iBytesPerColumn - The count of bytes each pixel column occupies.    │
 │       │       │            │ This value is calculated like this, depending on <iBinaryFormat>:   │
 │       │       │            │                                                                     │
-│       │       │            │      BITPLANES   <iBitsPerPixel> * ceil(<iCharHeight> / 8)          │
+│       │       │            │      BITPLANES   <iBitsPerPixel> * <iFormatExtra>                   │
 │       │       │            │                                                                     │
-│       │       │            │      FULLBYTES/  <iBitsPerPixel> / 8 * <iCharHeight>                │
+│       │       │            │      FULLBYTES/  <iCharHeight> * <iFormatExtra>                     │
 │       │       │            │      RGB/RGBA                                                       │
 │       │       │            │                                                                     │
 │       │       │            │ ["ceil(x)" is x, rounded to the next bigger integer]                │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #9    │ 2     │ uint16_t   │ iGlobalCharWidth - If the font is fixed-pitch, this field is        │
+│ #9    │ 2     │ uint32_t   │ iFormatExtra - A value specific to <iBinaryFormat>:                 │
+│       │       │            │                                                                     │
+│       │       │            │      BITPLANES   The count of bytes that one bitplane of a pixel    │
+│       │       │            │                  bitplane of a pixel column occupies.               │
+│       │       │            │                  Equal to ceil(<iCharHeight> / 8.0).                │
+│       │       │            │                                                                     │
+│       │       │            │      FULLBYTES/  The count of bytes that one pixel occupies.        │
+│       │       │            │      RGB/RGBA    Equal to ceil(<iBitsPerPixel> / 8.0).              │
+│       │       │            │                                                                     │
+│       │       │            │                                                                     │
+│       │       │            │ ["ceil(x)" is x, rounded to the next bigger integer]                │
+├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
+│ #10   │ 2     │ uint16_t   │ iGlobalCharWidth - If the font is fixed-pitch, this field is        │
 │       │       │            │ nonzero and represents the global character width, in pixels.       │
 │       │       │            │ If the font is variable-pitch, this field is zero.                  │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #10   │ 2     │ uint16_t   │ iCharHeight - The height of all characters, in pixels.              │
+│ #11   │ 2     │ uint16_t   │ iCharHeight - The height of all characters, in pixels.              │
 │       │       │            │ Cannot be zero.                                                     │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #11   │ 2     │ uint16_t   │ iWeight - The weight of the font.                                   │
+│ #12   │ 2     │ uint16_t   │ iWeight - The weight of the font.                                   │
 │       │       │            │ Standard values are (via Common Locale Data Repository):            │
 │       │       │            │      100     Thin                                                   │
 │       │       │            │      200     Ultra Light/Extra Light                                │
@@ -472,7 +484,7 @@ Figure 4: Header map
 │       │       │            │      900     Heavy/Black                                            │
 │       │       │            │      950     Extra Black/Ultra Black/Ultra Heavy                    │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #12   │ 2     │ uint16_t   │ iFlags - Some flags regarding the look and character range of the   │
+│ #13   │ 2     │ uint16_t   │ iFlags - Some flags regarding the look and character range of the   │
 │       │       │            │ face (see Figure 6 for the bit arrangement):                        │
 │       │       │            │                                                                     │
 │       │       │            │      MONOSPACED      The font is fixed-pitch. Field #9 must be      │
@@ -532,25 +544,25 @@ Figure 4: Header map
 │       │       │            │                      old gaming consoles like the NES or SNES, or   │
 │       │       │            │                      on MS-DOS/early Windows.                       │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #13   │ 1     │ uint8_t    │ iBitsPerPixel - The count of bits associated with a single pixel.   │
+│ #14   │ 1     │ uint8_t    │ iBitsPerPixel - The count of bits associated with a single pixel.   │
 │       │       │            │ A value between 1 and 32.                                           │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #14   │ 1     │ uint8_t    │ iBinaryFormat - The format the binary data should be stored in      │
+│ #15   │ 1     │ uint8_t    │ iBinaryFormat - The format the binary data should be stored in      │
 │       │       │            │ (--> 2.5):                                                          │
 │       │       │            │      $00     BITPLANES                                              │
 │       │       │            │      $01     FULLBYTES                                              │
 │       │       │            │      $02     RGB                                                    │
 │       │       │            │      $03     RGBA                                                   │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #15   │ 4     │ uint8_t    │ iPaddingFlags - Where are the graphics padded? (See Figure 7)       │
+│ #16   │ 4     │ uint8_t    │ iPaddingFlags - Where are the graphics padded? (See Figure 7)       │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #16   │ 4     │ uint8_t    │ iClassification - What is the classification of this font face?     │
+│ #17   │ 4     │ uint8_t    │ iClassification - What is the classification of this font face?     │
 │       │       │            │      $00     SANSSERIF   A normal font with no serifs.              │
 │       │       │            │      $01     SERIF       A normal font with serifs.                 │
 │       │       │            │      $02     SCRIPT      A font imitating handwriting of some sort. │
 │       │       │            │      $03     DECORATIVE  A font designed to look fancy.             │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #17   │ 4     │ uint8_t[]  │ iFaceVersion - An array of four bytes representing the version of   │
+│ #18   │ 4     │ uint8_t[]  │ iFaceVersion - An array of four bytes representing the version of   │
 │       │       │            │ the font face; default is 1.0.0.0 --> { $01, $00, $00, $00 }.       │
 └───────┴───────┴────────────┴─────────────────────────────────────────────────────────────────────┘
 
@@ -623,11 +635,9 @@ It contains <iCharCount> entries in the format described below.
 
      ╓────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
      ║ 00 │ 01 │ 02 │ 03 │ 04 │ 05 │ 06 │ 07 │ 08 │ 09 │ 0A │ 0B │ 0C │ 0D │ 0E │ 0F │
-╒════╬════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╪════╧════╧════╧════╡
-│ ?? ║ <...>                                                     │ #1                │
-├────╫───────────────────┬───────────────────┬─────────┬─────────┼────┬────┬────┬────┤
-│ ?? ║ #2                │ #3                │ #4      │ #5      │
-├────╫────┬────┬────┬────┼────┬────┬────┬────┼────┬────┼────┬────┼
+╒════╬════╧════╧════╧════╪════╧════╧════╧════╪════╧════╧════╧════╪════╧════╪════╧════╡
+│ ?? ║ #1                │ #2                │ #3                │ #4      │ #5      │
+├────╫────┬────┬────┬────┼────┬────┬────┬────┼────┬────┬────┬────┼────┬────┼────┬────┼
 
 Figure 8: Character table entry map
 

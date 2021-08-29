@@ -67,20 +67,30 @@ namespace rl
 #define RL_FNT_FLAG_GENERICUSE		0b0001000000000000ui16
 #define RL_FNT_FLAG_HIGHRES			0b0010000000000000ui16
 
-#define RL_FNT_FORMAT_BITPLANES		0x00ui8
-#define RL_FNT_FORMAT_FULLBYTES		0x01ui8
-#define RL_FNT_FORMAT_RGB			0x02ui8
-#define RL_FNT_FORMAT_RGBA			0x03ui8
-
 #define RL_FNT_PADFLAG_LEFT			0b00000001ui8
 #define RL_FNT_PADFLAG_TOP			0b00000010ui8
 #define RL_FNT_PADFLAG_RIGHT		0b00000100ui8
 #define RL_FNT_PADFLAG_BOTTOM		0b00001000ui8
 
-#define RL_FNT_CLASS_SANSSERIF		0x00ui8
-#define RL_FNT_CLASS_SERIF			0x01ui8
-#define RL_FNT_CLASS_SCRIPT			0x02ui8
-#define RL_FNT_CLASS_DECORATIVE		0x03ui8
+
+
+
+
+	enum FontFaceBinaryFormat : uint8_t
+	{
+		BitPlanes = 0x00,
+		FullBytes = 0x01,
+		RGB = 0x02,
+		RGBA = 0x03
+	};
+
+	enum FontFaceClassification : uint8_t
+	{
+		SansSerif = 0x00,
+		Serif = 0x01,
+		Script = 0x02,
+		Decorative = 0x03
+	};
 
 
 
@@ -130,6 +140,11 @@ namespace rl
 		/// Count of bytes each column occupies
 		/// </summary>
 		uint32_t iBytesPerColumn;
+
+		/// <summary>
+		/// A value with a meaning dependent on <c>iBinaryFormat</c>
+		/// </summary>
+		uint32_t iFormatExtra;
 
 		/// <summary>
 		/// Zero if variable-width face, otherwise the width of every character
@@ -372,8 +387,8 @@ namespace rl
 		uint16_t getFixedWidth() const;
 		uint16_t getHeight() const;
 		uint16_t getWeight() const;
+		uint16_t getFlags() const;
 		uint8_t  getBitsPerPixel() const;
-		uint8_t  getFlags() const;
 		void     getFaceVersion(uint8_t(&dest)[4]) const;
 
 		/// <summary>

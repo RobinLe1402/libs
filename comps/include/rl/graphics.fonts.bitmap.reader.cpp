@@ -110,6 +110,7 @@ namespace rl
 		return nullptr;
 	}
 
+	// ToDo: Check for correct functionality
 	bool FontFaceGetPixel(const FontFace* face, uint32_t ch, uint16_t x, uint16_t y,
 		uint32_t* dest)
 	{
@@ -127,14 +128,25 @@ namespace rl
 		switch (face->pHeader->iBinaryFormat)
 		{
 
-		case RL_FNT_FORMAT_BITPLANES:
+		case FontFaceBinaryFormat::BitPlanes:
 		{
+			const uint8_t* pCurrentByte =
+				pData + ((size_t)x * face->pHeader->iBytesPerColumn) + (y / 8);
+			const uint8_t iBitID = 7 - (y % 8);
+
+			for (uint8_t i = 0; i < iBPP; ++i)
+			{
+				*dest |= (uint32_t)(((*pCurrentByte) >> iBitID) & 1) << i;
+
+				pCurrentByte += face->pHeader->iFormatExtra;
+			}
+
 			break;
 		}
 
 
 
-		case RL_FNT_FORMAT_FULLBYTES:
+		case FontFaceBinaryFormat::FullBytes:
 		{
 			for (uint8_t i = 0; i < iBPP; i += 8)
 			{
@@ -145,15 +157,23 @@ namespace rl
 
 
 
-		case RL_FNT_FORMAT_RGB:
+		case FontFaceBinaryFormat::RGB:
 		{
+			for (uint8_t i = 0; i < 3; ++i)
+			{
+				*dest |= (uint32_t)(pData[i]) << (2 - i);
+			}
 			break;
 		}
 
 
 
-		case RL_FNT_FORMAT_RGBA:
+		case FontFaceBinaryFormat::RGBA:
 		{
+			for (uint8_t i = 0; i < 4; ++i)
+			{
+				*dest |= (uint32_t)(pData[i]) << (2 - i);
+			}
 			break;
 		}
 			
@@ -161,29 +181,6 @@ namespace rl
 
 
 		
-		// byte chains
-		if (iBPP % 8 == 0)
-		{
-		}
-
-
-		// bit layers
-		else
-		{
-			const size_t iBytesY = y / 8;
-			const size_t iBytesX = (size_t)x * face->pHeader->iBytesPerColumn;
-			const size_t iBytesPerBitplane =
-				face->pHeader->iBytesPerColumn / face->pHeader->iBitsPerPixel;
-
-			for (uint8_t i = 0; i < iBPP; i++)
-			{
-				*dest |= (uint32_t)((face->pData[i * face->pHeader->iBytesPerColumn + iBytesX + iBytesY] >>
-					(7 - y % 8)) & 1) << i;
-			}
-		}
-
-
-
 		return true;
 	}
 
@@ -367,13 +364,13 @@ namespace rl
 	const char* FontFaceClass::getFamilyName() const
 	{
 		checkData();
-		return (char*)(m_oData.pData + m_oData.pHeader->iOffsetFamily);
+		return (char*)(m_oData.pData + m_oData.pHeader->iOffsetFontFamName);
 	}
 
 	const char* FontFaceClass::getFaceName() const
 	{
 		checkData();
-		return (char*)(m_oData.pData + m_oData.pHeader->iOffsetFace);
+		return (char*)(m_oData.pData + m_oData.pHeader->iOffsetFontFaceName);
 	}
 
 	const char* FontFaceClass::getCopyright() const
@@ -391,19 +388,19 @@ namespace rl
 	uint32_t FontFaceClass::getFallback() const
 	{
 		checkData();
-		return m_oData.pHeader->iFallback;
+		return m_oData.pHeader->iFallbackChar;
 	}
 
 	uint16_t FontFaceClass::getFixedWidth() const
 	{
 		checkData();
-		return m_oData.pHeader->iFixedWidth;
+		return m_oData.pHeader->iGlobalCharWidth;
 	}
 
 	uint16_t FontFaceClass::getHeight() const
 	{
 		checkData();
-		return m_oData.pHeader->iHeight;
+		return m_oData.pHeader->iCharHeight;
 	}
 
 	uint16_t FontFaceClass::getWeight() const
@@ -418,7 +415,7 @@ namespace rl
 		return m_oData.pHeader->iBitsPerPixel;
 	}
 
-	uint8_t FontFaceClass::getFlags() const
+	uint16_t FontFaceClass::getFlags() const
 	{
 		checkData();
 		return m_oData.pHeader->iFlags;
@@ -443,7 +440,6 @@ namespace rl
 		return p->iWidth;
 	}
 
-	// ToDo: Check for correct functionality
 	uint32_t FontFaceClass::getPixel(uint32_t codepoint, uint16_t x, uint16_t y) const
 	{
 		checkData();

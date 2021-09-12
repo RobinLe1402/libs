@@ -452,8 +452,8 @@ Figure 4: Header map
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
 │ #9    │ 2     │ uint32_t   │ iFormatExtra - A value specific to <iBinaryFormat>:                 │
 │       │       │            │                                                                     │
-│       │       │            │      BITPLANES   The count of bytes that one bitplane of a pixel    │
-│       │       │            │                  bitplane of a pixel column occupies.               │
+│       │       │            │      BITPLANES   The count of bytes that one bitplane of one pixel  │
+│       │       │            │                  column occupies.                                   │
 │       │       │            │                  Equal to ceil(<iCharHeight> / 8.0).                │
 │       │       │            │                                                                     │
 │       │       │            │      FULLBYTES/  The count of bytes that one pixel occupies.        │

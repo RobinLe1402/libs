@@ -695,7 +695,7 @@ Now on to a detailed list of all possible formats, sorted by <iBinaryFormat>:
 
     VALUE       DESCRIPTION
 
-    BITPLANES   This format was created for font faces with a value of <iBitsPePixel> that is not a
+    BITPLANES   This format was created for font faces with a value of <iBitsPerPixel> that is not a
                 multiple of 8, but especially for low values (1 through 7).
                 It's very similar to how the SNES stored it's graphics.
                 

@@ -62,9 +62,9 @@ CONTENTS
     2.1     Introduction                    315
     2.2     Overhead                        349
     2.3     Header                          391
-    2.4     Character table                 628
-    2.5     Graphics data                   678
-    2.6     String table                    862
+    2.4     Character table                 626
+    2.5     Graphics data                   676
+    2.6     String table                    860
 
 
 
@@ -82,7 +82,7 @@ NAME                                    LINE
 
 FontFaceOverhead                        367
 FontFaceHeader                          416
-FontFaceCharInfo                        645
+FontFaceCharInfo                        643
 
 
 
@@ -98,8 +98,8 @@ FLAG TABLE
 
 NAME                                    LINE
 
-General font face flags                 573
-Font face padding flags                 606
+General font face flags                 571
+Font face padding flags                 604
 
 
 
@@ -115,8 +115,8 @@ ENUM TABLE
 
 NAME                                    LINE
 
-FontFaceBinaryFormat                    552,696
-FontFaceClassification                  560
+FontFaceBinaryFormat                    550,694
+FontFaceClassification                  558
 
 
 
@@ -225,7 +225,7 @@ Files containing such data have the file extension ".rlFNT".
 
 
 
-The RobinLe FontFace format is a unicode-based raster font format for use in games, primarily
+The RobinLe FontFace format is a Unicode-based raster font format for use in games, primarily
 designed for use within Microsoft Windows.
 Due to the option of both direct and indirect color, it is efficient both for modern, texture-based
 games, as well as retro graphics that are generated live, as seen on old 8- and 16-bit gaming
@@ -358,7 +358,7 @@ different identification method.
      ╓────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
      ║ 00 │ 01 │ 02 │ 03 │ 04 │ 05 │ 06 │ 07 │ 08 │ 09 │ 0A │ 0B │ 0C │ 0D │ 0E │ 0F │
 ╒════╬════╧════╧════╧════╧════╧════╧════╧════╧════╧════╪════╧════╪════╪════╪════╪════╡
-│ 00 ║ #0                                              │ #1      │    
+│ 00 ║ #1                                              │ #2      │    
 ├────╫────┬────┬────┬────┬────┬────┬────┬────┬────┬────┼────┬────┼
 
 Figure 2: Overhead map
@@ -367,16 +367,16 @@ Figure 2: Overhead map
 ┌───────┬───────┬────────────┬─────────────────────────────────────────────────────────────────────┐
 │ FIELD │ BYTES │ TYPE       │ DETAILS                                                             │
 ╞═══════╪═══════╪════════════╪═════════════════════════════════════════════════════════════════════╡
-│ #0    │ 10    │ char[]     │ sMagicNo - The ASCII string "rlFONTFACE" (not null-terminated).     │
+│ #1    │ 10    │ char[]     │ sMagicNo - The ASCII string "rlFONTFACE" (not null-terminated).     │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #1    │ 2     │ uint8_t[]  │ iFileTypeVersion - An array of two bytes representing the file      │
+│ #2    │ 2     │ uint8_t[]  │ iFileTypeVersion - An array of two bytes representing the file      │
 │       │       │            │ format version; currently 2.0 --> { $02, $00 }.                     │
 └───────┴───────┴────────────┴─────────────────────────────────────────────────────────────────────┘
 
 Figure 3: FontFaceOverhead struct
 
 
-The overhead's only function is to confirm that the file is of the correct type (and version). It's
+The overhead's only function is to confirm that the file is of the correct type (and version). Its
 values are constant and shall not be modified.
 
 
@@ -423,7 +423,7 @@ Figure 4: Header map
 │       │       │            │ This value cannot be zero, as every face needs at least one         │
 │       │       │            │ defined character.                                                  │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
-│ #3    │ 4     │ uint32_t   │ iFallbackChar - The unicode codepoint that should be used if a      │
+│ #3    │ 4     │ uint32_t   │ iFallbackChar - The Unicode codepoint that should be used if a      │
 │       │       │            │ requested codepoint is not defined in this font face.               │
 │       │       │            │ This character must be defined in this face.                        │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
@@ -447,8 +447,6 @@ Figure 4: Header map
 │       │       │            │                                                                     │
 │       │       │            │      FULLBYTES/  <iCharHeight> * <iFormatExtra>                     │
 │       │       │            │      RGB/RGBA                                                       │
-│       │       │            │                                                                     │
-│       │       │            │ ["ceil(x)" is x, rounded to the next bigger integer]                │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
 │ #9    │ 2     │ uint32_t   │ iFormatExtra - A value specific to <iBinaryFormat>:                 │
 │       │       │            │                                                                     │
@@ -645,7 +643,7 @@ Figure 8: Character table entry map
 ┌───────┬───────┬────────────┬─────────────────────────────────────────────────────────────────────┐
 │ FIELD │ BYTES │ TYPE       │ DETAILS                                                             │
 ╞═══════╪═══════╪════════════╪═════════════════════════════════════════════════════════════════════╡
-│ #1    │ 4     │ uint32_t   │ iCodepoint - The raw unicode value of the character                 │
+│ #1    │ 4     │ uint32_t   │ iCodepoint - The raw Unicode value of the character                 │
 ├───────┼───────┼────────────┼─────────────────────────────────────────────────────────────────────┤
 │ #2    │ 4     │ uint32_t   │ iDataSize - The size, in bytes, of the graphics data for this       │
 │       │       │            │ character.                                                          │

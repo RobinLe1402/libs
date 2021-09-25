@@ -62,9 +62,9 @@ CONTENTS
     2.1     Introduction                    315
     2.2     Overhead                        349
     2.3     Header                          391
-    2.4     Character table                 626
-    2.5     Graphics data                   676
-    2.6     String table                    860
+    2.4     Character table                 624
+    2.5     Graphics data                   674
+    2.6     String table                    858
 
 
 
@@ -82,7 +82,7 @@ NAME                                    LINE
 
 FontFaceOverhead                        367
 FontFaceHeader                          416
-FontFaceCharInfo                        643
+FontFaceCharInfo                        641
 
 
 
@@ -98,8 +98,8 @@ FLAG TABLE
 
 NAME                                    LINE
 
-General font face flags                 571
-Font face padding flags                 604
+General font face flags                 569
+Font face padding flags                 602
 
 
 
@@ -115,8 +115,8 @@ ENUM TABLE
 
 NAME                                    LINE
 
-FontFaceBinaryFormat                    550,694
-FontFaceClassification                  558
+FontFaceBinaryFormat                    548,692
+FontFaceClassification                  556
 
 
 
@@ -519,12 +519,10 @@ Figure 4: Header map
 │       │       │            │                      characters).                                   │
 │       │       │            │                                                                     │
 │       │       │            │      SYMBOLS         The font face covers non-text characters.      │
-│       │       │            │                      If this flag is set, the NONASCII flag must    │
-│       │       │            │                      also be set.                                   │
 │       │       │            │                                                                     │
 │       │       │            │      EMOJI           The font face covers emoji characters.         │
-│       │       │            │                      If this flag is set, the SYMBOLS flag must     │
-│       │       │            │                      also be set.                                   │
+│       │       │            │                      If this flag is set, both the NONASCII and     │
+│       │       │            │                      SYMBOLS flags must also be set.                │
 │       │       │            │                                                                     │
 │       │       │            │      PRIVATEUSEAREA  The font face covers custom characters in the  │
 │       │       │            │                      private use area.                              │

@@ -413,6 +413,8 @@ namespace rl
 
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_iWidth, m_iHeight, 0, GL_RGBA,
 				GL_UNSIGNED_BYTE, m_pData);
+
+			m_bUploaded = true;
 		}
 		else // already uploaded --> replace texture
 		{

@@ -62,6 +62,9 @@ namespace rl
 		static RECT rect = {};
 		static bool bUnknownSize = false;
 
+		if (!m_pInstance)
+			return 0;
+
 		bool bProcessed = true;
 		switch (uMsg)
 		{
@@ -311,7 +314,7 @@ namespace rl
 
 			RECT rect = { 0, 0, (LONG)m_iWidth, (LONG)m_iHeight };
 			AdjustWindowRect(&rect, dwStyle, FALSE);
-			
+
 			iPosX = mi.rcWork.left + iCenterX - (rect.right - rect.left) / 2;
 			iPosY = mi.rcWork.top + iCenterY - (rect.bottom - rect.top) / 2;
 		}
@@ -396,11 +399,12 @@ namespace rl
 			m_bRunning = false;
 			m_hWnd = NULL;
 		}
+		else if (trd.joinable())
+			trd.join();
 
 		UnregisterClassW(m_szWinClassName, NULL);
 
 		m_pInstance = nullptr;
-
 	}
 
 
@@ -515,7 +519,7 @@ namespace rl
 
 	OpenGLCoord OpenGLWin::getPixelCoord(int x, int y)
 	{
-		OpenGLCoord oResult;
+		OpenGLCoord oResult = {};
 		const OpenGLCoord oScreenCenter = { m_iCachedWidth / 2.0f, m_iCachedHeight / 2.0f };
 
 		if (x >= oScreenCenter.x)
@@ -548,7 +552,7 @@ namespace rl
 		getVersion(version);
 
 		char szInt[4]{};
-		
+
 
 
 		_itoa_s(version[0], szInt, 10);

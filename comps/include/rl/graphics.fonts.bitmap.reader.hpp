@@ -76,7 +76,7 @@ namespace rl
 
 
 
-	enum FontFaceBinaryFormat : uint8_t
+	enum class FontFaceBinaryFormat : uint8_t
 	{
 		BitPlanes = 0x00,
 		FullBytes = 0x01,
@@ -84,7 +84,7 @@ namespace rl
 		RGBA = 0x03
 	};
 
-	enum FontFaceClassification : uint8_t
+	enum class FontFaceClassification : uint8_t
 	{
 		SansSerif = 0x00,
 		Serif = 0x01,
@@ -187,7 +187,7 @@ namespace rl
 		/// Padding flags<para/>
 		/// Consisting of the "RL_FNT_PADFLAG_[...]" define values
 		/// </summary>
-		uint8_t iPaddingFags;
+		uint8_t iPaddingFlags;
 
 		/// <summary>
 		/// Optical classification of the font face<para/>
@@ -223,8 +223,11 @@ namespace rl
 		/// Width of the character
 		/// </summary>
 		uint16_t iWidth;
-	private:
-		uint16_t unused1; // padding
+		
+		/// <summary>
+		/// Padding to get back into DWORD alignment. Must be zero.
+		/// </summary>
+		uint16_t reserved;
 	};
 
 
@@ -383,13 +386,19 @@ namespace rl
 		const char* getCopyright() const;
 
 		uint32_t getCharCount() const;
-		uint32_t getFallback() const;
+		char32_t getFallback() const;
 		uint16_t getFixedWidth() const;
 		uint16_t getHeight() const;
 		uint16_t getWeight() const;
 		uint16_t getFlags() const;
-		uint8_t  getBitsPerPixel() const;
-		void     getFaceVersion(uint8_t(&dest)[4]) const;
+		uint8_t getBitsPerPixel() const;
+		FontFaceBinaryFormat getBinaryFormat() const;
+		uint8_t getPaddingFlags() const;
+		uint8_t getClassification() const;
+		void getFaceVersion(uint8_t(&dest)[4]) const;
+
+		const FontFace* getData() const;
+		const FontFaceCharInfo* getCharInfo(char32_t codepoint) const;
 
 		/// <summary>
 		/// Obtain the pointer to the character info of a certain codepoint
@@ -399,10 +408,10 @@ namespace rl
 		/// codepoint<para/>
 		/// If the function fails, it returns <c>nullptr</c>
 		/// </returns>
-		const FontFaceCharInfo* findChar(uint32_t codepoint) const;
+		const FontFaceCharInfo* findChar(char32_t codepoint) const;
 
-		uint16_t getCharWidth(uint32_t codepoint) const;
-		uint32_t getPixel(uint32_t codepoint, uint16_t x, uint16_t y) const;
+		uint16_t getCharWidth(char32_t codepoint) const;
+		uint32_t getPixel(char32_t codepoint, uint16_t x, uint16_t y) const;
 
 
 	private: // methods
@@ -415,7 +424,7 @@ namespace rl
 		/// Throw an <c>std::exception</c> if a certain codepoint doesn't have any data
 		/// </summary>
 		/// <param name="codepoint"></param>
-		const FontFaceCharInfo* checkChar(uint32_t codepoint) const;
+		const FontFaceCharInfo* checkChar(char32_t codepoint) const;
 
 
 	private: // variables

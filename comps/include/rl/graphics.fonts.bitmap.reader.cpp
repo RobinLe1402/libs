@@ -125,7 +125,7 @@ namespace rl
 
 		
 
-		switch (face->pHeader->iBinaryFormat)
+		switch (static_cast<FontFaceBinaryFormat>(face->pHeader->iBinaryFormat))
 		{
 
 		case FontFaceBinaryFormat::BitPlanes:
@@ -385,7 +385,7 @@ namespace rl
 		return m_oData.pHeader->iCharCount;
 	}
 
-	uint32_t FontFaceClass::getFallback() const
+	char32_t FontFaceClass::getFallback() const
 	{
 		checkData();
 		return m_oData.pHeader->iFallbackChar;
@@ -409,16 +409,34 @@ namespace rl
 		return m_oData.pHeader->iWeight;
 	}
 
+	uint16_t FontFaceClass::getFlags() const
+	{
+		checkData();
+		return m_oData.pHeader->iFlags;
+	}
+
 	uint8_t FontFaceClass::getBitsPerPixel() const
 	{
 		checkData();
 		return m_oData.pHeader->iBitsPerPixel;
 	}
 
-	uint16_t FontFaceClass::getFlags() const
+	FontFaceBinaryFormat FontFaceClass::getBinaryFormat() const
 	{
 		checkData();
-		return m_oData.pHeader->iFlags;
+		return static_cast<FontFaceBinaryFormat>(m_oData.pHeader->iBinaryFormat);
+	}
+
+	uint8_t FontFaceClass::getPaddingFlags() const
+	{
+		checkData();
+		return m_oData.pHeader->iPaddingFlags;
+	}
+
+	uint8_t FontFaceClass::getClassification() const
+	{
+		checkData();
+		return m_oData.pHeader->iClassification;
 	}
 
 	void FontFaceClass::getFaceVersion(uint8_t(&dest)[4]) const
@@ -427,20 +445,33 @@ namespace rl
 		memcpy_s(dest, 4, m_oData.pHeader->iFaceVersion, 4);
 	}
 
-	const FontFaceCharInfo* FontFaceClass::findChar(uint32_t codepoint) const
+	const FontFace* FontFaceClass::getData() const
+	{
+		checkData();
+		return &m_oData;
+	}
+
+	const FontFaceCharInfo* FontFaceClass::getCharInfo(char32_t codepoint) const
+	{
+		checkData();
+		auto p = checkChar(codepoint);
+		return p;
+	}
+
+	const FontFaceCharInfo* FontFaceClass::findChar(char32_t codepoint) const
 	{
 		checkData();
 		return FontFaceFindChar(&m_oData, codepoint);
 	}
 
-	uint16_t FontFaceClass::getCharWidth(uint32_t codepoint) const
+	uint16_t FontFaceClass::getCharWidth(char32_t codepoint) const
 	{
 		checkData();
 		auto p = checkChar(codepoint);
 		return p->iWidth;
 	}
 
-	uint32_t FontFaceClass::getPixel(uint32_t codepoint, uint16_t x, uint16_t y) const
+	uint32_t FontFaceClass::getPixel(char32_t codepoint, uint16_t x, uint16_t y) const
 	{
 		checkData();
 		uint32_t iResult = 0;
@@ -473,7 +504,7 @@ namespace rl
 			throw std::exception("rl::FontFaceClass: The instance was empty");
 	}
 
-	const FontFaceCharInfo* FontFaceClass::checkChar(uint32_t codepoint) const
+	const FontFaceCharInfo* FontFaceClass::checkChar(char32_t codepoint) const
 	{
 		auto p = findChar(codepoint);
 

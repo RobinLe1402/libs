@@ -114,7 +114,7 @@ namespace rl
 		/// <summary>
 		/// Get the current state of the mouse
 		/// </summary>
-		inline MouseState getState() { return *m_oState; }
+		inline const MouseState& getState() { return *m_oState; }
 
 		/// <summary>
 		/// Reset all input states<para/>

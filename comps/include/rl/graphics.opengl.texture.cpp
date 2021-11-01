@@ -295,6 +295,44 @@ namespace rl
 		glEnd();
 	}
 
+	void OpenGLTexture::drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom,
+		GLfloat opacity)
+	{
+		if (m_pData == nullptr || m_iID == 0)
+			return;
+
+		glBindTexture(GL_TEXTURE_2D, m_iID);
+
+
+
+		// apply opacity
+
+		if (opacity <= 0.0f)
+			return; // don't draw invisible texture
+
+		if (opacity > 1.0f)
+			opacity = 1.0f;
+
+		glColor4f(1.0f, 1.0f, 1.0f, opacity);
+
+
+
+		glBegin(GL_QUADS);
+		{
+			glTexCoord2f(0.0, 1.0);	glVertex3f(left, bottom, 0.0f);
+			glTexCoord2f(0.0, 0.0);	glVertex3f(left, top, 0.0f);
+			glTexCoord2f(1.0, 0.0);	glVertex3f(right, top, 0.0f);
+			glTexCoord2f(1.0, 1.0);	glVertex3f(right, bottom, 0.0f);
+		}
+		glEnd();
+
+
+
+		// reset opacity
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+	}
+
 	void OpenGLTexture::draw(const OpenGLTexture& texture, GLsizei x, GLsizei y, bool alpha)
 	{
 		if (m_pData == nullptr)

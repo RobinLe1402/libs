@@ -267,6 +267,16 @@ namespace rl
 		/// </summary>
 		void drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom);
 
+		/// <summary>
+		/// Draw the full texture with a defined opacity<para/>
+		/// <c>upload()</c> must have been called before drawing<para/>
+		/// Values are OpenGL viewport coordinates
+		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
+		/// Calling thread must have a current OpenGL rendering context
+		/// </summary>
+		void drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom,
+			GLfloat opacity);
+
 
 
 		/// <summary>

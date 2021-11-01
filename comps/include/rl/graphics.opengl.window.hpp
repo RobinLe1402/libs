@@ -20,31 +20,8 @@
 // <stdint.h>
 typedef unsigned int uint32_t;
 
-//--------------------------------------------------------------------------------------------------
-// <Windows.h>
-#define DECLARE_HANDLE(name) struct name##__; typedef struct name##__ *name
-#define NULL 0
-#define WINAPI __stdcall
-DECLARE_HANDLE(HDC);
-DECLARE_HANDLE(HICON);
-DECLARE_HANDLE(HMONITOR);
-DECLARE_HANDLE(HWND);
-typedef int					BOOL;
-typedef unsigned long		DWORD;
-typedef long				LONG;
-typedef unsigned int		UINT;
 
-#ifdef _WIN64
-typedef long long LPARAM;
-typedef long long LRESULT;
-typedef unsigned long long WPARAM;
-#else
-typedef long LPARAM;
-typedef long LRESULT;
-typedef unsigned int WPARAM;
-#endif // _WIN64
-
-
+#include <Windows.h>
 #include <atomic>
 #include <mutex>
 
@@ -383,10 +360,5 @@ namespace rl
 
 
 
-
-#undef CW_USEDEFAULT
-#undef DECLARE_HANDLE
-#undef NULL
-#undef WINAPI
 
 #endif // ROBINLE_GRAPHICS_OPENGL_WINDOW

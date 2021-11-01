@@ -22,21 +22,7 @@ typedef unsigned short uint16_t;
 typedef short int16_t;
 
 
-//--------------------------------------------------------------------------------------------------
-// <Windows.h>
-#define DECLARE_HANDLE(name) struct name##__; typedef struct name##__ *name
-#define NULL 0
-DECLARE_HANDLE(HWND);
-
-typedef unsigned int UINT;
-
-#ifdef _WIN64
-typedef long long LPARAM;
-typedef unsigned long long WPARAM;
-#else
-typedef long LPARAM;
-typedef unsigned int WPARAM;
-#endif // _WIN64
+#include <Windows.h>
 
 
 
@@ -150,8 +136,5 @@ namespace rl
 
 
 
-
-#undef DECLARE_HANDLE
-#undef NULL
 
 #endif // ROBINLE_INPUT_MOUSE

@@ -1,12 +1,9 @@
 #include "graphics.opengl.window.hpp"
 
-#define NULL 0
-#include <chrono>
-#undef NULL
-
 #include <stdint.h>
 #include <thread>
 #include <Windows.h>
+#include <chrono>
 
 // OpenGL
 #include <GL/gl.h>

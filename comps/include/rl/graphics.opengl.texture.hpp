@@ -37,9 +37,8 @@ typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
 
-#define NULL 0
+#include <Windows.h>
 #include <vector>
-#undef NULL
 
 
 
@@ -216,6 +215,7 @@ namespace rl
 
 		OpenGLTexture() {}
 		OpenGLTexture(const OpenGLTexture& other);
+		OpenGLTexture(OpenGLTexture&& rval) noexcept;
 		~OpenGLTexture();
 
 
@@ -259,14 +259,6 @@ namespace rl
 
 
 		/// <summary>
-		/// Assign another OpenGLTexture object to this
-		/// </summary>
-		/// <returns>Could the texture be assigned?</returns>
-		bool assign(const OpenGLTexture& other);
-
-
-
-		/// <summary>
 		/// Draw the full texture<para/>
 		/// <c>upload()</c> must have been called before drawing<para/>
 		/// Values are OpenGL viewport coordinates
@@ -286,7 +278,7 @@ namespace rl
 		/// <c>true</c>: The new pixels will be calculated based on the alpha values<para/>
 		/// <c>false</c>: The new pixels will be copied 1:1 from the source texture, including alpha
 		/// </param>
-		void draw(OpenGLTexture texture, GLsizei x, GLsizei y, bool alpha);
+		void draw(const OpenGLTexture& texture, GLsizei x, GLsizei y, bool alpha);
 
 
 
@@ -377,6 +369,7 @@ namespace rl
 	public: // operators
 
 		OpenGLTexture& operator=(const OpenGLTexture& other);
+		OpenGLTexture& operator=(OpenGLTexture&& rval) noexcept;
 
 
 	private: // methods
@@ -397,7 +390,7 @@ namespace rl
 		GLsizei m_iWidth = 0, m_iHeight = 0; // the textures's dimensions
 		GLuint m_iID = 0; // OpenGL ID of this texture
 		bool m_bUploaded = false; // has the texture been uploaded to the graphics card?
-		bool m_bUploadTransparecy = false; // does the uploaded texture have transparency?
+		bool m_bUploadTransparency = false; // does the uploaded texture have transparency?
 
 		GLint m_iMinFilter = 0;
 		GLint m_iMagFilter = 0;

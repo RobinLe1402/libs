@@ -187,7 +187,9 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	OpenGLTexture::OpenGLTexture(const OpenGLTexture& other) { assign(other); }
+	OpenGLTexture::OpenGLTexture(const OpenGLTexture& other) { *this = other; }
+
+	OpenGLTexture::OpenGLTexture(OpenGLTexture&& rval) noexcept { *this = std::move(rval); }
 
 	OpenGLTexture::~OpenGLTexture() { destroy(); }
 
@@ -277,20 +279,6 @@ namespace rl
 		m_iHeight = 0;
 	}
 
-	bool OpenGLTexture::assign(const OpenGLTexture& other)
-	{
-		destroy();
-
-		if (!other.isValid())
-			return false;
-
-		create(other.m_iWidth, other.m_iHeight, other.m_iMagFilter, other.m_iMinFilter,
-			other.m_iWrapX, other.m_iWrapY);
-		memcpy(m_pData, other.m_pData, sizeof(Pixel) * m_iWidth * m_iHeight);
-
-		return true;
-	}
-
 	void OpenGLTexture::drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom)
 	{
 		if (m_pData == nullptr || m_iID == 0)
@@ -307,7 +295,7 @@ namespace rl
 		glEnd();
 	}
 
-	void OpenGLTexture::draw(OpenGLTexture texture, GLsizei x, GLsizei y, bool alpha)
+	void OpenGLTexture::draw(const OpenGLTexture& texture, GLsizei x, GLsizei y, bool alpha)
 	{
 		if (m_pData == nullptr)
 			return; // no data in destination texture
@@ -326,36 +314,21 @@ namespace rl
 
 		const GLsizei iStartX = std::max(0, x);
 		const GLsizei iStartY = std::max(0, y);
-		const GLsizei iStopX = std::min(m_iWidth - 1, x + iSrcWidth);
-		const GLsizei iStopY = std::min(m_iHeight - 1, y + iSrcHeight);
+		const GLsizei iStopX = std::min(m_iWidth - 1, x + iSrcWidth - 1);
+		const GLsizei iStopY = std::min(m_iHeight - 1, y + iSrcHeight - 1);
 
 		const GLsizei iOffsetX = std::max(0, -x);
 		const GLsizei iOffsetY = std::max(0, -y);
 
 		for (GLsizei iX = iStartX; iX <= iStopX; iX++)
 		{
-			for (GLsizei iY = iStartY; iY < iStopY; iY++)
+			for (GLsizei iY = iStartY; iY <= iStopY; iY++)
 			{
-				Pixel px = texture.getPixel(iX - x, iY - y);
+				Pixel px = texture.getPixel(iX - iStartX, iY - iStartY);
 				if (!alpha)
 					setPixel(iX, iY, px);
 				else
 					drawPixel(iX, iY, px);
-			}
-		}
-
-		for (GLsizei iX = x; iX < x + texture.getWidth(); iX++)
-		{
-			if (iX < 0)
-				continue;
-
-			if (iX >= m_iWidth)
-				break;
-
-
-			for (GLsizei iY = y; iY < y + texture.getHeight(); iY++)
-			{
-
 			}
 		}
 	}
@@ -420,7 +393,7 @@ namespace rl
 		{
 			glBindTexture(GL_TEXTURE_2D, m_iID);
 
-			if (transparency != m_bUploadTransparecy)
+			if (transparency != m_bUploadTransparency)
 				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE,
 					GLfloat(transparency ? GL_MODULATE : GL_DECAL));
 
@@ -428,7 +401,7 @@ namespace rl
 				m_pData);
 		}
 
-		m_bUploadTransparecy = transparency;
+		m_bUploadTransparency = transparency;
 	}
 
 	void OpenGLTexture::removeUpload()
@@ -486,8 +459,47 @@ namespace rl
 
 	OpenGLTexture& OpenGLTexture::operator=(const OpenGLTexture& other)
 	{
-		if (!assign(other))
-			throw std::exception("Couldn't assign rl::OpenGLTexture to another one");
+		destroy();
+
+		if (!other.isValid())
+			return *this;
+
+		create(other.m_iWidth, other.m_iHeight, other.m_iMagFilter, other.m_iMinFilter,
+			other.m_iWrapX, other.m_iWrapY);
+		memcpy(m_pData, other.m_pData, sizeof(Pixel) * m_iWidth * m_iHeight);
+
+		return *this;
+	}
+
+	OpenGLTexture& OpenGLTexture::operator=(OpenGLTexture&& rval) noexcept
+	{
+		destroy();
+
+
+		// transfer data
+		m_bUploaded = rval.m_bUploaded;
+		m_bUploadTransparency = rval.m_bUploadTransparency;
+		m_iHeight = rval.m_iHeight;
+		m_iID = rval.m_iID;
+		m_iMagFilter = rval.m_iMagFilter;
+		m_iMinFilter = rval.m_iMinFilter;
+		m_iWidth = rval.m_iWidth;
+		m_iWrapX = rval.m_iWrapX;
+		m_iWrapY = rval.m_iWrapY;
+		m_pData = rval.m_pData;
+		
+		// clear source
+		rval.m_bUploaded = false;
+		rval.m_bUploadTransparency = false;
+		rval.m_iHeight = 0;
+		rval.m_iID = 0;
+		rval.m_iMagFilter = 0;
+		rval.m_iMinFilter = 0;
+		rval.m_iWidth = 0;
+		rval.m_iWrapX = 0;
+		rval.m_iWrapY = 0;
+		rval.m_pData = nullptr;
+
 
 		return *this;
 	}

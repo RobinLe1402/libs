@@ -32,26 +32,8 @@ namespace std
 	class thread;
 }
 
-//--------------------------------------------------------------------------------------------------
-// <Windows.h>
-#define DECLARE_HANDLE(name) struct name##__; typedef struct name##__ *name
-#define WINAPI __stdcall
-DECLARE_HANDLE(HBITMAP);
-DECLARE_HANDLE(HMONITOR);
-DECLARE_HANDLE(HWND);
-typedef unsigned int UINT;
 
-#ifdef _WIN64
-typedef long long LPARAM;
-typedef long long LRESULT;
-typedef unsigned long long WPARAM;
-#else
-typedef long LPARAM;
-typedef long LRESULT;
-typedef unsigned int WPARAM;
-#endif // _WIN64
-
-
+#include <Windows.h>
 #include <atomic>
 
 
@@ -125,8 +107,5 @@ namespace rl
 
 
 
-
-#undef DECLARE_HANDLE
-#undef WINAPI
 
 #endif // ROBINLE_SPLASHSCREEN

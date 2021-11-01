@@ -28,12 +28,8 @@ typedef uint64_t size_t;
 typedef uint32_t size_t;
 #endif
 
-//--------------------------------------------------------------------------------------------------
-// <Windows.h>
-typedef const char* LPCSTR;
-#define DECLARE_HANDLE(name) struct name##__; typedef struct name##__ *name
-DECLARE_HANDLE(HINSTANCE);
-typedef HINSTANCE HMODULE;
+
+#include <Windows.h>
 
 
 
@@ -437,7 +433,5 @@ namespace rl
 
 
 
-
-#undef DECLARE_HANDLE
 
 #endif // ROBINLE_GRAPHICS_FONTS_BITMAP_READER

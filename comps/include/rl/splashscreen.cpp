@@ -194,7 +194,7 @@ namespace rl
 		{
 			PAINTSTRUCT     ps;
 			HDC             hdc;
-			BITMAP          bitmap;
+			BITMAP          bitmap = {};
 			HDC             hdcMem;
 			HGDIOBJ         oldBitmap;
 

@@ -516,20 +516,45 @@ namespace rl
 
 	OpenGLCoord OpenGLWin::getPixelCoord(int x, int y)
 	{
-		OpenGLCoord oResult = {};
+		OpenGLCoord result = {};
 		const OpenGLCoord oScreenCenter = { m_iCachedWidth / 2.0f, m_iCachedHeight / 2.0f };
 
 		if (x >= oScreenCenter.x)
-			oResult.x = (x - oScreenCenter.x) / oScreenCenter.x;
+			result.x = (x - oScreenCenter.x) / oScreenCenter.x;
 		else
-			oResult.x = -1.0f + x / oScreenCenter.x;
+			result.x = -1.0f + x / oScreenCenter.x;
 
 		if (y >= oScreenCenter.y)
-			oResult.y = -1.0f * (y - oScreenCenter.y) / oScreenCenter.y;
+			result.y = -1.0f * (y - oScreenCenter.y) / oScreenCenter.y;
 		else
-			oResult.y = 1.0f - y / oScreenCenter.y;
+			result.y = 1.0f - y / oScreenCenter.y;
 
-		return oResult;
+		return result;
+	}
+
+	OpenGLRect OpenGLWin::getPixelRect(int left, int top, int right, int bottom)
+	{
+		if (right <= left || bottom <= top)
+			throw std::exception("rl::OpenGLWin: Invalid coordinates");
+
+		OpenGLRect result = {};
+
+		// 1. Get top left coordinate
+		OpenGLCoord tmp = getPixelCoord(left, top);
+		result.left = tmp.x;
+		result.top = tmp.y;
+
+		// 2. Get bottom right coordinate
+		tmp = getPixelCoord(right, bottom);
+		result.right = tmp.x;
+		result.bottom = tmp.y;
+
+		return result;
+	}
+
+	OpenGLRect OpenGLWin::getPixelRect_Size(int left, int top, int width, int height)
+	{
+		return getPixelRect(left, top, left + width, top + height);
 	}
 
 	void OpenGLWin::getVersion(uint8_t(&dest)[4])

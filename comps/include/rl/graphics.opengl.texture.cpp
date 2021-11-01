@@ -1,6 +1,7 @@
 #define NOMINMAX
 
 #include "graphics.opengl.texture.hpp"
+#include "graphics.opengl.types.hpp"
 #include "tools.gdiplus.hpp"
 
 #include <exception>
@@ -279,7 +280,7 @@ namespace rl
 		m_iHeight = 0;
 	}
 
-	void OpenGLTexture::drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom)
+	void OpenGLTexture::drawToScreen(OpenGLRect rect)
 	{
 		if (m_pData == nullptr || m_iID == 0)
 			return;
@@ -287,16 +288,15 @@ namespace rl
 		glBindTexture(GL_TEXTURE_2D, m_iID);
 		glBegin(GL_QUADS);
 		{
-			glTexCoord2f(0.0, 1.0);	glVertex3f(left, bottom, 0.0f);
-			glTexCoord2f(0.0, 0.0);	glVertex3f(left, top, 0.0f);
-			glTexCoord2f(1.0, 0.0);	glVertex3f(right, top, 0.0f);
-			glTexCoord2f(1.0, 1.0);	glVertex3f(right, bottom, 0.0f);
+			glTexCoord2f(0.0, 1.0);	glVertex3f(rect.left, rect.bottom, 0.0f);
+			glTexCoord2f(0.0, 0.0);	glVertex3f(rect.left, rect.top, 0.0f);
+			glTexCoord2f(1.0, 0.0);	glVertex3f(rect.right, rect.top, 0.0f);
+			glTexCoord2f(1.0, 1.0);	glVertex3f(rect.right, rect.bottom, 0.0f);
 		}
 		glEnd();
 	}
 
-	void OpenGLTexture::drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom,
-		GLfloat opacity)
+	void OpenGLTexture::drawToScreen(OpenGLRect rect, GLfloat opacity)
 	{
 		if (m_pData == nullptr || m_iID == 0)
 			return;
@@ -319,10 +319,10 @@ namespace rl
 
 		glBegin(GL_QUADS);
 		{
-			glTexCoord2f(0.0, 1.0);	glVertex3f(left, bottom, 0.0f);
-			glTexCoord2f(0.0, 0.0);	glVertex3f(left, top, 0.0f);
-			glTexCoord2f(1.0, 0.0);	glVertex3f(right, top, 0.0f);
-			glTexCoord2f(1.0, 1.0);	glVertex3f(right, bottom, 0.0f);
+			glTexCoord2f(0.0, 1.0);	glVertex3f(rect.left, rect.bottom, 0.0f);
+			glTexCoord2f(0.0, 0.0);	glVertex3f(rect.left, rect.top, 0.0f);
+			glTexCoord2f(1.0, 0.0);	glVertex3f(rect.right, rect.top, 0.0f);
+			glTexCoord2f(1.0, 1.0);	glVertex3f(rect.right, rect.bottom, 0.0f);
 		}
 		glEnd();
 

@@ -25,21 +25,14 @@ typedef unsigned int uint32_t;
 #include <atomic>
 #include <mutex>
 
+#include "graphics.opengl.types.hpp"
+
 
 
 //==================================================================================================
 // DECLARATION
 namespace rl
 {
-
-	/// <summary>
-	/// OpenGL coordinates for placing textures
-	/// </summary>
-	struct OpenGLCoord
-	{
-		float x, y;
-	};
-
 
 	/// <summary>
 	/// Startup configuration for <c>rl::OpenGLWin</c>
@@ -260,6 +253,18 @@ namespace rl
 		/// Uses cached size data from before last <c>OnUpdate()</c> call
 		/// </summary>
 		OpenGLCoord getPixelCoord(int x, int y);
+
+		/// <summary>
+		/// Converts pixel rectangle to OpenGL rectangle (for texture placement)<para/>
+		/// Uses cached size data from before last <c>OnUpdate()</c> call
+		/// </summary>
+		OpenGLRect getPixelRect(int left, int top, int right, int bottom);
+
+		/// <summary>
+		/// Converts pixel rectangle to OpenGL rectangle (for texture placement)<para/>
+		/// Uses cached size data from before last <c>OnUpdate()</c> call
+		/// </summary>
+		OpenGLRect getPixelRect_Size(int left, int top, int width, int height);
 
 
 

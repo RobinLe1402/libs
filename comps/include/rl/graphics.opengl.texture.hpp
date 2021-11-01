@@ -40,6 +40,8 @@ typedef unsigned long long uint64_t;
 #include <Windows.h>
 #include <vector>
 
+#include "graphics.opengl.types.hpp"
+
 
 
 //==================================================================================================
@@ -265,7 +267,7 @@ namespace rl
 		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
 		/// Calling thread must have a current OpenGL rendering context
 		/// </summary>
-		void drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom);
+		void drawToScreen(OpenGLRect rect);
 
 		/// <summary>
 		/// Draw the full texture with a defined opacity<para/>
@@ -274,8 +276,7 @@ namespace rl
 		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
 		/// Calling thread must have a current OpenGL rendering context
 		/// </summary>
-		void drawToScreen(GLfloat left, GLfloat top, GLfloat right, GLfloat bottom,
-			GLfloat opacity);
+		void drawToScreen(OpenGLRect rect, GLfloat opacity);
 
 
 

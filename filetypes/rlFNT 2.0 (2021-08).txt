@@ -165,7 +165,7 @@ For the listing of data fields, I'll use the types of the C standard:
 Hexadecimal values might be identified with the prefix "$" like so:
     $7F
 
-Arrays might be represented by a comma-seperated list of values inside curly brackets, like so:
+Arrays might be represented by a comma-separated list of values inside curly brackets, like so:
     { $01, $1F }
 
 
@@ -485,7 +485,7 @@ Figure 4: Header map
 │ #13   │ 2     │ uint16_t   │ iFlags - Some flags regarding the look and character range of the   │
 │       │       │            │ face (see Figure 6 for the bit arrangement):                        │
 │       │       │            │                                                                     │
-│       │       │            │      MONOSPACED      The font is fixed-pitch. Field #9 must be      │
+│       │       │            │      MONOSPACED      The font is fixed-pitch. <iGlobalCharWidth> is │
 │       │       │            │                      nonzero.                                       │
 │       │       │            │                                                                     │
 │       │       │            │      PADDED          The graphics have a padding for optical        │

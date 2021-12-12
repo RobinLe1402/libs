@@ -15,6 +15,10 @@
 #include <dwmapi.h>
 #pragma comment(lib, "Dwmapi.lib")
 
+// RobinLe
+#define ROBINLE_OPENGL_FUNCTIONS
+#include "graphics.opengl.types.hpp"
+
 
 
 typedef BOOL(WINAPI wglSwapInterval_t)(int interval);
@@ -516,45 +520,17 @@ namespace rl
 
 	OpenGLCoord OpenGLWin::getPixelCoord(int x, int y)
 	{
-		OpenGLCoord result = {};
-		const OpenGLCoord oScreenCenter = { m_iCachedWidth / 2.0f, m_iCachedHeight / 2.0f };
-
-		if (x >= oScreenCenter.x)
-			result.x = (x - oScreenCenter.x) / oScreenCenter.x;
-		else
-			result.x = -1.0f + x / oScreenCenter.x;
-
-		if (y >= oScreenCenter.y)
-			result.y = -1.0f * (y - oScreenCenter.y) / oScreenCenter.y;
-		else
-			result.y = 1.0f - y / oScreenCenter.y;
-
-		return result;
+		return OpenGL::GetPixelCoord(m_iCachedWidth, m_iCachedHeight, x, y);
 	}
 
-	OpenGLRect OpenGLWin::getPixelRect(int left, int top, int right, int bottom)
+	OpenGLRect OpenGLWin::getPixelRect_Pos(int left, int top, int right, int bottom)
 	{
-		if (right <= left || bottom <= top)
-			throw std::exception("rl::OpenGLWin: Invalid coordinates");
-
-		OpenGLRect result = {};
-
-		// 1. Get top left coordinate
-		OpenGLCoord tmp = getPixelCoord(left, top);
-		result.left = tmp.x;
-		result.top = tmp.y;
-
-		// 2. Get bottom right coordinate
-		tmp = getPixelCoord(right, bottom);
-		result.right = tmp.x;
-		result.bottom = tmp.y;
-
-		return result;
+		return OpenGL::GetPixelRect_Pos(m_iCachedWidth, m_iCachedHeight, left, top, right, bottom);
 	}
 
-	OpenGLRect OpenGLWin::getPixelRect_Size(int left, int top, int width, int height)
+	OpenGLRect OpenGLWin::getPixelRect(int left, int top, int width, int height)
 	{
-		return getPixelRect(left, top, left + width, top + height);
+		return OpenGL::GetPixelRect(m_iCachedWidth, m_iCachedHeight, left, top, width, height);
 	}
 
 	void OpenGLWin::getVersion(uint8_t(&dest)[4])

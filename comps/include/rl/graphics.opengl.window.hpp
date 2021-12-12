@@ -1,6 +1,7 @@
 /***************************************************************************************************
  FILE:	graphics.opengl.window.hpp
  CPP:	graphics.opengl.window.cpp
+		graphics.opengl.types.cpp
  DESCR:	Class for creating an OpenGL (game) window
 ***************************************************************************************************/
 
@@ -258,13 +259,13 @@ namespace rl
 		/// Converts pixel rectangle to OpenGL rectangle (for texture placement)<para/>
 		/// Uses cached size data from before last <c>OnUpdate()</c> call
 		/// </summary>
-		OpenGLRect getPixelRect(int left, int top, int right, int bottom);
+		OpenGLRect getPixelRect_Pos(int left, int top, int right, int bottom);
 
 		/// <summary>
 		/// Converts pixel rectangle to OpenGL rectangle (for texture placement)<para/>
 		/// Uses cached size data from before last <c>OnUpdate()</c> call
 		/// </summary>
-		OpenGLRect getPixelRect_Size(int left, int top, int width, int height);
+		OpenGLRect getPixelRect(int left, int top, int width, int height);
 
 
 

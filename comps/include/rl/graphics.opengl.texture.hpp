@@ -32,9 +32,9 @@ namespace Gdiplus
 
 //--------------------------------------------------------------------------------------------------
 // <stdint.h>
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
+using uint8_t = unsigned char;
+using uint32_t = unsigned int;
+using uint64_t = unsigned long long;
 
 
 #include <Windows.h>
@@ -61,7 +61,7 @@ namespace rl
 				uint8_t r; // red
 				uint8_t g; // green
 				uint8_t b; // blue
-				uint8_t a; // alpha
+				uint8_t alpha; // alpha
 			};
 
 			// single integer representation of this pixel's color
@@ -69,7 +69,10 @@ namespace rl
 			uint32_t val;
 		};
 
-		Pixel();
+		Pixel() : r(0), g(0), b(0), alpha(0) {}
+		constexpr Pixel(uint8_t r, uint8_t g, uint8_t b, uint8_t alpha = 0xFF)
+			: r(r), g(g), b(b), alpha(alpha) {}
+
 		Pixel(const Pixel& other) = default;
 
 		inline bool operator==(const Pixel& other) const { return this->val == other.val; }
@@ -83,17 +86,17 @@ namespace rl
 		/// Create <c>rl::Pixel</c> by RGB value<para/>
 		/// Alpha will be set to <c>0xFF</c> (opaque)
 		/// </summary>
-		static Pixel ByRGB(uint32_t RGB);
+		static constexpr inline Pixel ByRGB(uint32_t RGB);
 
 		/// <summary>
 		/// Create <c>rl::Pixel</c> by ARGB value
 		/// </summary>
-		static Pixel ByARGB(uint32_t ARGB);
+		static constexpr inline Pixel ByARGB(uint32_t ARGB);
 
 		/// <summary>
 		/// Create <c>rl::Pixel</c> by RGBA value
 		/// </summary>
-		static Pixel ByRGBA(uint32_t RGBA);
+		static constexpr inline Pixel ByRGBA(uint32_t RGBA);
 
 
 
@@ -128,14 +131,123 @@ namespace rl
 		uint32_t getRGBA() const;
 
 	};
+	
 
-	const Pixel BlankPixel = Pixel::ByRGBA(0);
+
+	//==============================================================================================
+	// Inline functions
+
+	constexpr Pixel Pixel::ByRGB(uint32_t RGB)
+	{
+		return Pixel(
+			(uint8_t)(RGB >> 16), // r
+			(uint8_t)(RGB >> 8), // g
+			(uint8_t)RGB, // b
+			0xFF // alpha
+		);
+	}
+
+	constexpr Pixel Pixel::ByARGB(uint32_t ARGB)
+	{
+		return Pixel(
+			(uint8_t)(ARGB >> 16), // r
+			(uint8_t)(ARGB >> 8), // g
+			(uint8_t)ARGB, // b
+			(uint8_t)(ARGB >> 24) // alpha
+		);
+	}
+
+	constexpr Pixel Pixel::ByRGBA(uint32_t RGBA)
+	{
+		return Pixel(
+			(uint8_t)(RGBA >> 24), // r
+			(uint8_t)(RGBA >> 16), // g
+			(uint8_t)(RGBA >> 8), // b
+			(uint8_t)RGBA // alpha
+		);
+	}
+
+	// Inline functions
+	//==============================================================================================
+
+
+
+	constexpr Pixel BlankPixel = Pixel::ByRGBA(0);
 	namespace Color
 	{
-#define DECLARE_PIXEL(name, hex) const Pixel name = Pixel::ByRGB(0x##hex)
+#define DECLARE_PIXEL(name, hex) constexpr Pixel name = Pixel::ByRGB(0x##hex)
 
 		DECLARE_PIXEL(White, FFFFFF);
 		DECLARE_PIXEL(Black, 000000);
+
+		namespace WinCon
+		{
+			enum IDs
+			{
+				Black,
+				DarkBlue,
+				DarkGreen,
+				DarkCyan,
+				DarkRed,
+				DarkMagenta,
+				DarkYellow,
+				DarkWhite,
+				BrightBlack,
+				BrightBlue,
+				BrightGreen,
+				BrightCyan,
+				BrightRed,
+				BrightMagenta,
+				BrightYellow,
+				White
+			};
+
+			/// <summary>
+			/// The classic Windows console color scheme
+			/// </summary>
+			constexpr Pixel Legacy[16] =
+			{
+				Pixel::ByRGB(0x000000), // black
+				Pixel::ByRGB(0x000080), // dark blue
+				Pixel::ByRGB(0x008000), // dark green
+				Pixel::ByRGB(0x008080), // dark cyan
+				Pixel::ByRGB(0x800000), // dark red
+				Pixel::ByRGB(0x800080), // dark magenta
+				Pixel::ByRGB(0x808000), // dark yellow
+				Pixel::ByRGB(0xC0C0C0), // dark white
+				Pixel::ByRGB(0x808080), // bright black
+				Pixel::ByRGB(0x0000FF), // bright blue
+				Pixel::ByRGB(0x00FF00), // bright green
+				Pixel::ByRGB(0x00FFFF), // bright cyan
+				Pixel::ByRGB(0xFF0000), // bright red
+				Pixel::ByRGB(0xFF00FF), // bright magenta
+				Pixel::ByRGB(0xFFFF00), // bright yellow
+				Pixel::ByRGB(0xFFFFFF), // white
+			};
+
+			/// <summary>
+			/// The new default Windows console color scheme
+			/// </summary>
+			constexpr Pixel Campbell[16] =
+			{
+				Pixel::ByRGB(0x0C0C0C), // black
+				Pixel::ByRGB(0x0037DA), // dark blue
+				Pixel::ByRGB(0x13A10E), // dark green
+				Pixel::ByRGB(0x3A96DD), // dark cyan
+				Pixel::ByRGB(0xC50F1F), // dark red
+				Pixel::ByRGB(0x881798), // dark magenta
+				Pixel::ByRGB(0xC19C00), // dark yellow
+				Pixel::ByRGB(0xCCCCCC), // dark white
+				Pixel::ByRGB(0x767676), // bright black
+				Pixel::ByRGB(0x3B78FF), // bright blue
+				Pixel::ByRGB(0x16C60C), // bright green
+				Pixel::ByRGB(0x61D6D6), // bright cyan
+				Pixel::ByRGB(0xE74856), // bright red
+				Pixel::ByRGB(0xB4009E), // bright magenta
+				Pixel::ByRGB(0xF9F1A5), // bright yellow
+				Pixel::ByRGB(0xF2F2F2), // white
+			};
+		}
 
 #undef DECLARE_PIXEL
 	}
@@ -267,7 +379,7 @@ namespace rl
 		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
 		/// Calling thread must have a current OpenGL rendering context
 		/// </summary>
-		void drawToScreen(OpenGLRect rect);
+		void drawToScreen(OpenGLRect rect) const;
 
 		/// <summary>
 		/// Draw the full texture with a defined opacity<para/>
@@ -276,7 +388,7 @@ namespace rl
 		/// (center is (0|0), top left is (-1|1), bottom left is (1|-1))<para/>
 		/// Calling thread must have a current OpenGL rendering context
 		/// </summary>
-		void drawToScreen(OpenGLRect rect, GLfloat opacity);
+		void drawToScreen(OpenGLRect rect, GLfloat opacity)  const;
 
 
 
@@ -408,6 +520,22 @@ namespace rl
 		GLint m_iWrapX = 0;
 		GLint m_iWrapY = 0;
 	};
+
+
+
+
+
+	// some common OpenGLTexture configuration constants
+	namespace OpenGL
+	{
+		const OpenGLTexture_Config TextureConfig_Pixelart =
+		{
+			OpenGLTextureFilter::NearestNeighbor,
+			OpenGLTextureFilter::NearestNeighbor,
+			OpenGLTextureWrap::Clamp,
+			OpenGLTextureWrap::Clamp
+		};
+	}
 
 }
 

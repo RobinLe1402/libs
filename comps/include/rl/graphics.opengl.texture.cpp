@@ -37,21 +37,21 @@ namespace rl
 			break;
 
 		case PixelAddMode::OpaquePart:
-			if (top.a > 0)
+			if (top.alpha > 0)
 				oResult = top;
 			break;
 
 		case PixelAddMode::OpaqueFull:
-			if (top.a == 0xFF)
+			if (top.alpha == 0xFF)
 				oResult = top;
 			break;
 
 		case PixelAddMode::Transparent:
 		{
-			const float fTopVisible = top.a / 255.0f;
+			const float fTopVisible = top.alpha / 255.0f;
 			const float fBottomVisible = 1.0f - fTopVisible;
 
-			oResult.a = (uint8_t)std::min<uint16_t>(0xFF, (uint16_t)bottom.a + top.a);
+			oResult.alpha = (uint8_t)std::min<uint16_t>(0xFF, (uint16_t)bottom.alpha + top.alpha);
 			oResult.r = (uint8_t)(round((double)fBottomVisible * bottom.r) +
 				round((double)fTopVisible * top.r));
 			oResult.g = (uint8_t)(round((double)fBottomVisible * bottom.g) +
@@ -82,49 +82,6 @@ namespace rl
 
 
 	//----------------------------------------------------------------------------------------------
-	// CONSTRUCTORS, DESTRUCTORS
-
-	Pixel::Pixel()
-	{
-		r = 0;
-		g = 0;
-		b = 0;
-		a = 0xFF;
-	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// STATIC METHODS
-
-	Pixel Pixel::ByRGB(uint32_t RGB)
-	{
-		Pixel pxResult;
-		pxResult.setRGB(RGB);
-		return pxResult;
-	}
-
-	Pixel Pixel::ByARGB(uint32_t ARGB)
-	{
-		Pixel pxResult;
-		pxResult.setARGB(ARGB);
-		return pxResult;
-	}
-
-	Pixel Pixel::ByRGBA(uint32_t RGBA)
-	{
-		Pixel pxResult;
-		pxResult.setRGBA(RGBA);
-		return pxResult;
-	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
 	void Pixel::setRGB(uint32_t RGB)
@@ -132,7 +89,7 @@ namespace rl
 		r = uint8_t(RGB >> 16);
 		g = uint8_t(RGB >> 8);
 		b = uint8_t(RGB);
-		a = 0xFF;
+		alpha = 0xFF;
 	}
 
 	void Pixel::setARGB(uint32_t ARGB)
@@ -140,7 +97,7 @@ namespace rl
 		r = uint8_t(ARGB >> 16);
 		g = uint8_t(ARGB >> 8);
 		b = uint8_t(ARGB);
-		a = uint8_t(ARGB >> 24);
+		alpha = uint8_t(ARGB >> 24);
 	}
 
 	void Pixel::setRGBA(uint32_t RGBA)
@@ -148,7 +105,7 @@ namespace rl
 		r = uint8_t(RGBA >> 24);
 		g = uint8_t(RGBA >> 16);
 		b = uint8_t(RGBA >> 8);
-		a = uint8_t(RGBA);
+		alpha = uint8_t(RGBA);
 	}
 
 	uint32_t Pixel::getARGB() const
@@ -156,14 +113,14 @@ namespace rl
 		uint32_t argb = b;
 		argb |= uint16_t(g) << 8;
 		argb |= uint32_t(r) << 16;
-		argb |= uint32_t(a) << 24;
+		argb |= uint32_t(alpha) << 24;
 
 		return argb;
 	}
 
 	uint32_t Pixel::getRGBA() const
 	{
-		uint32_t rgba = a;
+		uint32_t rgba = alpha;
 		rgba |= uint16_t(b) << 8;
 		rgba |= uint32_t(g) << 16;
 		rgba |= uint32_t(r) << 24;
@@ -280,7 +237,7 @@ namespace rl
 		m_iHeight = 0;
 	}
 
-	void OpenGLTexture::drawToScreen(OpenGLRect rect)
+	void OpenGLTexture::drawToScreen(OpenGLRect rect)  const
 	{
 		if (m_pData == nullptr || m_iID == 0)
 			return;
@@ -296,7 +253,7 @@ namespace rl
 		glEnd();
 	}
 
-	void OpenGLTexture::drawToScreen(OpenGLRect rect, GLfloat opacity)
+	void OpenGLTexture::drawToScreen(OpenGLRect rect, GLfloat opacity)  const
 	{
 		if (m_pData == nullptr || m_iID == 0)
 			return;
@@ -449,6 +406,7 @@ namespace rl
 
 		glDeleteTextures(1, &m_iID);
 		m_iID = 0;
+		m_bUploaded = false;
 	}
 
 	OpenGLTexture_Config OpenGLTexture::getConfig() const

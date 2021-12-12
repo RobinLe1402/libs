@@ -42,6 +42,9 @@
     <ClCompile Include="..\..\..\..\..\comps\include\rl-dev\graphics.fonts.bitmap.creator.cpp">
       <Filter>Source Files\dev</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\unicode.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.hpp">
@@ -52,6 +55,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\comps\include\rl-dev\graphics.fonts.bitmap.creator.hpp">
       <Filter>Header Files\dev</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\unicode.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.legacy.hpp">
+      <Filter>Header Files\general</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

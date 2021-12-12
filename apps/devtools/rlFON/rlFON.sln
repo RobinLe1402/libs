@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceGUI", "projects\Fon
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlFNT2_TMP", "projects\rlFNT2_TMP\rlFNT2_TMP.vcxproj", "{9E592114-7540-4C0E-B9EF-FB5B95FE9389}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceDesigner", "projects\FontFaceDesigner\FontFaceDesigner.vcxproj", "{C704FFF0-6468-4557-A8F6-878616B5CEF8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -81,6 +83,14 @@ Global
 		{9E592114-7540-4C0E-B9EF-FB5B95FE9389}.Release|x64.Build.0 = Release|x64
 		{9E592114-7540-4C0E-B9EF-FB5B95FE9389}.Release|x86.ActiveCfg = Release|Win32
 		{9E592114-7540-4C0E-B9EF-FB5B95FE9389}.Release|x86.Build.0 = Release|Win32
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Debug|x64.ActiveCfg = Debug|x64
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Debug|x64.Build.0 = Debug|x64
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Debug|x86.ActiveCfg = Debug|Win32
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Debug|x86.Build.0 = Debug|Win32
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Release|x64.ActiveCfg = Release|x64
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Release|x64.Build.0 = Release|x64
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Release|x86.ActiveCfg = Release|Win32
+		{C704FFF0-6468-4557-A8F6-878616B5CEF8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

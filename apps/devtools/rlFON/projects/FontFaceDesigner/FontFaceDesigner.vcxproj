@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{5e4018e0-7a86-402e-8228-e85a82c11970}</ProjectGuid>
-    <RootNamespace>analyzeFNT</RootNamespace>
+    <ProjectGuid>{c704fff0-6468-4557-a8f6-878616b5cef8}</ProjectGuid>
+    <RootNamespace>FontFaceDesigner</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -92,9 +92,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -106,9 +108,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -120,9 +124,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -134,30 +140,54 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\comps\include\rl\console.cpp" />
-    <ClCompile Include="..\..\comps\consoleui.cpp" />
-    <ClCompile Include="..\..\comps\parser.cpp" />
-    <ClCompile Include="main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\comps\include\rl\console.hpp" />
-    <ClInclude Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.h" />
-    <ClInclude Include="..\..\comps\consoleui.hpp" />
-    <ClInclude Include="..\..\comps\parser.hpp" />
-    <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.rc" />
-    <ResourceCompile Include="analyzeFNT.rc" />
+    <ResourceCompile Include="FontFaceDesigner.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\graphics.opengl.texture.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\graphics.opengl.types.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\graphics.opengl.window.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\input.keyboard.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\input.mouse.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\splashscreen.cpp" />
+    <ClCompile Include="..\..\..\..\..\comps\include\rl\unicode.cpp" />
+    <ClCompile Include="gui.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="types.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\global\robinle_mainicon.h" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.fonts.bitmap.reader.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.opengl.texture.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\graphics.opengl.window.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\input.keyboard.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\input.mouse.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\splashscreen.hpp" />
+    <ClInclude Include="..\..\..\..\..\comps\include\rl\unicode.hpp" />
+    <ClInclude Include="constants.hpp" />
+    <ClInclude Include="gui.hpp" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="types.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\..\..\RobinLe.ico" />
+    <Image Include="Resources\splash.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\..\..\..\..\[Temp]\!DevFont.rlFNT" />
+    <None Include="resources\fontface.bin" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -36,7 +36,7 @@ private: // methods
 
 	bool OnUpdate(float fElapsedTime) override
 	{
-		tex.drawToScreen(-1, 1, 1, -1);
+		tex.drawToScreen(rl::OpenGL::FullScreen);
 
 		return true;
 	}

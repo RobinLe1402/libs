@@ -1,4 +1,4 @@
-#include "graphics.fonts.bitmap.hpp"
+#include "graphics.fonts.bitmap.legacy.hpp"
 
 #include "tools.textencoding.hpp"
 

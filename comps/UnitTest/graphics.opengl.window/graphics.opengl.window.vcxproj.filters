@@ -21,12 +21,18 @@
     <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\rl\graphics.opengl.types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main-graphics.opengl.window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\rl\graphics.opengl.types.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

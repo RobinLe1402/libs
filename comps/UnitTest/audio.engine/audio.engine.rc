@@ -26,7 +26,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ROBINLE             ICON                    "E:\\Softwareentwicklung\\GitHub\\libs\\RobinLe-Logo.ico"
+IDI_ROBINLE             ICON                    "..\\..\\..\\RobinLe.ico"
 
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////

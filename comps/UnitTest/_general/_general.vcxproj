@@ -140,8 +140,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.legacy.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.opengl.texture.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.opengl.types.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
     <ClInclude Include="..\..\include\rl\input.keyboard.hpp" />
     <ClInclude Include="..\..\include\rl\input.mouse.hpp" />
@@ -157,8 +158,9 @@
     <Image Include="..\..\..\RobinLe-Logo.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\include\rl\graphics.fonts.bitmap.cpp" />
+    <ClCompile Include="..\..\include\rl\graphics.fonts.bitmap.legacy.cpp" />
     <ClCompile Include="..\..\include\rl\graphics.opengl.texture.cpp" />
+    <ClCompile Include="..\..\include\rl\graphics.opengl.types.cpp" />
     <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp" />
     <ClCompile Include="..\..\include\rl\input.keyboard.cpp" />
     <ClCompile Include="..\..\include\rl\input.mouse.cpp" />

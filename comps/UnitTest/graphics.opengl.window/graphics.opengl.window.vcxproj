@@ -140,10 +140,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\rl\graphics.opengl.types.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\include\rl\graphics.opengl.types.cpp" />
     <ClCompile Include="..\..\include\rl\graphics.opengl.window.cpp" />
     <ClCompile Include="main-graphics.opengl.window.cpp" />
   </ItemGroup>

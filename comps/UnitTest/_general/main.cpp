@@ -73,7 +73,7 @@ private:
 		if (kb.getKey('A').bHeld)
 			MessageBoxA(NULL, "Test", NULL, MB_ICONINFORMATION | MB_SYSTEMMODAL);
 
-		auto mousestate = mouse.getState();
+		auto& mousestate = mouse.getState();
 		if (mousestate.left.bReleased)
 		{
 			MessageBoxA(getHWND(), ("Clicked at (" + std::to_string(mousestate.x) + "|" + std::to_string(mousestate.y) + ")").c_str(), NULL, MB_ICONINFORMATION);
@@ -88,9 +88,9 @@ private:
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		rl::OpenGLCoord coordTL = { -1, 1 };
 		rl::OpenGLCoord coordBR = getPixelCoord(tex1.getWidth(), tex1.getHeight());
-		tex1.draw(coordTL.x, coordTL.y, coordBR.x, coordBR.y);
+		rl::OpenGLRect rect = { -1, 1, coordBR.x, coordBR.y };
+		tex1.drawToScreen(rect);
 
 		/*rl::OpenGLCoord coordTMP = getPixelCoord(tex2.getWidth(), tex2.getHeight());
 		coordTL = { coordBR.x, 1 };

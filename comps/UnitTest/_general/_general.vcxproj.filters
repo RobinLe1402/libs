@@ -33,7 +33,10 @@
     <ClInclude Include="..\..\include\rl\input.mouse.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.hpp">
+    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.legacy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\rl\graphics.opengl.types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -72,7 +75,10 @@
     <ClCompile Include="..\..\include\rl\input.mouse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\rl\graphics.fonts.bitmap.cpp">
+    <ClCompile Include="..\..\include\rl\graphics.fonts.bitmap.legacy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\rl\graphics.opengl.types.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -76,6 +76,14 @@ namespace rl
 			m_bStatesNew[wParam] = false;
 			return true;
 
+		case WM_CHAR:
+			m_cLastInput = (char32_t)wParam;
+			return true;
+
+			// Window loses focus --> reset keys to prevent messy state
+		case WM_KILLFOCUS:
+			reset();
+
 		default: // non-key message
 			return false;
 		}
@@ -116,6 +124,8 @@ namespace rl
 		memset(m_oKeyStates, 0, 256 * sizeof(KeyState));
 		memset(m_bStatesOld, 0, 256 * sizeof(bool));
 		memset(m_bStatesNew, 0, 256 * sizeof(bool));
+
+		clearLastChar();
 	}
 
 }

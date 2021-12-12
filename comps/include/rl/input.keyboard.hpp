@@ -85,7 +85,17 @@ namespace rl
 		/// Get the state of a single key
 		/// </summary>
 		/// <param name="KeyCode">= Windows keycode of desired key (<c>VK_[...]</c>)</param>
-		inline KeyState getKey(uint8_t KeyCode) { return m_oKeyStates[KeyCode]; }
+		inline KeyState getKey(uint8_t KeyCode) const { return m_oKeyStates[KeyCode]; }
+
+		/// <summary>
+		/// Get the last input character (0 = no value)
+		/// </summary>
+		inline char32_t getLastChar() const { return m_cLastInput; }
+
+		/// <summary>
+		/// Clear the last input character (set it to 0)
+		/// </summary>
+		inline void clearLastChar() { m_cLastInput = 0; }
 
 
 	private: // methods
@@ -99,6 +109,7 @@ namespace rl
 		static KeyState* m_oKeyStates;
 		static bool* m_bStatesOld;
 		static bool* m_bStatesNew;
+		char32_t m_cLastInput = 0;
 
 	};
 	

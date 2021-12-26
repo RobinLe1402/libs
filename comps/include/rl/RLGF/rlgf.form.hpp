@@ -146,14 +146,11 @@ namespace rl
 		friend class Form;
 	private: // static methods
 
-		static WORD getControlID();
-		static void releaseControlID(WORD controlID);
 		static LRESULT CALLBACK GlobalWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 
 	private: // static variables
 
-		static std::vector<uint64_t> oControlIDs;
 		static std::map<HWND, IWinControl*> oControls;
 
 
@@ -184,7 +181,6 @@ namespace rl
 
 	protected: // variables
 
-		const WORD m_dwControlID;
 		int m_iLeft;
 		int m_iTop;
 		Component m_pParent = nullptr;

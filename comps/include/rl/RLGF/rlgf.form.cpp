@@ -305,7 +305,6 @@ namespace rl
 	//==============================================================================================
 	// STATIC VARIABLES
 
-	std::vector<uint64_t> IWinControl::oControlIDs;
 	std::map<HWND, IWinControl*> IWinControl::oControls;
 
 
@@ -314,40 +313,6 @@ namespace rl
 
 	//----------------------------------------------------------------------------------------------
 	// STATIC METHODS
-
-	WORD IWinControl::getControlID()
-	{
-		if (oControlIDs.size() == 0xFFFF)
-			throw std::exception("Too many registered windows controls");
-
-		WORD result = 1;
-		while (result <= oControlIDs.size() && oControlIDs[(size_t)result - 1] == result)
-			++result;
-
-		oControlIDs.insert(oControlIDs.begin() + (result - 1), result);
-		return result;
-	}
-
-	void IWinControl::releaseControlID(WORD controlID)
-	{
-		size_t index = 0;
-		while (index < oControlIDs.size())
-		{
-			if (oControlIDs[index] < controlID)
-				++index;
-			else if (oControlIDs[index] == controlID)
-			{
-				oControlIDs.erase(oControlIDs.cbegin() + index);
-				return;
-			}
-			else if (oControlIDs[index] > controlID)
-				return; // ID not used
-		}
-
-		auto it = std::find(oControlIDs.begin(), oControlIDs.end(), controlID);
-		if (it != oControlIDs.end())
-			oControlIDs.erase(it);
-	}
 
 	LRESULT CALLBACK IWinControl::GlobalWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
@@ -375,11 +340,10 @@ namespace rl
 	// CONSTRUCTORS, DESTRUCTORS
 
 	IWinControl::IWinControl(Component owner, int left, int top) :
-		IComponent(owner), m_iLeft(left), m_iTop(top), m_dwControlID(getControlID()) {}
+		IComponent(owner), m_iLeft(left), m_iTop(top) {}
 
 	IWinControl::~IWinControl()
 	{
-		releaseControlID(m_dwControlID);
 		removeHWND(m_hWnd);
 	}
 
@@ -512,8 +476,7 @@ namespace rl
 	{
 		m_hWnd = CreateWindowW(WC_BUTTONW, m_sCaption.c_str(),
 			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, m_iLeft, m_iTop, m_iWidth,
-			m_iHeight, getParentHandle(), (HMENU)m_dwControlID,
-			Application::getInstance().getHandle(), this);
+			m_iHeight, getParentHandle(), NULL, Application::getInstance().getHandle(), this);
 
 		SendMessage(m_hWnd, WM_SETFONT, (WPARAM)Font::GetDefault().getHandle(), NULL);
 	}
@@ -626,12 +589,24 @@ namespace rl
 
 		case WM_COMMAND:
 		{
-			for (auto ctrl : m_oControls)
+			if (lParam == 0) // menu or accelerator
 			{
-				if (LOWORD(wParam) == ctrl->m_dwControlID)
+				const WORD wHigh = HIWORD(wParam);
+				/*
+				if (wHigh == 0)
+					// ToDo: Menu
+					;
+				else if (wHigh == 1)
+					// ToDo: Accelerator
+					;
+				*/
+			}
+			else // control
+			{
+				for (auto ctrl : m_oControls)
 				{
-					ctrl->processMessage(hWnd, uMsg, wParam, lParam);
-					break;
+					if (ctrl->getHandle() == (HWND)lParam)
+						ctrl->processMessage(hWnd, uMsg, wParam, lParam);
 				}
 			}
 		}

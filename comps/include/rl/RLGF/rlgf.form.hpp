@@ -40,6 +40,32 @@ namespace rl
 	class IComponent;
 
 
+	enum class MouseButton
+	{
+		Left = VK_LBUTTON,
+		Right = VK_RBUTTON,
+		Middle = VK_MBUTTON
+	};
+
+	enum ShiftButton
+	{
+		Left = MK_LBUTTON, // 1
+		Right = MK_RBUTTON, // 2
+		Shift = MK_SHIFT, // 4
+		Control = MK_CONTROL, // 8
+		Middle = MK_MBUTTON, // 16
+		X1 = MK_XBUTTON1, // 32
+		X2 = MK_XBUTTON2, // 64
+		Double = 128
+	};
+
+
+	// callback types
+	using ContextPopupEvent = std::function<void(POINT MousePos, bool& Handled)>;
+	using MouseEvent = std::function<void(MouseButton Button, WORD ShiftButtons, int X, int Y)>;
+	using NotifyEvent = std::function<void()>;
+
+
 
 
 	using Color = COLORREF;
@@ -164,9 +190,13 @@ namespace rl
 
 		void setParent(Component parent);
 
-		std::function<void()> OnMouseEnter = nullptr;
-		std::function<void()> OnMouseHover = nullptr;
-		std::function<void()> OnMouseLeave = nullptr;
+		ContextPopupEvent OnContextPopup = nullptr;
+		NotifyEvent OnDblClick = nullptr;
+		MouseEvent OnMouseDown = nullptr;
+		NotifyEvent OnMouseEnter = nullptr;
+		NotifyEvent OnMouseLeave = nullptr;
+		NotifyEvent OnMouseMove = nullptr;
+		MouseEvent OnMouseUp = nullptr;
 
 
 	protected: // methods
@@ -176,7 +206,12 @@ namespace rl
 			return m_pParent ? m_pParent->getHandle() : NULL;
 		}
 
-		virtual void processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		virtual bool processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+		/// <summary>
+		/// Call a method of type void(...) if it is assigned
+		/// </summary>
+		template <typename ...FN> void invoke(std::function<void(FN...)> fn, FN... args);
 
 
 	protected: // variables
@@ -337,14 +372,14 @@ namespace rl
 			IWinControl(owner, InitData.iLeft, InitData.iTop), m_sCaption(InitData.sCaption),
 			m_iWidth(InitData.iWidth), m_iHeight(InitData.iHeight) {}
 
-		std::function<void(void)> OnClick = nullptr;
+		NotifyEvent OnClick = nullptr;
 
 
 	protected: // IComponent implementation
 
 		void initialize() override;
 
-		virtual void processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+		virtual bool processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
 
 	private: // variables
@@ -367,7 +402,7 @@ namespace rl
 		Brush oBrushBackground;
 	};
 
-	class Form : public IComponent
+	class Form : public IWinControl
 	{
 		friend class Application;
 
@@ -386,6 +421,9 @@ namespace rl
 		Form(const wchar_t* szClassName, const FormInitData& InitData);
 
 		inline HWND getHandle() const noexcept { return m_hWnd; }
+
+		void addComponent(Component comp);
+		void addControl(WinControl ctrl);
 
 		inline const auto& getComponents() const noexcept { return m_oComponents; }
 		inline auto& getComponents() noexcept { return m_oComponents; }
@@ -427,7 +465,7 @@ namespace rl
 	{
 	public: // static methods
 
-		static inline Application& getInstance() noexcept { return m_oInstance; }
+		static inline Application& GetInstance() noexcept { return m_oInstance; }
 
 
 	private: // static variables

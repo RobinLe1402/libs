@@ -71,9 +71,12 @@ protected: // methods
 		init.iWidth = 250;
 		auto btn = new rl::Button(this, init);
 		btn->OnClick = [=]() { MessageBox(m_hWnd, TEXT("BtnClick"), TEXT("LOL"), MB_ICONINFORMATION); };
-
-		getComponents().push_back(btn);
-		getControls().push_back(btn);
+		this->OnDblClick =
+			[&]()
+		{
+			MessageBoxA(NULL, "TEST", "", MB_ICONINFORMATION);
+		};
+		addControl(btn);
 
 		init.iLeft = init.iLeft + init.iWidth + iCompPadding;
 		init.iWidth = init.iHeight;
@@ -82,8 +85,7 @@ protected: // methods
 		btn->OnClick = [&]() { OnBtn1(); };
 		btn->OnMouseEnter = [&]() { OnHover(); };
 		btn->OnMouseLeave = [&]() { OnLeave(); };
-		getComponents().push_back(btn);
-		getControls().push_back(btn);
+		addControl(btn);
 	}
 
 	void AfterConstruction() override
@@ -110,7 +112,7 @@ int WINAPI WinMain(
 	_In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
-	auto& App = rl::Application::getInstance();
+	auto& App = rl::Application::GetInstance();
 
 	rl::FormInitData fid;
 	fid.szCaption = L"Test form";

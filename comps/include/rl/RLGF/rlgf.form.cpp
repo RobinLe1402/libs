@@ -369,19 +369,70 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PROTECTED METHODS
 
-	void IWinControl::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	bool IWinControl::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
+		bool bHandled = false;
 		switch (uMsg)
 		{
+		case WM_CONTEXTMENU:
+			invoke<POINT, bool&>(OnContextPopup, { LOWORD(lParam), HIWORD(lParam) }, bHandled);
+			break;
+
+		case WM_LBUTTONDBLCLK:
+			invoke(OnDblClick);
+			invoke(OnMouseDown, MouseButton::Left, (WORD)(wParam | ShiftButton::Double),
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_LBUTTONDOWN:
+			invoke(OnMouseDown, MouseButton::Left, (WORD)wParam,
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_LBUTTONUP:
+			invoke(OnMouseUp, MouseButton::Left, (WORD)wParam,
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_MBUTTONDBLCLK:
+			invoke(OnMouseDown, MouseButton::Middle, (WORD)(wParam | ShiftButton::Double),
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_MBUTTONDOWN:
+			invoke(OnMouseDown, MouseButton::Middle, (WORD)wParam,
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_MBUTTONUP:
+			invoke(OnMouseUp, MouseButton::Middle, (WORD)wParam,
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_RBUTTONDBLCLK:
+			invoke(OnMouseDown, MouseButton::Right, (WORD)(wParam | ShiftButton::Double),
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_RBUTTONDOWN:
+			invoke(OnMouseDown, MouseButton::Right, (WORD)wParam,
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
+		case WM_RBUTTONUP:
+			invoke(OnMouseUp, MouseButton::Right, (WORD)wParam,
+				(int)LOWORD(lParam), (int)HIWORD(lParam));
+			break;
+
 		case WM_MOUSEMOVE:
-			if (!m_bHovering && OnMouseEnter)
-				OnMouseEnter();
+			if (!m_bHovering)
+				invoke(OnMouseEnter);
+			invoke(OnMouseMove);
 			if (!m_bMouseTracking)
 			{
 				TRACKMOUSEEVENT tme = { sizeof(tme) };
 				tme.dwFlags = TME_LEAVE;
 				tme.hwndTrack = hWnd;
-				tme.dwHoverTime = HOVER_DEFAULT;
 				if (!TrackMouseEvent(&tme))
 					throw std::exception("Call to TrackMouseEvent() failed");
 
@@ -389,22 +440,29 @@ namespace rl
 			}
 			break;
 
-		case WM_MOUSEHOVER:
-			if (m_bHovering)
-				break;
-			m_bHovering = true;
-			if (OnMouseHover)
-				OnMouseHover();
-			break;
-
 		case WM_MOUSELEAVE:
 			m_bMouseTracking = false; // must re-call TrackMouseEvent()
 			m_bHovering = false;
-			if (OnMouseLeave)
-				OnMouseLeave();
+			invoke(OnMouseLeave);
 			break;
 		}
+
+		return bHandled;
 	}
+
+	template <typename ...FN> void IWinControl::invoke(std::function<void(FN...)> fn,
+		FN... args)
+	{
+		if (fn)
+			fn(args...);
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PRIVATE METHODS
 
 	void IWinControl::addHWND(HWND hWnd)
 	{
@@ -424,15 +482,6 @@ namespace rl
 		addHWND(m_hWnd); // register HWND for mouse events
 		m_pOriginalWndProc = (WNDPROC)SetWindowLongPtr(m_hWnd, GWLP_WNDPROC, (LONG_PTR)GlobalWndProc);
 	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	// private methods
 
 
 
@@ -476,17 +525,25 @@ namespace rl
 	{
 		m_hWnd = CreateWindowW(WC_BUTTONW, m_sCaption.c_str(),
 			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, m_iLeft, m_iTop, m_iWidth,
-			m_iHeight, getParentHandle(), NULL, Application::getInstance().getHandle(), this);
+			m_iHeight, getParentHandle(), NULL, Application::GetInstance().getHandle(), this);
 
 		SendMessage(m_hWnd, WM_SETFONT, (WPARAM)Font::GetDefault().getHandle(), NULL);
 	}
 
-	void Button::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	bool Button::processMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
-		rl::IWinControl::processMessage(hWnd, uMsg, wParam, lParam);
+		if (rl::IWinControl::processMessage(hWnd, uMsg, wParam, lParam))
+			return true;
 
-		if (uMsg == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && OnClick)
-			OnClick();
+		bool bHandled = false;
+
+		if (uMsg == WM_COMMAND && HIWORD(wParam) == BN_CLICKED)
+		{
+			invoke(OnClick);
+			bHandled = true;
+		}
+
+		return bHandled;
 	}
 
 
@@ -528,7 +585,7 @@ namespace rl
 	// CONSTRUCTORS, DESTRUCTORS
 
 	Form::Form(const wchar_t* szClassName, const FormInitData& InitData) :
-		IComponent(nullptr), m_sClassName(szClassName), m_oInitData(InitData),
+		IWinControl(nullptr, 0, 0), m_sClassName(szClassName), m_oInitData(InitData),
 		m_bVisible(InitData.bVisible) {}
 
 
@@ -567,6 +624,25 @@ namespace rl
 		ShowWindow(m_hWnd, SW_SHOWNORMAL);
 	}
 
+	void Form::addComponent(Component comp)
+	{
+		if (comp == nullptr)
+			return;
+
+		if (std::find(m_oComponents.begin(), m_oComponents.end(), comp) == m_oComponents.end())
+			m_oComponents.push_back(comp);
+	}
+
+	void Form::addControl(WinControl ctrl)
+	{
+		if (ctrl == nullptr)
+			return;
+
+		if (std::find(m_oControls.begin(), m_oControls.end(), ctrl) == m_oControls.end())
+			m_oControls.push_back(ctrl);
+		addComponent(ctrl);
+	}
+
 
 
 
@@ -581,6 +657,11 @@ namespace rl
 
 	LRESULT Form::LocalWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
+		bool bHandled = IWinControl::processMessage(hWnd, uMsg, wParam, lParam);
+		
+		if (bHandled)
+			return ERROR_SUCCESS;
+
 		switch (uMsg)
 		{
 		case WM_CREATE:
@@ -606,7 +687,7 @@ namespace rl
 				for (auto ctrl : m_oControls)
 				{
 					if (ctrl->getHandle() == (HWND)lParam)
-						ctrl->processMessage(hWnd, uMsg, wParam, lParam);
+						bHandled = ctrl->processMessage(hWnd, uMsg, wParam, lParam);
 				}
 			}
 		}
@@ -618,7 +699,11 @@ namespace rl
 			break;
 		}
 
-		auto result = DefWindowProc(hWnd, uMsg, wParam, lParam);
+		LRESULT result;
+		if (!bHandled)
+			result = DefWindowProc(hWnd, uMsg, wParam, lParam);
+		else
+			result = ERROR_SUCCESS;
 
 		if (uMsg == WM_CREATE)
 			AfterConstruction();
@@ -635,22 +720,24 @@ namespace rl
 
 	void Form::initialize()
 	{
-		HINSTANCE hInstance = Application::getInstance().getHandle();
+		HINSTANCE hInstance = Application::GetInstance().getHandle();
 
 		WNDCLASSW wc = {};
 		wc.hInstance = hInstance;
 		wc.hbrBackground = m_oInitData.oBrushBackground.getHandle();
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hIcon = m_oInitData.hIcon;
 		wc.lpszClassName = m_sClassName.c_str();
 		wc.lpfnWndProc = GlobalWndProc;
-		wc.hIcon = m_oInitData.hIcon;
+		wc.style = CS_DBLCLKS;
 
 		if (!RegisterClassW(&wc))
 			throw std::exception("Couldn't register window class");
 
 		// m_hWnd is assigned on WM_CREATE
-		CreateWindowExW(WS_EX_CONTROLPARENT, m_sClassName.c_str(), m_oInitData.szCaption, WS_OVERLAPPEDWINDOW,
-			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, this);
+		CreateWindowExW(WS_EX_CONTROLPARENT, m_sClassName.c_str(), m_oInitData.szCaption,
+			WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL,
+			NULL, hInstance, this);
 
 		if (m_hWnd == NULL)
 			throw std::exception("Couldn't create window");

@@ -86,6 +86,13 @@ protected: // methods
 		btn->OnMouseEnter = [&]() { OnHover(); };
 		btn->OnMouseLeave = [&]() { OnLeave(); };
 		addControl(btn);
+
+		init.sCaption = L"Hello World!";
+		init.iTop += init.iHeight + iCompPadding;
+		init.iLeft = iWinPadding;
+		init.iWidth = 100;
+		auto lb = new rl::Label(this, init);
+		addControl(lb);
 	}
 
 	void AfterConstruction() override

@@ -394,6 +394,31 @@ namespace rl
 
 
 
+	class Label final : public IWinControl
+	{
+	public: // methods
+
+		Label(Component owner, const ButtonInitData& InitData) :
+			IWinControl(owner, InitData.iLeft, InitData.iTop), m_sCaption(InitData.sCaption),
+			m_iWidth(InitData.iWidth), m_iHeight(InitData.iHeight) {}
+
+
+	protected: // IComponent implementation
+
+		void initialize() override;
+
+
+	private: // variables
+
+		std::wstring m_sCaption;
+		int m_iWidth;
+		int m_iHeight;
+	};
+
+
+
+
+
 	struct FormInitData
 	{
 		bool bVisible = false;

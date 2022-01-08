@@ -56,8 +56,8 @@ typedef unsigned int uint32_t;
 namespace rl
 {
 
-	typedef uint8_t audio8_t;
-	typedef int16_t audio16_t;
+	using audio8_t = uint8_t;
+	using audio16_t = int16_t;
 	typedef struct int24_t
 	{
 		uint8_t iData[3];
@@ -71,7 +71,7 @@ namespace rl
 		int32_t asInt32();
 		void assign(int32_t i);
 	} audio24_t;
-	typedef float audio32_t;
+	using audio32_t = float;
 
 
 
@@ -242,17 +242,10 @@ namespace rl
 		{
 		public: // methods
 
-			Callback(AudioEngine& engine) : m_oEngine(engine) {}
-
 			void __stdcall OnCriticalError(HRESULT Error) override;
 
 			inline void __stdcall OnProcessingPassEnd() override {}
 			inline void __stdcall OnProcessingPassStart() override {}
-
-
-		private: // variables
-
-			AudioEngine& m_oEngine;
 
 		};
 
@@ -298,7 +291,7 @@ namespace rl
 	{
 	public: // methods
 
-		IAudio(AudioEngine& engine) : m_oEngine(engine) {}
+		IAudio() = default;
 		virtual ~IAudio();
 
 		virtual void pause() = 0;
@@ -344,8 +337,6 @@ namespace rl
 
 
 	protected: // variables
-
-		AudioEngine& m_oEngine;
 
 		IXAudio2SourceVoice* m_pVoice = nullptr;
 		IXAudio2SubmixVoice* m_pVoiceMono = nullptr;
@@ -393,7 +384,7 @@ namespace rl
 	{
 	public: // methods
 
-		SoundInstance(AudioEngine& engine) : IAudio(engine), m_oCallback(*this, m_mux, m_cv) {}
+		SoundInstance() : m_oCallback(*this, m_mux, m_cv) {}
 		virtual ~SoundInstance();
 
 		void play(WaveformData& data, float volume = 1.0f);
@@ -454,6 +445,44 @@ namespace rl
 
 
 	/// <summary>
+	/// A struct used for requesting audio sample data
+	/// </summary>
+	struct AudioSampleDest
+	{
+		/// <summary>
+		/// The bitdepth<para/>
+		/// Use to find out what pointer to use
+		/// </summary>
+		uint8_t iBitsPerSample;
+		/// <summary>
+		/// The count of channels to provide samples for
+		/// </summary>
+		uint8_t iChannels;
+
+		union
+		{
+			/// <summary>
+			/// The destination for 8-bit PCM audio
+			/// </summary>
+			rl::audio8_t* p8;
+			/// <summary>
+			/// The destination for 16-bit PCM audio
+			/// </summary>
+			rl::audio16_t* p16;
+			/// <summary>
+			/// The destination for 24-bit PCM audio
+			/// </summary>
+			rl::audio24_t* p24;
+			/// <summary>
+			/// The destination for 32-bit PCM audio
+			/// </summary>
+			rl::audio32_t* p32;
+		};
+	};
+
+
+
+	/// <summary>
 	/// For streaming audio data of unknown or very big length
 	/// </summary>
 	class IAudioStream : public IAudio
@@ -474,7 +503,7 @@ namespace rl
 		/// The buffer's size is <c>getBitsPerSample() / 8 * getChannelCount()</c>
 		/// </param>
 		/// <returns>Were samples written (= is the stream still running?)</returns>
-		virtual bool OnUpdate(float fElapsedTime, void* pDest)
+		virtual bool OnUpdate(float fElapsedTime, const AudioSampleDest& dest)
 		{
 			return false;
 		}
@@ -487,8 +516,7 @@ namespace rl
 
 	public: // methods
 
-		IAudioStream(AudioEngine& engine) :
-			IAudio(engine), m_oCallback(this, m_mux, m_cv) {}
+		IAudioStream() : m_oCallback(this, m_mux, m_cv) {}
 		~IAudioStream();
 
 

@@ -131,9 +131,9 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PROTECTED METHODS
 
-	void IAudio::registerAudio() { m_oEngine.registerAudio(this); }
+	void IAudio::registerAudio() { AudioEngine::getInstance().registerAudio(this); }
 
-	void IAudio::unregisterAudio() { m_oEngine.unregisterAudio(this); }
+	void IAudio::unregisterAudio() { AudioEngine::getInstance().unregisterAudio(this); }
 
 
 
@@ -155,7 +155,7 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	AudioEngine::AudioEngine() : m_oCallback(*this)
+	AudioEngine::AudioEngine()
 	{
 		createEngine();
 	}
@@ -409,9 +409,11 @@ namespace rl
 		GenerateHResultString(sError, Error, "Critical error in rl::AudioEngine:\n");
 		MessageBoxA(NULL, sError.c_str(), "Exception", MB_ICONERROR | MB_SYSTEMMODAL);*/
 
-		m_oEngine.m_bError = true;
+		auto& engine = AudioEngine::getInstance();
 
-		m_oEngine.destroy();
+		engine.m_bError = true;
+
+		engine.destroy();
 	}
 
 
@@ -432,10 +434,12 @@ namespace rl
 
 	bool IAudio::createVoices(WAVEFORMATEX wavfmt, const char* szClassName)
 	{
+		auto& engine = AudioEngine::getInstance();
+
 		if (!m_b3D) // regular playback
 		{
-			HRESULT hr = m_oEngine.getEngine()->CreateSourceVoice(&m_pVoice, &wavfmt, 0,
-				XAUDIO2_DEFAULT_FREQ_RATIO, m_pCallback);
+			HRESULT hr = engine.getEngine()->CreateSourceVoice(&m_pVoice,
+				&wavfmt, 0, XAUDIO2_DEFAULT_FREQ_RATIO, m_pCallback);
 
 			if (FAILED(hr))
 			{
@@ -448,7 +452,7 @@ namespace rl
 		}
 		else // 3D mode
 		{
-			auto p = m_oEngine.getEngine();
+			auto p = engine.getEngine();
 			XAUDIO2_SEND_DESCRIPTOR send = { 0 };
 			XAUDIO2_VOICE_SENDS sendlist = { 1, &send };
 
@@ -526,7 +530,7 @@ namespace rl
 
 	void IAudio::destroyVoices()
 	{
-		if (!m_oEngine.error())
+		if (!AudioEngine::getInstance().error())
 		{
 			m_bRunning = false;
 			m_pVoice->Stop();
@@ -554,7 +558,7 @@ namespace rl
 		if (!m_b3D)
 			return;
 
-		m_oEngine.get3DOutputVolume(m_oPos, m_f3DVolume);
+		AudioEngine::getInstance().get3DOutputVolume(m_oPos, m_f3DVolume);
 		m_pVoiceMono->SetOutputMatrix(m_pVoiceSurround, 1, 8, m_f3DVolume);
 	}
 
@@ -744,7 +748,7 @@ namespace rl
 	void IAudioStream::play(uint8_t BitsPerSample, uint8_t ChannelCount, uint32_t SampleRate,
 		float volume, size_t BufferBlocks, size_t BufferBlockSamples)
 	{
-		if (!m_oEngine.isRunning())
+		if (!AudioEngine::getInstance().isRunning())
 			return;
 
 
@@ -762,7 +766,7 @@ namespace rl
 	void IAudioStream::play3D(Audio3DPos pos, uint8_t BitsPerSample, uint8_t ChannelCount,
 		uint32_t SampleRate, float volume, size_t BufferBlocks, size_t BufferBlockSamples)
 	{
-		if (!m_oEngine.isRunning())
+		if (!AudioEngine::getInstance().isRunning())
 			return;
 
 		stop();
@@ -801,7 +805,7 @@ namespace rl
 		m_cv.notify_one();
 
 		m_bPaused = false;
-		m_b3D = false;
+		//m_b3D = false;
 
 		unregisterAudio();
 	}
@@ -834,14 +838,19 @@ namespace rl
 
 		OnStartup();
 
+		AudioSampleDest oSampleDest = { m_iBitsPerSample, m_iChannelCount, nullptr };
+
 		// fill buffer first time
 		for (size_t i = 0; i < m_iBufferBlocks; i++)
 		{
 			buf = {};
 			for (size_t j = 0; j < m_iBufferBlockSamples; j++)
 			{
-				if (!OnUpdate(fTimeBetweenCalls, m_pBufferData +
-					i * m_iBlockSize + j * iBytesPerSampleGroup))
+				// assign pointer to union (type is irrelevant here)
+				oSampleDest.p8 = static_cast<audio8_t*>(m_pBufferData + i * m_iBlockSize +
+					j * iBytesPerSampleGroup);
+
+				if (!OnUpdate(fTimeBetweenCalls, oSampleDest))
 				{
 					buf.Flags = XAUDIO2_END_OF_STREAM;
 					m_iBlocksFree = 1;
@@ -877,8 +886,11 @@ namespace rl
 				buf = {};
 				for (size_t i = 0; i < m_iBufferBlockSamples; i++)
 				{
-					if (!OnUpdate(fTimeBetweenCalls, m_pBufferData +
-						m_iBufferCurrentBlock * m_iBlockSize + i * iBytesPerSampleGroup))
+					// assign pointer to union (type is irrelevant here)
+					oSampleDest.p8 = static_cast<audio8_t*>(m_pBufferData +
+						m_iBufferCurrentBlock * m_iBlockSize + i * iBytesPerSampleGroup);
+
+					if (!OnUpdate(fTimeBetweenCalls, oSampleDest))
 					{
 						buf.Flags = XAUDIO2_END_OF_STREAM;
 						break;

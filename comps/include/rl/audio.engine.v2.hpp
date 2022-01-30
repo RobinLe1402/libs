@@ -57,7 +57,9 @@ using uint32_t = unsigned int;
 // DECLARATION
 namespace rl
 {
-	
+
+	constexpr bool BigEndian = (const uint8_t&)0x00FF == 0x00;
+
 	using audio8_t = uint8_t;
 	using audio16_t = int16_t;
 	typedef struct int24_t
@@ -77,6 +79,98 @@ namespace rl
 
 
 
+	/// <summary>
+	/// All bit depths supported by the RobinLe Audio Engine
+	/// </summary>
+	enum class AudioBitDepth
+	{
+		Audio8 = 8,
+		Audio16 = 16,
+		Audio24 = 24,
+		Audio32 = 32
+	};
+
+
+
+	/// <summary>
+	/// 3D audio position data
+	/// </summary>
+	struct Audio3DPos
+	{
+		float x; // -1.0f = left, 0.0f = center, 1.0f = right
+		float z; // 0.0f = front, 1.0f = side, 2.0f = back
+		float radius = 2.5f; // emission radius, scale is same as x and z
+
+		static const Audio3DPos Center;
+		static const Audio3DPos Left;
+		static const Audio3DPos Right;
+	};
+
+
+
+
+	/// <summary>
+	/// Own, reduced version of the <c>WAVEFORMATEX</c> struct for PCM waveforms
+	/// </summary>
+	struct WaveFormat
+	{
+		AudioBitDepth eBitDepth = AudioBitDepth::Audio16;
+		uint8_t iChannelCount = 2;
+		uint32_t iSampleRate = 44100;
+	};
+
+	constexpr bool ValidWaveFormat(const WaveFormat& format) noexcept;
+
+	constexpr WAVEFORMATEX CreateWaveFormatEx(const WaveFormat& format) noexcept;
+
+
+
+
+
+	/// <summary>
+	/// Audio data for one or multiple channels
+	/// </summary>
+	struct MultiChannelAudioSample
+	{
+		/// <summary>
+		/// The bitdepth<para/>
+		/// Use to find out what pointer to use
+		/// </summary>
+		uint8_t iBitsPerSample;
+		/// <summary>
+		/// The count of channels
+		/// </summary>
+		uint8_t iChannelCount;
+
+		union
+		{
+			/// <summary>
+			/// The destination for 8-bit PCM audio
+			/// </summary>
+			rl::audio8_t* p8;
+			/// <summary>
+			/// The destination for 16-bit PCM audio
+			/// </summary>
+			rl::audio16_t* p16;
+			/// <summary>
+			/// The destination for 24-bit PCM audio
+			/// </summary>
+			rl::audio24_t* p24;
+			/// <summary>
+			/// The destination for 32-bit PCM audio
+			/// </summary>
+			rl::audio32_t* p32;
+		} val;
+
+
+		/// <summary>
+		/// Delete allocated memory
+		/// </summary>
+		void free();
+	};
+
+
+
 
 
 	/// <summary>
@@ -84,17 +178,13 @@ namespace rl
 	/// </summary>
 	class AudioEngine final
 	{
-	public: // static methods
+	public: // types
 
-		static AudioEngine& getInstance();
-
-
-	private: // types
-		
 		enum class MessageVal
 		{
 			DestroyVoice,
 			DestroyEngine,
+			DeleteSoundInstance,
 			Recover, // TODO: try to recreate the audio engine (ptr = CreateParams*)
 			Quit
 		};
@@ -104,6 +194,15 @@ namespace rl
 			MessageVal eMsg;
 			void* ptr;
 		};
+
+
+	public: // static methods
+
+		static AudioEngine& GetInstance();
+		static void PostMsg(MessageVal eMsg, void* ptr);
+
+
+	private: // types
 
 		struct CreateParams
 		{
@@ -116,7 +215,6 @@ namespace rl
 	private: // static methods
 
 		static void MessageLoop();
-		static void PostMsg(MessageVal eMsg, void* ptr);
 		static void ProcessMessages();
 
 
@@ -166,7 +264,7 @@ namespace rl
 			virtual ~Voice();
 
 			// destroy this voice without locking the AudioEngine::m_muxVoicese mutex
-			virtual void destroyNoMutex();
+			virtual void destroy();
 
 			inline auto getPtr() { return m_pVoice; }
 			inline auto& getParents() { return m_oParents; }
@@ -235,8 +333,7 @@ namespace rl
 
 			// pCallback will be deleted on destruction
 			SourceVoice(IXAudio2SourceVoice* ptr, const std::set<SubmixVoice*>& parents,
-				Callback* pCallback) :
-				Voice(ptr, parents, VoiceType::SourceVoice), m_pCallback(pCallback) {}
+				Callback* pCallback);
 
 			virtual ~SourceVoice();
 
@@ -268,10 +365,12 @@ namespace rl
 			SubmixVoice(IXAudio2SubmixVoice* ptr, const std::set<SubmixVoice*>& parents) :
 				Voice(ptr, parents, VoiceType::SubmixVoice) {}
 
+			~SubmixVoice();
+
 			inline auto getPtr() { return reinterpret_cast<IXAudio2SubmixVoice*>(Voice::getPtr()); }
 
 			// destroy this voice without locking the AudioEngine::m_muxVoicese mutex
-			void destroyNoMutex() override;
+			void destroy() override;
 
 			inline auto& getSubVoices() { return m_oSubVoices; }
 
@@ -292,6 +391,9 @@ namespace rl
 		public: // methods
 
 			MasteringVoice(IXAudio2MasteringVoice* ptr) : SubmixVoice(ptr) {}
+			~MasteringVoice();
+
+			using SubmixVoice::destroy;
 
 			inline auto getPtr()
 			{
@@ -330,10 +432,26 @@ namespace rl
 			const XAUDIO2_EFFECT_CHAIN* pEffectChain = nullptr);
 
 		HRESULT createSourceVoice(SourceVoice** dest, const WAVEFORMATEX* pSourceFormat,
-			UINT32 Flags = 0, float MaxFrequencyRatio = 2.0f, const VoiceSends* sends = nullptr,
-			const XAUDIO2_EFFECT_CHAIN* pEffectChain = nullptr);
+			UINT32 Flags = 0, float MaxFrequencyRatio = XAUDIO2_DEFAULT_FREQ_RATIO,
+			const VoiceSends* sends = nullptr, const XAUDIO2_EFFECT_CHAIN* pEffectChain = nullptr);
 
 		inline HRESULT getHRESULT() { return hr; }
+
+		std::function<void(HRESULT Error)> OnCriticalError = nullptr;
+
+
+	private: // types
+
+		class Callback : public IXAudio2EngineCallback
+		{
+		public: // methods
+
+			void __stdcall OnCriticalError(HRESULT Error) override;
+
+			inline void __stdcall OnProcessingPassStart() override {}
+			inline void __stdcall OnProcessingPassEnd() override {}
+		};
+		friend class Callback;
 
 
 	private: // methods
@@ -346,6 +464,8 @@ namespace rl
 		/// </summary>
 		void createEngine();
 
+		void destroyEngine();
+
 
 	private: // variables
 
@@ -354,9 +474,189 @@ namespace rl
 		MasteringVoice* m_pMasteringVoice = nullptr;
 		IXAudio2* m_pEngine = nullptr;
 		std::mutex m_muxVoices;
+		uint8_t m_iChannelCount = 0;
+		Callback m_oCallback;
 
 	};
-	
+
+
+
+
+
+	// forward declaration
+	class SoundInstance;
+	class SoundInstance3D;
+
+	class Sound
+	{
+	public: // operators
+
+		Sound& operator=(const Sound& other);
+		Sound& operator=(Sound&& rval) noexcept;
+
+
+	public: // static variables
+
+		/// <summary>
+		/// Load a WAV file
+		/// </summary>
+		/// <returns>
+		/// * On success: Pointer to a <c>Sound</c> instance<para />
+		/// * On failure: <c>nullptr</c>
+		/// </returns>
+		static Sound* FromFile(const wchar_t* szFileName);
+		/// <summary>
+		/// Load a <c>"WAVE"</c> resource
+		/// </summary>
+		/// <returns>
+		/// * On success: Pointer to a <c>Sound</c> instance<para />
+		/// * On failure: <c>nullptr</c>
+		/// </returns>
+		static Sound* FromResource(HMODULE hModule, LPCWSTR lpName);
+		/// <summary>
+		/// Load audio from RIFF waveform data in memory
+		/// </summary>
+		/// <returns>
+		/// * On success: Pointer to a <c>Sound</c> instance<para />
+		/// * On failure: <c>nullptr</c>
+		/// </returns>
+		static Sound* FromMemory(const void* data, size_t size);
+
+
+	public: // methods
+
+		Sound();
+		Sound(const Sound& other);
+		Sound(Sound&& rval) noexcept;
+		Sound(const WaveFormat& Format, size_t SampleCount);
+		~Sound();
+
+		void clear();
+
+		bool getSample(MultiChannelAudioSample& dest, size_t iSampleID) const;
+
+		inline const void* getDataPtr() const { return m_pData; }
+		inline auto getDataSize() const { return m_iDataSize; }
+
+		inline auto getSampleCount() const { return m_iSampleCount; }
+		inline const auto& getWaveFormat() const { return m_oWavFmt; }
+
+		SoundInstance* play(float volume = 1.0f);
+		SoundInstance3D* play3D(const Audio3DPos& pos, float volume = 1.0f);
+
+
+	private: // variables
+
+		WaveFormat m_oWavFmt;
+		size_t m_iSampleAlign;
+		size_t m_iSampleCount;
+		size_t m_iDataSize;
+
+		uint8_t* m_pData;
+
+	};
+
+
+
+	enum class SoundInstanceType
+	{
+		Default, // sound is played unchanged
+		Surround // sound is played at a certain 3D position
+	};
+
+	/// <summary>
+	/// An instance of a sound effect
+	/// </summary>
+	class SoundInstance
+	{
+	public: // methods
+
+		SoundInstance(const Sound& sound, float volume);
+		virtual ~SoundInstance();
+
+		void pause();
+		void resume();
+		void stop();
+
+		void waitForEnd();
+
+		inline auto getType() const { return m_eType; }
+		inline bool getPlaying() const { return m_bPlaying; }
+		inline bool getPaused() const { return m_bPaused; }
+
+
+	protected: // methods
+
+		SoundInstance(SoundInstanceType type, float volume) : m_eType(type), m_fVolume(volume) {}
+
+		virtual bool createVoices(const WAVEFORMATEX& format);
+		virtual void destroyVoices();
+
+		bool loadSound(const Sound& sound);
+		void onEnd();
+
+
+	protected: // variables
+
+		AudioEngine::SourceVoice* m_pSourceVoice = nullptr;
+		std::atomic<bool> m_bVoiceExists = false;
+		std::atomic<bool> m_bPlaying = false;
+		std::atomic<bool> m_bPaused = false;
+		float m_fVolume;
+
+
+	private: // variables
+
+		const SoundInstanceType m_eType;
+		std::mutex m_mux;
+		std::condition_variable m_cv;
+	};
+
+	/// <summary>
+	/// An instance of a sound effect, played at a certain position in 3-dimensional space
+	/// </summary>
+	class SoundInstance3D : public SoundInstance
+	{
+	public: // methods
+
+		SoundInstance3D(const Sound& sound, float volume, const Audio3DPos& pos);
+
+		void set3DPos(const Audio3DPos& pos);
+		inline auto get3DPos() const { return m_o3DPos; }
+
+
+	protected: // methods
+
+		bool createVoices(const WAVEFORMATEX& format) override;
+		void destroyVoices() override;
+
+
+	private: // methods
+
+		void applyPos();
+
+
+	private: // variables
+
+		Audio3DPos m_o3DPos;
+		float m_fSurroundVolume[8] = {};
+		AudioEngine::SubmixVoice* m_pSubmixVoice_Surround = nullptr;
+		AudioEngine::SubmixVoice* m_pSubmixVoice_Mono = nullptr;
+
+	};
+
+
+
+
+
+	//class IAudioStream
+	//{
+	//protected: // methods
+
+
+
+	//};
+
 }
 
 

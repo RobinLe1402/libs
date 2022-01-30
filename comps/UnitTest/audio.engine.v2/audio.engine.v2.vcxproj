@@ -144,10 +144,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\rl\audio.engine.v2.hpp" />
+    <ClInclude Include="..\..\include\rl\global\robinle_mainicon.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\include\rl\audio.engine.v2.cpp" />
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\include\rl\global\robinle_mainicon.rc" />
+    <ResourceCompile Include="audio.engine.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="test.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -16,7 +16,7 @@
 
 namespace rl
 {
-	
+
 	constexpr bool ValidWaveFormat(const WaveFormat& format) noexcept
 	{
 		return format.iChannelCount > 0 && format.iChannelCount <= XAUDIO2_MAX_AUDIO_CHANNELS &&
@@ -260,14 +260,6 @@ namespace rl
 			while (oMessageQueue.size() > 0)
 			{
 				auto& msg = oMessageQueue.front();
-
-				static const char* szEnumStrings[] =
-				{
-					"DestroyVoice", "DestroyEngine", "DeleteSoundInstance", "Recover", "Quit"
-				};
-
-				printf("Message received: %-19s for pointer 0x%p\n",
-					szEnumStrings[(int)msg.eMsg], msg.ptr);
 
 				switch (msg.eMsg)
 				{
@@ -888,7 +880,7 @@ namespace rl
 		wf.eBitDepth = static_cast<AudioBitDepth>(wBitsPerSample);
 		wf.iChannelCount = (uint8_t)hdr.nChannels;
 		wf.iSampleRate = hdr.nSamplesPerSec;
-		
+
 		Sound* result = new Sound(wf, chData.ckSize / hdr.nBlockAlign);
 		memcpy_s(result->m_pData, result->m_iDataSize, pData, chData.ckSize);
 		return result;
@@ -952,24 +944,6 @@ namespace rl
 
 
 
-	//----------------------------------------------------------------------------------------------
-	// PROTECTED METHODS
-
-	// protected methods
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	// private methods
-
-
-
-
-
 
 
 
@@ -1011,15 +985,6 @@ namespace rl
 
 
 	//----------------------------------------------------------------------------------------------
-	// OPERATORS
-
-	// operators
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
 	void SoundInstance::pause()
@@ -1052,7 +1017,7 @@ namespace rl
 			return;
 
 		m_pSourceVoice->getPtr()->Stop();
-		
+
 		destroyVoices();
 
 		m_bPlaying = false;
@@ -1120,15 +1085,6 @@ namespace rl
 
 
 
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	// private methods
-
-
-
-
-
 
 
 
@@ -1161,15 +1117,6 @@ namespace rl
 		pVoice->SetVolume(m_fVolume);
 		pVoice->Start();
 	}
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// OPERATORS
-
-	// operators
 
 
 
@@ -1268,17 +1215,8 @@ namespace rl
 
 
 	/***********************************************************************************************
-	 class XXX
+	 class IAudioStream
 	***********************************************************************************************/
-
-	//==============================================================================================
-	// STATIC VARIABLES
-
-	// static variables
-
-
-
-
 
 	//==============================================================================================
 	// METHODS
@@ -1287,25 +1225,7 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// CONSTRUCTORS, DESTRUCTORS
 
-	// constructors, destructors
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// OPERATORS
-
-	// operators
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// STATIC METHODS
-
-	// static methods
+	IAudioStream::~IAudioStream() { stop(); }
 
 
 
@@ -1314,7 +1234,51 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
-	// public methods
+	void IAudioStream::setVolume(float volume)
+	{
+		if (!m_pSourceVoice)
+			return;
+
+		if (volume < 0.0f)
+			volume = 0.0f;
+		m_pSourceVoice->getPtr()->SetVolume(volume);
+		m_fVolume = volume;
+	}
+
+	void IAudioStream::pause()
+	{
+		if (!m_bRunning || m_bPaused)
+			return;
+
+		m_pSourceVoice->getPtr()->Stop();
+		m_bPaused = true;
+	}
+
+	void IAudioStream::resume()
+	{
+		if (!m_bRunning || !m_bPaused)
+			return;
+
+		m_pSourceVoice->getPtr()->Start();
+		m_bPaused = false;
+	}
+
+	void IAudioStream::stop()
+	{
+		if (!m_pSourceVoice)
+			return;
+
+		m_bRunning = false;
+
+		if (m_trdSampleGeneration.joinable())
+			m_trdSampleGeneration.join();
+
+		delete m_pSourceVoice;
+		m_pSourceVoice = nullptr;
+
+		delete[] m_pBuffer;
+		m_pBuffer = nullptr;
+	}
 
 
 
@@ -1323,7 +1287,41 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PROTECTED METHODS
 
-	// protected methods
+	void IAudioStream::internalStart(const WaveFormat& format, float volume, size_t BufferBlockCount,
+		size_t SamplesPerBufferBlock)
+	{
+		stop();
+		if (volume < 0.0f)
+			volume = 0.0f;
+
+		if (BufferBlockCount < 2 || SamplesPerBufferBlock == 0)
+			return;
+
+		if (!ValidWaveFormat(format))
+			return;
+
+		m_oFormat = format;
+		m_iByteDepth = static_cast<uint8_t>(m_oFormat.eBitDepth) / 8;
+		m_fVolume = volume;
+		m_iBlockCount = BufferBlockCount;
+		m_iSamplesPerBlock = SamplesPerBufferBlock;
+		m_iBlockSize = m_iSamplesPerBlock * m_iByteDepth;
+		m_iFreeBlocks = m_iBlockCount;
+
+		m_pBuffer = new uint8_t[m_iBlockCount * m_iBlockSize];
+
+		const auto wfe = CreateWaveFormatEx(format);
+
+		AudioEngine::GetInstance().createSourceVoice(&m_pSourceVoice, &wfe);
+		m_pSourceVoice->getPtr()->SetVolume(m_fVolume);
+		m_pSourceVoice->OnBufferEnd = [&](void* pBufferContext)
+		{
+			++m_iFreeBlocks;
+			m_cv.notify_one();
+		};
+
+		m_trdSampleGeneration = std::thread(&rl::IAudioStream::threadFunc, this);
+	}
 
 
 
@@ -1332,6 +1330,72 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PRIVATE METHODS
 
-	// private methods
+	void IAudioStream::threadFunc()
+	{
+		m_fTimePerSample = 1.0f / m_oFormat.iSampleRate;
+		m_iSampleAlign = m_oFormat.iChannelCount * m_iByteDepth;
+
+		m_bRunning = true;
+		m_bPaused = false;
+
+		// fill buffers at startup
+		for (size_t i = 0; m_bRunning && i < m_iBlockCount; ++i)
+		{
+			fillBlock();
+		}
+
+		m_pSourceVoice->getPtr()->Start();
+
+		while (m_bRunning)
+		{
+			if (m_iFreeBlocks == 0)
+			{
+				std::unique_lock lm(m_mux);
+				m_cv.wait(lm);
+			}
+			fillBlock();
+		}
+
+		m_bPaused = false;
+		auto ptr = m_pSourceVoice->getPtr();
+		if (!m_bEndOfStream) // --> not stopped by XAUDIO2_END_OF_STREAM
+		{
+			ptr->Stop();
+			ptr->FlushSourceBuffers();
+		}
+	}
+
+	void IAudioStream::fillBlock()
+	{
+		--m_iFreeBlocks;
+
+		XAUDIO2_BUFFER buf = {};
+		buf.AudioBytes = (UINT32)(m_iSamplesPerBlock * m_oFormat.iChannelCount * m_iByteDepth);
+		auto pData = &m_pBuffer[m_iCurrentBlock * m_iBlockSize];
+		memset(pData, 0, buf.AudioBytes);
+		buf.pAudioData = pData;
+		for (size_t i = 0; i < m_iSamplesPerBlock; ++i)
+		{
+			rl::MultiChannelAudioSample sample = {};
+			sample.iBitsPerSample = static_cast<uint8_t>(m_oFormat.eBitDepth);
+			sample.iChannelCount = m_oFormat.iChannelCount;
+			sample.val.p8 = pData + i * m_iSampleAlign;
+
+			if (!m_bRunning)
+				break;
+			m_bEndOfStream = !nextSample(m_fTimePerSample, sample);
+
+			m_bRunning = m_bRunning && !m_bEndOfStream;
+			if (!m_bRunning)
+				break;
+		}
+		if (!m_bRunning)
+			buf.Flags = XAUDIO2_END_OF_STREAM;
+
+		m_pSourceVoice->getPtr()->SubmitSourceBuffer(&buf);
+
+		++m_iCurrentBlock;
+		m_iCurrentBlock %= m_iBlockCount;
+	}\
 
 }

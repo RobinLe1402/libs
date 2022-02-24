@@ -44,6 +44,7 @@ using int32_t = int;
 using uint32_t = unsigned int;
 
 
+#include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <queue>
@@ -487,6 +488,10 @@ namespace rl
 	class SoundInstance;
 	class SoundInstance3D;
 
+	/// <summary>
+	/// An audio track that's loaded into memory at once<br />
+	/// Currently only supports WAV PCM data (8/16/24/32 bits per sample)
+	/// </summary>
 	class Sound
 	{
 	public: // operators
@@ -649,20 +654,92 @@ namespace rl
 
 
 
-	//class IAudioStream
-	//{
-	//protected: // methods
+	/// <summary>
+	/// An interface for buffered real-time audio generation
+	/// </summary>
+	class IAudioStream
+	{
+	public: // methods
+
+		virtual ~IAudioStream();
+
+		void setVolume(float volume);
+		inline float getVolume() const noexcept { return m_fVolume; }
+
+		void pause();
+		void resume();
+
+		void stop();
+
+		inline bool running() const noexcept { return m_bRunning; }
+		inline bool paused() const noexcept { return m_bPaused; }
 
 
+	protected: // methods
 
-	//};
+		/// <summary>
+		/// Start playback of the audio stream<para/>
+		/// Does nothing when the stream is already running
+		/// </summary>
+		/// <param name="format"></param>
+		void internalStart(const WaveFormat& format, float volume = 1.0f, size_t BufferBlockCount = 8,
+			size_t SamplesPerBufferBlock = 512);
+
+		/// <summary>
+		/// Get the next audio sample
+		/// </summary>
+		/// <param name="fElapsedTime">
+		/// = The elapsed time, in seconds, since the last call
+		/// </param>
+		/// <param name="dest">= The destination for the sample data to generate</param>
+		/// <returns>
+		/// Was sample data written? (if not, the audio stream will terminate)
+		/// </returns>
+		virtual bool nextSample(float fElapsedTime, MultiChannelAudioSample& dest) noexcept = 0;
+
+
+	private: // methods
+
+		void threadFunc(); // audio generation thread
+		void fillBlock(); // fill the current buffer block with audio data
+
+
+	private: // variables
+
+		AudioEngine::SourceVoice* m_pSourceVoice = nullptr;
+		uint8_t* m_pBuffer = nullptr;
+
+		std::mutex m_mux;
+		std::condition_variable m_cv;
+
+		// audio metadata
+		WaveFormat m_oFormat = {};
+		float m_fVolume = 0.0f;
+
+		// block info
+		size_t m_iBlockCount = 0;
+		size_t m_iBlockSize = 0;
+		size_t m_iSamplesPerBlock = 0;
+		std::atomic<size_t> m_iFreeBlocks = 0;
+		size_t m_iCurrentBlock = 0;
+
+		// precalculated values (constant between start() and stop())
+		float m_fTimePerSample = 0.0f;
+		uint8_t m_iByteDepth = 0; // m_oFormat.eBitDepth in bytes
+		uint8_t m_iSampleAlign = 0;
+
+		// thread stuff
+		std::thread m_trdSampleGeneration;
+		std::atomic_bool m_bPaused = false;
+		std::atomic_bool m_bRunning = false;
+		bool m_bEndOfStream = false; // nextSample() returned FALSE
+
+	}; \
 
 }
 
 
 
 
-
-// #undef foward declared definitions
 
 #endif // ROBINLE_AUDIO_ENGINE_V2

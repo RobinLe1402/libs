@@ -1,6 +1,6 @@
 /***************************************************************************************************
- FILE:	audio.engine.v2.hpp
- CPP:	audio.engine.v2.cpp
+ FILE:	audio.engine.hpp
+ CPP:	audio.engine.cpp
  DESCR:	Audio engine based on XAudio2, created for games
 
 
@@ -26,8 +26,8 @@
 
 
 #pragma once
-#ifndef ROBINLE_AUDIO_ENGINE_V2
-#define ROBINLE_AUDIO_ENGINE_V2
+#ifndef ROBINLE_AUDIO_ENGINE
+#define ROBINLE_AUDIO_ENGINE
 
 
 
@@ -714,4 +714,4 @@ namespace rl
 
 
 
-#endif // ROBINLE_AUDIO_ENGINE_V2
+#endif // ROBINLE_AUDIO_ENGINE

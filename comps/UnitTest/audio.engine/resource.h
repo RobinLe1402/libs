@@ -2,8 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by audio.engine.rc
 //
-#define IDI_ICON1                       101
-#define IDI_ROBINLE                     101
+#define IDW_TEST                        101
 
 // Next default values for new objects
 // 

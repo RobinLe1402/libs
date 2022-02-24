@@ -291,13 +291,13 @@ namespace rl
 	//----------------------------------------------------------------------------------------------
 	// PUBLIC METHODS
 
-	bool AudioEngine::create(const wchar_t* DeviceID, uint8_t ChannelCount, uint32_t SampleRate)
+	bool AudioEngine::create(uint8_t ChannelCount, uint32_t SampleRate)
 	{
 		destroy();
 
 		IXAudio2MasteringVoice* pMasteringVoice = nullptr;
 		hr = m_pEngine->CreateMasteringVoice(&pMasteringVoice, ChannelCount, SampleRate,
-			0, DeviceID);
+			0, NULL);
 
 		if (FAILED(hr))
 			ThrowHResultException(hr, "Couldn't create XAudio2 mastering voice:\n");
@@ -346,7 +346,7 @@ namespace rl
 		else
 			pSendList = nullptr;
 
-		HRESULT hr = m_pEngine->CreateSubmixVoice(&pSubmixVoice, InputChannels, InputSampleRate,
+		hr = m_pEngine->CreateSubmixVoice(&pSubmixVoice, InputChannels, InputSampleRate,
 			Flags, ProcessingStage, pSendList, pEffectChain);
 
 		if (SUCCEEDED(hr))
@@ -448,7 +448,6 @@ namespace rl
 		if (FAILED(hr))
 			ThrowHResultException(hr, "Couldn't create XAudio2 object:\n");
 
-		m_pEngine->RegisterForCallbacks(&m_oCallback);
 		m_bEngineExists = true;
 	}
 
@@ -654,36 +653,6 @@ namespace rl
 	{
 		std::unique_lock lm(AudioEngine::GetInstance().m_muxVoices);
 		destroy();
-	}
-
-
-
-
-
-
-
-
-
-
-	/***********************************************************************************************
-	 class AudioEngine::Callback
-	***********************************************************************************************/
-
-	//==============================================================================================
-	// METHODS
-
-
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
-
-	void AudioEngine::Callback::OnCriticalError(HRESULT Error)
-	{
-		auto& engine = AudioEngine::GetInstance();
-
-		engine.destroy();
-		engine.hr = Error;
-		if (engine.OnCriticalError)
-			engine.OnCriticalError(Error);
 	}
 
 

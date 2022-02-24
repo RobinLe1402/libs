@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 	pInstance->set3DPos(rl::Audio3DPos::Right);
 	Sleep(1000);
 	pInstance->stop();
-	printf("\b\n\n");
+	printf("\b \n\n");
 	delete pInstance;
 
 	delete pSound;
@@ -102,9 +102,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
-// TODO:
-/*
-- overthink AudioEngine::SourceVoice::Callback (--> initialization)
-- remove debug output from AudioEngine::MessageLoop()
-*/

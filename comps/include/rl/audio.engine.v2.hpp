@@ -186,7 +186,6 @@ namespace rl
 			DestroyVoice,
 			DestroyEngine,
 			DeleteSoundInstance,
-			Recover, // TODO: try to recreate the audio engine (ptr = CreateParams*)
 			Quit
 		};
 
@@ -201,16 +200,6 @@ namespace rl
 
 		static AudioEngine& GetInstance();
 		static void PostMsg(MessageVal eMsg, void* ptr);
-
-
-	private: // types
-
-		struct CreateParams
-		{
-			std::wstring sDeviceID;
-			uint8_t iChannelCount;
-			uint32_t iSampleRate;
-		};
 
 
 	private: // static methods
@@ -421,7 +410,7 @@ namespace rl
 		/// </param>
 		/// <returns>Was the mastering voice successfully created?</returns>
 		[[nodiscard]]
-		bool create(const wchar_t* DeviceID = 0, uint8_t ChannelCount = 2,
+		bool create(uint8_t ChannelCount = 2,
 			uint32_t SampleRate = 44100);
 
 		void destroy();
@@ -437,22 +426,6 @@ namespace rl
 			const VoiceSends* sends = nullptr, const XAUDIO2_EFFECT_CHAIN* pEffectChain = nullptr);
 
 		inline HRESULT getHRESULT() { return hr; }
-
-		std::function<void(HRESULT Error)> OnCriticalError = nullptr;
-
-
-	private: // types
-
-		class Callback : public IXAudio2EngineCallback
-		{
-		public: // methods
-
-			void __stdcall OnCriticalError(HRESULT Error) override;
-
-			inline void __stdcall OnProcessingPassStart() override {}
-			inline void __stdcall OnProcessingPassEnd() override {}
-		};
-		friend class Callback;
 
 
 	private: // methods
@@ -476,7 +449,6 @@ namespace rl
 		IXAudio2* m_pEngine = nullptr;
 		std::mutex m_muxVoices;
 		uint8_t m_iChannelCount = 0;
-		Callback m_oCallback;
 
 	};
 

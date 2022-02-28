@@ -657,6 +657,8 @@ namespace rl
 		void internalStart(const WaveFormat& format, float volume = 1.0f, size_t BufferBlockCount = 8,
 			size_t SamplesPerBufferBlock = 512);
 
+		inline const WaveFormat& getFormat() const noexcept { return m_oFormat; }
+
 		/// <summary>
 		/// Get the next audio sample
 		/// </summary>

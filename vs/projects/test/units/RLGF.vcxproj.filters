@@ -18,15 +18,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="$(GitHub_rl_libs)test\units\RLGF\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\rl\RLGF\rlgf.form.cpp">
+    <ClCompile Include="$(GitHub_rl_libs)src\RLGF\rlgf.form.cpp">
       <Filter>Source Files\RLGF</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\RLGF\rlgf.form.hpp">
+    <ClInclude Include="$(GitHub_rl_libs)src\RLGF\rlgf.form.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

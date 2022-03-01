@@ -1,7 +1,7 @@
 #include <string>
 #include <Windows.h>
 
-#include <rl/RLGF/rlgf.form.hpp>
+#include "../src/RLGF/rlgf.form.hpp"
 #include <rl/visualstyles.h>
 
 

@@ -15,18 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="$(GitHub_rl_libs)test\units\audio.decoders.flac\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\rl\audio.decoder.flac.cpp">
+    <ClCompile Include="$(GitHub_rl_libs)src\audio.decoder.flac.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\audio.engine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\audio.decoder.flac.hpp">
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\audio.decoder.flac.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\rl\data.endian.hpp">
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\data.endian.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\audio.engine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -11,6 +11,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(GitHub_rl_libs)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Lib>
     </Lib>

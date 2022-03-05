@@ -100,7 +100,7 @@ namespace rl
 			/// Convert a value from host endian to big endian
 			/// </summary>
 #define DECLARE_HOST_TO_BE(bits)								\
-			constexpr uint##bits##_t HostToLE(uint##bits##_t x)	\
+			constexpr uint##bits##_t HostToBE(uint##bits##_t x)	\
 			{													\
 				if constexpr (BigEndian)						\
 					return x;									\

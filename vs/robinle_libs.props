@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IntDir>$(GitHub_rl_libs)lib\!intermediate\$(SolutionName)\$ProjectName\$(Configuration)\$(Platform)\</IntDir>
+    <IntDir>$(GitHub_rl_libs)lib\!intermediate\$(SolutionName)\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <OutDir Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)lib\$(Configuration)\x32\</OutDir>
     <OutDir Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration)\</OutDir>
   </PropertyGroup>

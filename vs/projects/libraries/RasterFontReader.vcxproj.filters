@@ -41,16 +41,8 @@
     <ClInclude Include="$(GitHub_rl_libs)src\RasterFontReader\include\DataReader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)src\RasterFontReader\include\resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\RasterFontReader\include\CodePageToUnicode.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="$(GitHub_rl_libs)src\RasterFontReader\resource.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -15,12 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="$(GitHub_rl_libs)src\UnicodeData\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\comps\include\rl\dll\UnicodeData.hpp">
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\dll\UnicodeData.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

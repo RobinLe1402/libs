@@ -2,6 +2,8 @@
 #include <memory>
 #include <Windows.h>
 
+#pragma comment(lib, "RasterFontReader.lib")
+
 inline void ShowUsage();
 inline void ShowUnknownExt();
 

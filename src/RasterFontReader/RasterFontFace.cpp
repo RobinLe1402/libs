@@ -15,6 +15,8 @@ namespace lib = rl::RasterFontReader;
 //==================================================================================================
 // HELP FUNCTIONS
 
+constexpr uint16_t UnknownCodepage = 0xFFFF;
+
 /// <summary>
 /// Convert a FON character set identifier to a Windows codepage identifier
 /// </summary>
@@ -42,7 +44,7 @@ bool CharSetToCodePage(uint8_t charset, uint16_t& codepage)
 
 #undef CHARSET
 	default:
-		codepage = lib::UnknownCodepage;
+		codepage = UnknownCodepage;
 		return false;
 	}
 	return true;

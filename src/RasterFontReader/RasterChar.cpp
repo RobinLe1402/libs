@@ -46,7 +46,7 @@ bool lib::RasterChar::getPixel(unsigned int iX, unsigned int iY) const
 	if (iX >= m_iWidth || iY >= m_iHeight)
 		return false;
 
-	const uint8_t iByte = *(m_pData + (iY * m_iBytesPerRow) + (iX / 8));
+	const uint8_t iByte = *(m_pData + ((size_t)iY * m_iBytesPerRow) + (iX / 8));
 	return (iByte >> (7 - (iX & 7))) & 1;
 }
 
@@ -55,7 +55,7 @@ void lib::RasterChar::setPixel(unsigned int iX, unsigned int iY, bool bSet)
 	if (iX >= m_iWidth || iY >= m_iHeight)
 		return;
 
-	uint8_t* const pByte = m_pData + (iY * m_iBytesPerRow) + (iX / 8);
+	uint8_t* const pByte = m_pData + ((size_t)iY * m_iBytesPerRow) + (iX / 8);
 	const uint8_t iShift = 7 - (iX & 7);
 	*pByte &= ~(1 << iShift);
 	*pByte |= (bSet ? 1 : 0) << iShift;

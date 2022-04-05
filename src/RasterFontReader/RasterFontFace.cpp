@@ -108,18 +108,13 @@ struct FONTHDR
 //==================================================================================================
 // RasterFontFace
 
-lib::RasterFontFace::RasterFontFace() : m_pChars(new std::map<char32_t, RasterChar>), m_oMeta{} {}
+lib::RasterFontFace::RasterFontFace() : m_oMeta{} {}
 
 lib::RasterFontFace::RasterFontFace(const RasterFontFace& other) :
-	m_pChars(new std::map<char32_t, RasterChar>(*other.m_pChars)), m_oMeta(other.m_oMeta) { }
+	m_oChars(other.m_oChars), m_oMeta(other.m_oMeta) { }
 
 lib::RasterFontFace::RasterFontFace(RasterFontFace&& rval) noexcept :
-	m_pChars(rval.m_pChars), m_oMeta(rval.m_oMeta)
-{
-	rval.m_pChars = nullptr;
-}
-
-lib::RasterFontFace::~RasterFontFace() { delete m_pChars; }
+	m_oChars(std::move(rval.m_oChars)), m_oMeta(rval.m_oMeta) { }
 
 lib::LoadResult_FNT lib::RasterFontFace::loadFromFile_FNT(const wchar_t* szFilepath)
 {
@@ -258,8 +253,8 @@ lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, siz
 
 			CodePageToUnicode((uint8_t)i, m_oMeta.iCodepage, cRaw);
 
-			m_pChars->emplace(cRaw, RasterChar(dfCharWidth, hdr.dfPixHeight));
-			auto& oChar = m_pChars->at(cRaw);
+			m_oChars.emplace(cRaw, RasterChar(dfCharWidth, hdr.dfPixHeight));
+			auto& oChar = m_oChars.at(cRaw);
 
 
 			if (oChar.width() <= 8)
@@ -331,7 +326,7 @@ lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, siz
 	m_oMeta.iMaxWidth = 0;
 	m_oMeta.iMinWidth = (unsigned int)-1;
 
-	for (const auto& pair : *m_pChars)
+	for (const auto& pair : m_oChars)
 	{
 		const auto iWidth = pair.second.width();
 
@@ -351,6 +346,6 @@ lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, siz
 
 void lib::RasterFontFace::clear()
 {
-	m_pChars->clear();
+	m_oChars.clear();
 	m_oMeta = {};
 }

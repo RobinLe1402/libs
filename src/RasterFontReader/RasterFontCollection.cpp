@@ -16,22 +16,11 @@ namespace lib = rl::RasterFontReader;
 //==================================================================================================
 // RasterFontFaceCollection
 
-lib::RasterFontFaceCollection::RasterFontFaceCollection() :
-	m_pFonts(new std::vector<RasterFontFace>) { }
-
 lib::RasterFontFaceCollection::RasterFontFaceCollection(const RasterFontFaceCollection& other) :
-	m_pFonts(new std::vector<RasterFontFace>(*other.m_pFonts)) { }
+	m_oFonts(other.m_oFonts) { }
 
 lib::RasterFontFaceCollection::RasterFontFaceCollection(RasterFontFaceCollection&& rval) noexcept :
-	m_pFonts(rval.m_pFonts)
-{
-	rval.m_pFonts = nullptr;
-}
-
-lib::RasterFontFaceCollection::~RasterFontFaceCollection()
-{
-	delete m_pFonts;
-}
+	m_oFonts(std::move(rval.m_oFonts)) {}
 
 lib::LoadResult_CPI lib::RasterFontFaceCollection::loadFromFile_CPI(const wchar_t* szFilepath)
 {
@@ -153,8 +142,8 @@ lib::LoadResult_CPI lib::RasterFontFaceCollection::loadFromData_CPI(const void* 
 						}
 
 
-						m_pFonts->push_back(RasterFontFace());
-						auto& face = m_pFonts->at(m_pFonts->size() - 1);
+						m_oFonts.push_back(RasterFontFace());
+						auto& face = m_oFonts.at(m_oFonts.size() - 1);
 						auto& meta = face.meta();
 
 						meta.iCodepage = cpeh.codepage;
@@ -215,7 +204,7 @@ lib::LoadResult_CPI lib::RasterFontFaceCollection::loadFromData_CPI(const void* 
 			memcpy_s(&sCopyright[0], sCopyright.length(),
 				reader.begin() + iPos, iCopyrightLength);
 
-			for (auto& oFont : *m_pFonts)
+			for (auto& oFont : m_oFonts)
 			{
 				oFont.meta().sCopyright = sCopyright;
 			}
@@ -317,7 +306,7 @@ lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromData_FON(const void* 
 						(size_t)rte.wLength << wAlignShift);
 
 				if (result == LoadResult_FNT::Success)
-					m_pFonts->push_back(std::move(oFont));
+					m_oFonts.push_back(std::move(oFont));
 			}
 		}
 

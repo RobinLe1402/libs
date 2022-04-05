@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)tools\rlFON\consoleui.cpp">
+      <Filter>Source Files\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)tools\rlFON\parser.cpp">
+      <Filter>Source Files\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\console.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\!include\consoleui.hpp">
+      <Filter>Header Files\dev</Filter>
+    </ClInclude>
+    <ClInclude Include="..\!include\parser.hpp">
+      <Filter>Header Files\dev</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\console.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\tools.gdiplus.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{eded1eae-528a-46f1-a740-bcbb1764ab76}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\dev">
+      <UniqueIdentifier>{aceeefdc-694b-47b3-a201-55093ef488a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\general">
+      <UniqueIdentifier>{4e04780b-445e-4526-bf49-e8877a7a9467}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{9599b3c1-518c-4a1a-a845-8c0b23b97600}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\dev">
+      <UniqueIdentifier>{2693cf63-3721-4b16-b15c-2b8ed1adcff3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\general">
+      <UniqueIdentifier>{aaf4bb3a-5915-48b8-bc01-ba84f5e61656}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{52d55f2a-18a5-4517-85bc-0f08f70bfcdf}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="$(GitHub_rl_libs)RobinLe.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

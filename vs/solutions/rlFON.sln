@@ -3,23 +3,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31313.79
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "analyzeFON", "..\projects\tools\rlFON\analyzeFON.vcxproj", "{6115E4B0-355F-4A37-BC2E-DFF47D952B1C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "analyzeFON", "..\..\tools\rlFON\analyzeFON\analyzeFON.vcxproj", "{6115E4B0-355F-4A37-BC2E-DFF47D952B1C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "previewFON", "..\projects\tools\rlFON\previewFON.vcxproj", "{410F58E6-971F-47FA-88AB-9ED8F7C4254F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "previewFON", "..\..\tools\rlFON\previewFON\previewFON.vcxproj", "{410F58E6-971F-47FA-88AB-9ED8F7C4254F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "extractFNT", "..\projects\tools\rlFON\extractFNT.vcxproj", "{2B38510E-39F6-4208-AF12-08CB51DD1E2C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "extractFNT", "..\..\tools\rlFON\extractFNT\extractFNT.vcxproj", "{2B38510E-39F6-4208-AF12-08CB51DD1E2C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "analyzeFNT", "..\projects\tools\rlFON\analyzeFNT.vcxproj", "{5E4018E0-7A86-402E-8228-E85A82C11970}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "analyzeFNT", "..\..\tools\rlFON\analyzeFNT\analyzeFNT.vcxproj", "{5E4018E0-7A86-402E-8228-E85A82C11970}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFace", "..\projects\tools\rlFON\FontFace.vcxproj", "{B0C1CDBE-A5AC-4ABB-9D3E-CAF5A95F6807}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFace", "..\..\tools\rlFON\FontFace\FontFace.vcxproj", "{B0C1CDBE-A5AC-4ABB-9D3E-CAF5A95F6807}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceGUI", "..\projects\tools\rlFON\FontFaceGUI.vcxproj", "{D1030F1B-9F96-4652-AC60-9070573E004C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceGUI", "..\..\tools\rlFON\FontFaceGUI\FontFaceGUI.vcxproj", "{D1030F1B-9F96-4652-AC60-9070573E004C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlFNT2_TMP", "..\projects\tools\rlFON\rlFNT2_TMP.vcxproj", "{9E592114-7540-4C0E-B9EF-FB5B95FE9389}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlFNT2_TMP", "..\..\tools\rlFON\rlFNT2_TMP\rlFNT2_TMP.vcxproj", "{9E592114-7540-4C0E-B9EF-FB5B95FE9389}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceDesigner", "..\projects\tools\rlFON\FontFaceDesigner.vcxproj", "{C704FFF0-6468-4557-A8F6-878616B5CEF8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceDesigner", "..\..\tools\rlFON\FontFaceDesigner\FontFaceDesigner.vcxproj", "{C704FFF0-6468-4557-A8F6-878616B5CEF8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceGUI_WinAPI", "..\projects\tools\rlFON\FontFaceGUI_WinAPI.vcxproj", "{E344CC18-B179-4C60-AAED-22D2AFFD93D8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontFaceGUI_WinAPI", "..\..\tools\rlFON\FontFaceGUI_WinAPI\FontFaceGUI_WinAPI.vcxproj", "{E344CC18-B179-4C60-AAED-22D2AFFD93D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

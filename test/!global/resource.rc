@@ -26,7 +26,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ROBINLE             ICON                    "..\\..\\..\\RobinLe.ico"
+IDI_ROBINLE             ICON                    "..\\..\\RobinLe.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ IDI_ROBINLE             ICON                    "..\\..\\..\\RobinLe.ico"
 // Bitmap
 //
 
-IDB_SPLASH              BITMAP                  "..\\..\\..\\res\\SplashScreen.bmp"
+IDB_SPLASH              BITMAP                  "..\\..\\res\\SplashScreen.bmp"
 
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////

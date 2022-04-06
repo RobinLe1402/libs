@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{d2c45470-ec8c-41b8-af1f-0deb1a3cfe9b}</ProjectGuid>
-    <RootNamespace>UnicodeDataTest</RootNamespace>
+    <RootNamespace>UnicodeData_Test</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

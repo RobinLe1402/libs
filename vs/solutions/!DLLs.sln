@@ -7,11 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnicodeData", "..\..\src\Un
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnicodeData_Generator", "..\..\tools\UnicodeData_Generator\UnicodeData_Generator.vcxproj", "{4B3FCB1D-1FA5-42BB-9148-98411F8A2AAC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnicodeDataTest", "..\..\test\libraries\UnicodeData\UnicodeDataTest.vcxproj", "{D2C45470-EC8C-41B8-AF1F-0DEB1A3CFE9B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnicodeData_Test", "..\..\test\libraries\UnicodeData_Test\UnicodeData_Test.vcxproj", "{D2C45470-EC8C-41B8-AF1F-0DEB1A3CFE9B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RasterFontReader", "..\..\src\RasterFontReader\RasterFontReader.vcxproj", "{C1DA117F-B51F-47CC-B953-F6963CFEEE7D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RasterFontReader_Test", "..\..\test\libraries\RasterFontReader\RasterFontReader_Test.vcxproj", "{9352D34A-3486-4194-B32C-D96871C63EF1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RasterFontReader_Test", "..\..\test\libraries\RasterFontReader_Test\RasterFontReader_Test.vcxproj", "{9352D34A-3486-4194-B32C-D96871C63EF1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

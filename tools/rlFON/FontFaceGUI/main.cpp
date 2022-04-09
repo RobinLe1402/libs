@@ -1,15 +1,15 @@
 #include "resource.h"
 
-#include <rl/graphics.opengl.gui.hpp>
-#include <rl/graphics.opengl.texture.hpp>
-#include <rl/tools.gdiplus.hpp>
+#include "rl/graphics.opengl.gui.hpp"
+#include "rl/graphics.opengl.texture.hpp"
+#include "rl/tools.gdiplus.hpp"
 
 #include <Windows.h>
 #include <gl/GL.h>
 
 
 
-#include <rl/graphics.opengl.window.hpp>
+#include "rl/graphics.opengl.window.hpp"
 class UI : public rl::OpenGLWin
 {
 private: // variables

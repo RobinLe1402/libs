@@ -1,5 +1,5 @@
 @ECHO OFF
-REM Thie script analyzes each .fon file in a directory and writes the output to a file
+REM This script analyzes each .fon file in a directory and writes the output to a file
 CHCP 1252 > NUL
 
 IF NOT EXIST ".\analyzeFON.exe" GOTO :NOEXE

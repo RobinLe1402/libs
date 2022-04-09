@@ -1,5 +1,5 @@
 @ECHO OFF
-REM Thie script analyzes each .fnt file in a directory and writes the output to a file
+REM This script analyzes each .fnt file in a directory and writes the output to a file
 CHCP 1252 > NUL
 
 IF NOT EXIST ".\analyzeFNT.exe" GOTO :NOEXE

@@ -1,5 +1,5 @@
 @ECHO OFF
-REM Thie script tries to generate a preview bitmap image for each .fon file in a directory
+REM This script tries to generate a preview bitmap image for each .fon file in a directory
 
 IF NOT EXIST ".\previewFON.exe" GOTO :NOEXE
 

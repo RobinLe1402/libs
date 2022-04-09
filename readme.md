@@ -15,11 +15,13 @@ Here's a definition of what each directory contains:
 | `include` | `.hpp` and `.h` files for including |
 | `lib` | *(only locally)* `.dll` and `.lib` files (compiled from `src`) |
 | `res` | Misc. resource files |
-| `src` | Library source code |
+| `src` | Source files (both for libraries and single units) |
 | `template` | Misc. template files |
 | `test` | Source code for test applications (mainly for testing libraries) |
 | `tools` | Source code for misc. applications |
 | `vs` | Visual Studio-specific files |
+
+Further info about the directory structure and contents are available in `readme.md`s in the subdirectories.
 
 
 ## Executable downloads

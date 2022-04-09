@@ -31,6 +31,6 @@ Since this repository is the home of a multiple of unrelated applications and th
 
 
 ## Documentation
-For detailed documentation, visit [this repository's wiki](https://lnk.robinle.de/git/wiki/libs).
+For detailed documentation, visit [this repository's wiki](https://lnk.robinle.de/git/libs/wiki).
 
 Sorry it's currently in a poorly maintained, outdated state. But I'm working on it!

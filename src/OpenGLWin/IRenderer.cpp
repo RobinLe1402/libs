@@ -1,4 +1,4 @@
-#include "rl/lib/OpenGLWin.hpp"
+#include "rl/lib/OpenGLWin/OpenGLWin.hpp"
 
 namespace lib = rl::OpenGLWin;
 
@@ -22,7 +22,7 @@ lib::IRenderer::~IRenderer()
 	destroy();
 }
 
-bool lib::IRenderer::create(HDC hDC, bool bVSync)
+bool lib::IRenderer::create(HDC hDC, unsigned iWidth, unsigned iHeight, bool bVSync)
 {
 	destroy();
 
@@ -47,8 +47,8 @@ bool lib::IRenderer::create(HDC hDC, bool bVSync)
 		return false;
 	}
 
-	m_iWidth = m_oApplication.window()->width();
-	m_iHeight = m_oApplication.window()->height();
+	m_iWidth = iWidth;
+	m_iHeight = iHeight;
 	glViewport(0, 0, m_iWidth, m_iHeight);
 	m_hDC = hDC;
 
@@ -65,6 +65,8 @@ void lib::IRenderer::destroy()
 {
 	if (m_hGLRC == NULL)
 		return;
+
+	OnDestroy();
 
 	wglDeleteContext(m_hGLRC);
 	m_hGLRC = NULL;

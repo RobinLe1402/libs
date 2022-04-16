@@ -1,6 +1,8 @@
-#include "rl/lib/OpenGLWin.hpp"
+#include "rl/lib/OpenGLWin/OpenGLWin.hpp"
 
 namespace lib = rl::OpenGLWin;
+
+// ToDo: Fix screen flickering on gaining/losing focus when in fullscreen mode
 
 
 
@@ -9,11 +11,25 @@ lib::Window* lib::Window::s_pInstance = nullptr;
 LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static Window& o = *s_pInstance;
+	static bool s_bFirstRestore = true;
 
 	switch (uMsg)
 	{
+	case WM_SETFOCUS:
+	case WM_KILLFOCUS:
+		o.m_oApplication.winMessage(uMsg, wParam, lParam);
+		break;
+
 	case WM_SIZING:
 		o.m_oApplication.winMessage(uMsg, wParam, lParam);
+		{
+			auto& rect = *reinterpret_cast<RECT*>(lParam);
+			o.m_iNativeWidth = rect.right - rect.left;
+			o.m_iNativeHeight = rect.bottom - rect.top;
+
+			o.m_iWidth = o.m_iNativeWidth - o.m_iClientToScreenX;
+			o.m_iHeight = o.m_iNativeHeight - o.m_iClientToScreenY;
+		}
 		break;
 
 	case WM_SIZE:
@@ -23,52 +39,38 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			o.m_iWidth = LOWORD(lParam);
 			o.m_iHeight = HIWORD(lParam);
 
-			RECT rect{};
-			GetWindowRect(hWnd, &rect);
-			o.m_iNativeWidth = rect.right - rect.left;
-			o.m_iNativeHeight = rect.bottom - rect.top;
+			o.m_iNativeWidth = o.m_iWidth + o.m_iClientToScreenX;
+			o.m_iNativeHeight = o.m_iHeight + o.m_iClientToScreenY;
 		}
 
-		switch (wParam)
-		{
-		case SIZE_MINIMIZED:
-			o.m_bMinimized = true;
-			[[fallthrough]];
-		case SIZE_MAXIMIZED:
-		case SIZE_RESTORED:
-			o.m_oApplication.winMessage(uMsg, wParam, lParam);
-		}
+		o.m_bMinimized = (wParam == SIZE_MINIMIZED);
+		if (!o.m_bFullscreen)
+			o.m_bMaximized = (wParam == SIZE_MAXIMIZED);
+
+		o.m_oApplication.winMessage(uMsg, wParam, lParam);
 		break;
 
 	case WM_GETMINMAXINFO:
 		if (!o.m_bFullscreen)
 		{
 			MINMAXINFO& mmi = *reinterpret_cast<MINMAXINFO*>(lParam);
-			const DWORD dwStyle = GetWindowLong(hWnd, GWL_STYLE);
-
-
-			RECT rect;
 
 			// maximum
 			if (o.m_iMaxWidth > 0 || o.m_iMaxHeight > 0)
 			{
-				rect = { 0, 0, (LONG)o.m_iMaxWidth, (LONG)o.m_iMaxHeight };
-				AdjustWindowRect(&rect, dwStyle, FALSE);
 				if (o.m_iMaxWidth > 0)
-					mmi.ptMaxTrackSize.x = rect.right - rect.left;
+					mmi.ptMaxTrackSize.x = o.m_iMaxWidth + o.m_iClientToScreenX;
 				if (o.m_iMaxHeight > 0)
-					mmi.ptMaxTrackSize.y = rect.bottom - rect.top;
+					mmi.ptMaxTrackSize.y = o.m_iMaxHeight + o.m_iClientToScreenY;
 			}
 
 			// minimum
 			if (o.m_iMinWidth > 0 || o.m_iMinHeight > 0)
 			{
-				rect = { 0, 0, (LONG)o.m_iMinWidth, (LONG)o.m_iMinHeight };
-				AdjustWindowRect(&rect, dwStyle, FALSE);
 				if (o.m_iMinWidth > 0)
-					mmi.ptMinTrackSize.x = rect.right - rect.left;
+					mmi.ptMinTrackSize.x = o.m_iMinWidth + o.m_iClientToScreenX;
 				if (o.m_iMinHeight > 0)
-					mmi.ptMinTrackSize.y = rect.bottom - rect.top;
+					mmi.ptMinTrackSize.y = o.m_iMinHeight + o.m_iClientToScreenY;
 			}
 		}
 
@@ -103,7 +105,8 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	return 0;
 }
 
-lib::Window::Window(IApplication& oApplication) : m_oApplication(oApplication) { }
+lib::Window::Window(IApplication& oApplication, const wchar_t* szClassName) :
+	m_oApplication(oApplication), m_sClassName(szClassName) { }
 
 lib::Window::~Window() { destroy(); }
 
@@ -198,15 +201,67 @@ void lib::Window::setSize(unsigned iWidth, unsigned iHeight)
 	SendMessage(m_hWnd, WM_SIZE, SIZE_RESTORED, MAKELPARAM(iWidth, iHeight));
 }
 
-bool lib::Window::windowToClient(unsigned& iWidth, unsigned& iHeight)
+void lib::Window::setFullscreen(bool bFullscreen, HMONITOR hMon)
 {
-	if (m_iNativeWidth < m_iWidth || m_iNativeHeight < m_iHeight)
-		return false;
+	if (!running())
+		return;
 
-	iWidth -= m_iNativeWidth - m_iWidth;
-	iHeight -= m_iNativeHeight - m_iHeight;
+	if (hMon == NULL)
+		hMon = m_hMonitorFullscreen;
 
-	return true;
+	const bool bFullscreenChange =
+		!(bFullscreen && m_bFullscreen) || (!bFullscreen && !m_bFullscreen);
+
+	if (!bFullscreenChange && (!bFullscreen || m_hMonitorFullscreen == hMon))
+		return; // no change
+
+
+	m_bFullscreen = bFullscreen;
+	m_hMonitorFullscreen = hMon;
+
+	if (bFullscreenChange) // fullscreen mode was toggled
+	{
+		WINDOWPLACEMENT wndpl = { sizeof(WINDOWPLACEMENT) };
+		GetWindowPlacement(m_hWnd, &wndpl);
+
+		const DWORD dwStyle = refreshStyle();
+		if (bFullscreen) // entering fullscreen --> save the current window data
+		{
+			m_iRestoredWidth = wndpl.rcNormalPosition.right - wndpl.rcNormalPosition.left;
+			m_iRestoredHeight = wndpl.rcNormalPosition.bottom - wndpl.rcNormalPosition.top;
+			m_iWindowX = wndpl.rcNormalPosition.left;
+			m_iWindowY = wndpl.rcNormalPosition.top;
+			m_iMaximizedX = wndpl.ptMaxPosition.x;
+			m_iMaximizedY = wndpl.ptMaxPosition.y;
+
+			SetWindowLong(m_hWnd, GWL_STYLE, dwStyle);
+		}
+		else // exiting fullscreen --> set window data
+		{
+			if (m_bMaximized)
+				wndpl.showCmd = SW_SHOWMAXIMIZED;
+			else
+				wndpl.showCmd = SW_SHOWNORMAL;
+			wndpl.rcNormalPosition.left = m_iWindowX;
+			wndpl.rcNormalPosition.top = m_iWindowY;
+			wndpl.rcNormalPosition.right = m_iWindowX + m_iRestoredWidth;
+			wndpl.rcNormalPosition.bottom = m_iWindowY + m_iRestoredHeight;
+			wndpl.ptMaxPosition = { m_iMaximizedX, m_iMaximizedY };
+
+			SetWindowLong(m_hWnd, GWL_STYLE, dwStyle);
+			SetWindowPlacement(m_hWnd, &wndpl);
+		}
+	}
+
+	if (bFullscreen)
+	{
+		MONITORINFO mi = { sizeof(mi) };
+		GetMonitorInfoW(hMon, &mi);
+
+		SetWindowPos(m_hWnd, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top,
+			mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
+			SWP_FRAMECHANGED);
+	}
 }
 
 void lib::Window::messageLoop(WindowConfig cfg)
@@ -218,8 +273,8 @@ void lib::Window::messageLoop(WindowConfig cfg)
 		m_sTitle = cfg.sTitle;
 		m_bFullscreen = cfg.bFullscreen;
 		m_bResizable = cfg.bResizable;
-		m_iWindowedWidth = cfg.iWidth;
-		m_iWindowedHeight = cfg.iHeight;
+		m_iRestoredWidth = cfg.iWidth;
+		m_iRestoredHeight = cfg.iHeight;
 		m_iMinWidth = cfg.iMinWidth;
 		m_iMinHeight = cfg.iMinHeight;
 		m_iMaxWidth = cfg.iMaxWidth;
@@ -251,7 +306,7 @@ void lib::Window::messageLoop(WindowConfig cfg)
 		wc.hInstance = GetModuleHandle(NULL);
 		wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 		wc.lpfnWndProc = WindowProc;
-		wc.lpszClassName = s_szCLASSNAME;
+		wc.lpszClassName = m_sClassName.c_str();
 		wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
 		wc.hIcon = cfg.hIconBig;
 		wc.hIconSm = cfg.hIconSmall;
@@ -259,39 +314,30 @@ void lib::Window::messageLoop(WindowConfig cfg)
 		if (!RegisterClassExW(&wc))
 			throw std::exception();
 
-		DWORD dwStyle = 0;
-		if (!m_bFullscreen)
-		{
-			dwStyle |= WS_OVERLAPPEDWINDOW;
 
-			if (!m_bResizable)
-				dwStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
-		}
-		else
-			dwStyle |= WS_POPUP;
+		const DWORD dwStyle = refreshStyle();
 
 
 
 		// calculate the window position
+
 		int iPosX, iPosY;
+		MONITORINFO mi = { sizeof(mi) };
+		GetMonitorInfo(m_hMonitorFullscreen, &mi);
+
+		// default windowed position
+		m_iWindowX = mi.rcWork.left + ((mi.rcWork.right - mi.rcWork.left - m_iWidth) / 2);
+		m_iWindowY = mi.rcWork.top + ((mi.rcWork.bottom - mi.rcWork.top - m_iHeight) / 2);
+
 		if (m_bFullscreen) // fullscreen --> top left
 		{
-			iPosX = 0;
-			iPosY = 0;
+			iPosX = mi.rcMonitor.left;
+			iPosY = mi.rcMonitor.top;
 		}
 		else // windowed --> screen center
 		{
-			MONITORINFO mi = { sizeof(mi) };
-			GetMonitorInfo(m_hMonitorFullscreen, &mi);
-
-			const int iCenterX = (mi.rcWork.right - mi.rcWork.left) / 2;
-			const int iCenterY = (mi.rcWork.bottom - mi.rcWork.top) / 2;
-
-			RECT rect = { 0, 0, (LONG)m_iWidth, (LONG)m_iHeight };
-			AdjustWindowRect(&rect, dwStyle, FALSE);
-
-			iPosX = mi.rcWork.left + iCenterX - (rect.right - rect.left) / 2;
-			iPosY = mi.rcWork.top + iCenterY - (rect.bottom - rect.top) / 2;
+			iPosX = m_iWindowX;
+			iPosY = m_iWindowY;
 		}
 
 
@@ -301,19 +347,18 @@ void lib::Window::messageLoop(WindowConfig cfg)
 		m_iNativeHeight = m_iHeight;
 		if (!m_bFullscreen)
 		{
-			RECT rect = { 0, 0, (LONG)m_iNativeWidth, (LONG)m_iNativeHeight };
-			AdjustWindowRect(&rect, dwStyle, FALSE);
-			m_iNativeWidth = rect.right - rect.left;
-			m_iNativeHeight = rect.bottom - rect.top;
+			m_iNativeWidth += m_iClientToScreenX;
+			m_iNativeHeight += m_iClientToScreenY;
 		}
 
 
 
-		m_hWnd = CreateWindowW(s_szCLASSNAME, cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
+		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
 			m_iNativeWidth, m_iNativeHeight, NULL, NULL, NULL, NULL);
 
 		if (m_hWnd == NULL)
 			throw std::exception();
+
 	}
 	catch (...)
 	{
@@ -324,7 +369,8 @@ void lib::Window::messageLoop(WindowConfig cfg)
 
 	m_bMessageLoop = true;
 	m_cvState.notify_one(); // notify main thread that create() has succeeded
-	
+
+	OnCreate();
 
 	MSG msg{};
 	while (true)
@@ -335,7 +381,7 @@ void lib::Window::messageLoop(WindowConfig cfg)
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		
+
 		if (msg.message == WM_QUIT)
 			break;
 
@@ -350,6 +396,8 @@ void lib::Window::messageLoop(WindowConfig cfg)
 		}
 	}
 	m_bMessageLoop = false;
+
+	OnDestroy();
 
 	std::unique_lock lm(m_muxState);
 	m_cvState.notify_one();
@@ -366,6 +414,34 @@ void lib::Window::clear()
 	m_hMonitorFullscreen = NULL;
 	m_iWidth = 0;
 	m_iHeight = 0;
-	m_iWindowedWidth = 0;
-	m_iWindowedHeight = 0;
+	m_iRestoredWidth = 0;
+	m_iRestoredHeight = 0;
+}
+
+DWORD lib::Window::refreshStyle()
+{
+	DWORD dwOldStyle = GetWindowLong(m_hWnd, GWL_STYLE);
+	DWORD dwNewStyle = 0;
+	if (dwOldStyle & WS_VISIBLE)
+		dwNewStyle = WS_VISIBLE;
+
+	if (!m_bFullscreen)
+	{
+		dwNewStyle |= WS_OVERLAPPEDWINDOW;
+
+		if (!m_bResizable)
+			dwNewStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
+
+		RECT rect = { 0, 0, 0, 0 };
+		AdjustWindowRect(&rect, dwNewStyle, false);
+		m_iClientToScreenX = rect.right - rect.left;
+		m_iClientToScreenY = rect.bottom - rect.top;
+	}
+	else
+	{
+		m_iClientToScreenX = m_iClientToScreenY = 0;
+		dwNewStyle |= WS_POPUP;
+	}
+
+	return dwNewStyle;
 }

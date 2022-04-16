@@ -1,4 +1,4 @@
-#include "rl/lib/OpenGLWin.hpp"
+#include "rl/lib/OpenGLWin/OpenGLWin.hpp"
 
 namespace lib = rl::OpenGLWin;
 
@@ -29,7 +29,8 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 		return false;
 	}
 
-	if (!oRenderer.create(GetDC(oWindow.handle()), cfg.renderer.bVSync))
+	if (!oRenderer.create(GetDC(oWindow.handle()), oWindow.width(), oWindow.height(),
+		cfg.renderer.bVSync))
 	{
 		oWindow.destroy();
 		m_pRenderer = nullptr;
@@ -38,7 +39,9 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 		return false;
 	}
 
-	if (!OnStart() || !OnUpdate(0.0f)) // try to draw first frame
+	oRenderer.OnCreate();
+
+	if (!OnStart() || !OnUpdate(0.0f)) // initialize values
 	{
 		oRenderer.destroy();
 		oWindow.destroy();
@@ -47,7 +50,10 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 		s_bRunning = false;
 		return false;
 	}
+	oRenderer.update(); // try to draw first frame
+	m_bMessageByApp = true;
 	oWindow.show();
+	m_bMessageByApp = false;
 
 	auto time1 = std::chrono::system_clock::now();
 	auto time2 = time1;
@@ -65,7 +71,17 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 			// block access to m_bAtomRunning while accessing it
 			std::unique_lock lm(m_muxWindow);
 
-			handleMessage();
+			if (handleMessage() && m_bSleeping)
+			{
+				OnMinize();
+				m_cvMinimized.wait(lm);
+				m_bSleeping = false;
+				OnRestore();
+
+				time1 = std::chrono::system_clock::now();
+				time2 = time1;
+				oElapsed = time1 - time2;
+			}
 
 			if (!m_bAtomRunning || !OnUpdate(oElapsed.count()))
 			{
@@ -75,7 +91,7 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 					m_cvWinClose.notify_one();
 			}
 		}
-		
+
 
 		if (m_bAtomRunning)
 			m_pRenderer->update();
@@ -96,13 +112,31 @@ bool lib::IApplication::winClose()
 {
 	std::unique_lock lm(m_muxWindow);
 	m_bAtomRunning = false;
+
+	if (m_pWindow->minimized())
+		m_cvMinimized.notify_one();
+
 	m_cvWinClose.wait(lm);
 	return !m_bAtomRunning;
 }
 
 void lib::IApplication::winMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	if (m_bMessageByApp)
+	{
+		handleMessage();
+		return;
+	}
+
 	std::unique_lock lm(m_muxWindow);
+
+	if (m_bSleeping)
+	{
+		if (uMsg == WM_SIZE && wParam == SIZE_RESTORED)
+			m_cvMinimized.notify_one();
+		else
+			return;
+	}
 
 	WindowMessage msg = { uMsg, wParam, lParam };
 	m_pMessage = &msg;
@@ -111,17 +145,30 @@ void lib::IApplication::winMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		m_cvWinMsg.wait(lm);
 }
 
-void lib::IApplication::handleMessage()
+bool lib::IApplication::handleMessage()
 {
 	if (!m_pMessage)
-		return; // no message
+		return false; // no message
 
 	const auto& msg = *m_pMessage;
 
+	bool bHandled = true;
 	switch (msg.uMsg)
 	{
+		//------------------------------------------------------------------------------------------
+		// SIZE-RELATED MESSAGES
+
 	case WM_SIZE:
-		m_pRenderer->resize(HIWORD(msg.lParam), LOWORD(msg.lParam));
+
+		if (msg.wParam == SIZE_MINIMIZED)
+		{
+			m_pMessage = nullptr;
+			m_cvWinMsg.notify_one();
+			m_bSleeping = true;
+			return true;
+		}
+
+		m_pRenderer->resize(LOWORD(msg.lParam), HIWORD(msg.lParam));
 		break;
 
 	case WM_SIZING:
@@ -168,10 +215,23 @@ void lib::IApplication::handleMessage()
 
 		break;
 	}
+
+	case WM_SETFOCUS:
+		OnGainFocus();
+		break;
+
+	case WM_KILLFOCUS:
+		OnLoseFocus();
+		break;
+
+	default:
+		bHandled = false;
+		break;
 	}
 
 	m_pRenderer->update(); // update display immediately
 
 	m_pMessage = nullptr;
 	m_cvWinMsg.notify_one();
+	return bHandled;
 }

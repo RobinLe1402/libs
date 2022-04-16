@@ -88,7 +88,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\rl\lib\OpenGLWin.hpp" />
+    <ClInclude Include="..\..\..\include\rl\lib\OpenGLWin\OpenGLWin.hpp" />
+    <ClInclude Include="..\..\..\include\rl\lib\OpenGLWin\Texture.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

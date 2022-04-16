@@ -29,10 +29,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\rl\lib\OpenGLWin\OpenGLWin.hpp">
+    <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Core.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\rl\lib\OpenGLWin\Texture.hpp">
+    <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Texture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

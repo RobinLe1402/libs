@@ -1,6 +1,6 @@
-#include "rl/lib/OpenGLWin/OpenGLWin.hpp"
+#include "rl/lib/rlOpenGL/Core.hpp"
 
-namespace lib = rl::OpenGLWin;
+namespace lib = rl::OpenGL;
 
 
 

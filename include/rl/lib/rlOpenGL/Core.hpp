@@ -1,13 +1,13 @@
 /***************************************************************************************************
- FILE:	OpenGLWin.hpp
- LIB:	OpenGLWin.lib
+ FILE:	lib/rlOpenGL/Core.hpp
+ LIB:	rlOpenGL.lib
  DESCR:	The basic framework for a OpenGL-based window
 ***************************************************************************************************/
 
 
 #pragma once
-#ifndef ROBINLE_LIB_OPENGLWIN
-#define ROBINLE_LIB_OPENGLWIN
+#ifndef ROBINLE_LIB_OPENGL_CORE
+#define ROBINLE_LIB_OPENGL_CORE
 
 
 
@@ -43,7 +43,7 @@ using GLfloat = float;
 // DECLARATION
 namespace rl
 {
-	namespace OpenGLWin
+	namespace OpenGL
 	{
 		class Window;
 		class IRenderer;
@@ -293,8 +293,6 @@ namespace rl
 
 		};
 
-		// ToDo: improve windowToClient, complete fullscreen functionality
-
 
 
 		/// <summary>
@@ -374,6 +372,4 @@ namespace rl
 
 
 
-// #undef foward declared definitions
-
-#endif // ROBINLE_LIB_OPENGLWIN
+#endif // ROBINLE_LIB_OPENGL_CORE

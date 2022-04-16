@@ -1,13 +1,13 @@
 /***************************************************************************************************
- FILE:	Texture.hpp
- LIB:	OpenGLWin.lib
+ FILE:	lib/rlOpenGL/Texture.hpp
+ LIB:	rlOpenGL.lib
  DESCR:	Data structures for drawing OpenGL textures
 ***************************************************************************************************/
 
 
 #pragma once
-#ifndef ROBINLE_TEXTURE
-#define ROBINLE_TEXTURE
+#ifndef ROBINLE_LIB_OPENGL_TEXTURE
+#define ROBINLE_LIB_OPENGL_TEXTURE
 
 
 
@@ -33,10 +33,8 @@ using GLfloat = float;
 // DECLARATION
 namespace rl
 {
-	namespace OpenGLWin
+	namespace OpenGL
 	{
-
-
 
 
 
@@ -314,4 +312,4 @@ namespace rl
 
 
 
-#endif // ROBINLE_TEXTURE
+#endif // ROBINLE_LIB_OPENGL_TEXTURE

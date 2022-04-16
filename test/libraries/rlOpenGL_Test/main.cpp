@@ -1,22 +1,22 @@
 #include <Windows.h>
 
-#include "rl/lib/OpenGLWin/OpenGLWin.hpp"
-#include "rl/lib/OpenGLWin/Texture.hpp"
+#include "rl/lib/rlOpenGL/Core.hpp"
+#include "rl/lib/rlOpenGL/Texture.hpp"
 #include "rl/visualstyles.h"
 #include <gl/GL.h>
 #include <format>
 
 #include "resource.h"
 
-#pragma comment(lib, "OpenGLWin.lib")
+#pragma comment(lib, "rlOpenGL.lib")
 
-constexpr rl::OpenGLWin::Pixel pxFuchsia = rl::OpenGLWin::Pixel::ByRGB(0xFF00FF);
+constexpr rl::OpenGL::Pixel pxFuchsia = rl::OpenGL::Pixel::ByRGB(0xFF00FF);
 
-class GameRenderer : public rl::OpenGLWin::IRenderer
+class GameRenderer : public rl::OpenGL::IRenderer
 {
 public: // methods
 
-	using rl::OpenGLWin::IRenderer::IRenderer;
+	using rl::OpenGL::IRenderer::IRenderer;
 
 
 private: // methods
@@ -34,13 +34,13 @@ private: // methods
 		/*m_oTex.create(2, 2);
 
 		m_oTex.setPixel(0, 0, pxFuchsia);
-		m_oTex.setPixel(1, 0, rl::OpenGLWin::Color::Black);
-		m_oTex.setPixel(0, 1, rl::OpenGLWin::Color::Black);
+		m_oTex.setPixel(1, 0, rl::OpenGL::Color::Black);
+		m_oTex.setPixel(0, 1, rl::OpenGL::Color::Black);
 		m_oTex.setPixel(1, 1, pxFuchsia);*/
 
 		m_oTex.create(6, 6);
 
-		using namespace rl::OpenGLWin::Color;
+		using namespace rl::OpenGL::Color;
 
 		/*
 		+------+
@@ -97,25 +97,25 @@ private: // methods
 
 
 
-		m_oTex.setUpscalingMethod(rl::OpenGLWin::TextureScalingMethod::NearestNeighbor);
+		m_oTex.setUpscalingMethod(rl::OpenGL::TextureScalingMethod::NearestNeighbor);
 		m_oTex.setTransparency(false);
-		//m_oTex.setWrapMethod(rl::OpenGLWin::TextureWrapMethod::Clamp);
+		//m_oTex.setWrapMethod(rl::OpenGL::TextureWrapMethod::Clamp);
 		m_oTex.upload();
 	}
 
-	rl::OpenGLWin::Texture m_oTex;
+	rl::OpenGL::Texture m_oTex;
 
 	bool bTMP = false;
 
 	void OnUpdate() override
 	{
-		//m_oTex.draw({ rl::OpenGLWin::FullScreen, rl::OpenGLWin::FullTexture });
+		//m_oTex.draw({ rl::OpenGL::FullScreen, rl::OpenGL::FullTexture });
 		/*const auto pos1 = m_oTex.coordsUnscaled({ 0, 0, (int)width(), (int)height() },
 			0, 0, { width(), height() });*/
 		if (bTMP)
-			m_oTex.setPixel(3, 1, rl::OpenGLWin::Color::Black);
+			m_oTex.setPixel(3, 1, rl::OpenGL::Color::Black);
 		else
-			m_oTex.setPixel(3, 1, rl::OpenGLWin::Color::White);
+			m_oTex.setPixel(3, 1, rl::OpenGL::Color::White);
 		bTMP = !bTMP;
 		m_oTex.upload();
 
@@ -131,11 +131,11 @@ private: // methods
 	}*/
 };
 
-class Game : public rl::OpenGLWin::IApplication
+class Game : public rl::OpenGL::IApplication
 {
 public: // methods
 
-	using rl::OpenGLWin::IApplication::IApplication;
+	using rl::OpenGL::IApplication::IApplication;
 
 
 private: // methods
@@ -150,11 +150,11 @@ private: // methods
 
 };
 
-class GameWindow : public rl::OpenGLWin::Window
+class GameWindow : public rl::OpenGL::Window
 {
 public: // methods
 
-	using rl::OpenGLWin::Window::Window; // use same constructors
+	using rl::OpenGL::Window::Window; // use same constructors
 
 
 private: // methods
@@ -211,7 +211,7 @@ int WINAPI WinMain(
 	GameWindow oWindow(oGame, L"OpenGLWin_Test");
 	GameRenderer oRenderer(oGame);
 
-	rl::OpenGLWin::OpenGLWinConfig cfg;
+	rl::OpenGL::OpenGLWinConfig cfg;
 	cfg.renderer.bVSync = true;
 	cfg.window.bResizable = true;
 	cfg.window.iMinWidth = 256;

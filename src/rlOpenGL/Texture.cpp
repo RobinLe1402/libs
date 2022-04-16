@@ -1,6 +1,6 @@
-#include "rl/lib/OpenGLWin/Texture.hpp"
+#include "rl/lib/rlOpenGL/Texture.hpp"
 
-namespace lib = rl::OpenGLWin;
+namespace lib = rl::OpenGL;
 
 #include <Windows.h>
 #include <gl/GL.h>

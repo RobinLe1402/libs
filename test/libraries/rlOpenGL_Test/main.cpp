@@ -10,7 +10,17 @@
 
 #pragma comment(lib, "rlOpenGL.lib")
 
-constexpr rl::OpenGL::Pixel pxFuchsia = rl::OpenGL::Pixel::ByRGB(0xFF00FF);
+using rl::OpenGL::Pixel;
+namespace Color = rl::OpenGL::Color;
+
+constexpr auto pxFuchsia = Pixel::ByRGB(0xFF00FF);
+
+
+
+struct GameGraph
+{
+	bool bPixelWhite;
+};
 
 class GameRenderer : public rl::OpenGL::IRenderer
 {
@@ -105,18 +115,19 @@ private: // methods
 
 	rl::OpenGL::Texture m_oTex;
 
-	bool bTMP = false;
-
-	void OnUpdate() override
+	void OnUpdate(const void* pGraph) override
 	{
+		const GameGraph& oGraph = *reinterpret_cast<const GameGraph*>(pGraph);
+
+
 		//m_oTex.draw({ rl::OpenGL::FullScreen, rl::OpenGL::FullTexture });
 		/*const auto pos1 = m_oTex.coordsUnscaled({ 0, 0, (int)width(), (int)height() },
 			0, 0, { width(), height() });*/
-		if (bTMP)
-			m_oTex.setPixel(3, 1, rl::OpenGL::Color::Black);
+
+		if (oGraph.bPixelWhite)
+			m_oTex.setPixel(3, 1, Color::White);
 		else
-			m_oTex.setPixel(3, 1, rl::OpenGL::Color::White);
-		bTMP = !bTMP;
+			m_oTex.setPixel(3, 1, Color::Black);
 		m_oTex.upload();
 
 		const auto pos2 = m_oTex.coordsScaled({ 0, 0, (int)width() / 8, (int)height() / 16 },
@@ -140,13 +151,28 @@ public: // methods
 
 private: // methods
 
-	bool OnUpdate(float fElapsedTime) override { return true; }
+	bool OnUpdate(float fElapsedTime) override
+	{
+		GameGraph& oGraph = *reinterpret_cast<GameGraph*>(graph());
+
+		oGraph.bPixelWhite = !oGraph.bPixelWhite;
+		return true;
+	}
 
 	void OnResize(LONG& iWidth, LONG& iHeight) override
 	{
 		iWidth -= iWidth % 8;
 		iHeight -= iHeight % 16;
 	}
+
+	void createGraph(void** pGraph) override { *pGraph = new GameGraph; }
+
+	void copyGraph(void* pDest, const void* pSource) override
+	{
+		memcpy_s(pDest, sizeof(GameGraph), pSource, sizeof(GameGraph));
+	}
+
+	void destroyGraph(void* pGraph) override { delete pGraph; }
 
 };
 
@@ -207,11 +233,16 @@ int WINAPI WinMain(
 	_In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
-	Game oGame;
-	GameWindow oWindow(oGame, L"OpenGLWin_Test");
-	GameRenderer oRenderer(oGame);
+	(void)hInstance;
+	(void)hPrevInstance;
+	(void)szCmdLine;
+	(void)iCmdShow;
 
-	rl::OpenGL::OpenGLWinConfig cfg;
+	GameWindow oWindow(L"OpenGLWin_Test");
+	GameRenderer oRenderer;
+	Game oGame(oWindow, oRenderer);
+
+	rl::OpenGL::AppConfig cfg;
 	cfg.renderer.bVSync = true;
 	cfg.window.bResizable = true;
 	cfg.window.iMinWidth = 256;
@@ -231,7 +262,7 @@ int WINAPI WinMain(
 		"  MMB = Write info text to debug text stream\n",
 		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_APPLMODAL) != IDOK)
 		return 0; // user cancelled test
-	oGame.execute(cfg, oWindow, oRenderer);
+	oGame.execute(cfg);
 
 	return 0;
 }

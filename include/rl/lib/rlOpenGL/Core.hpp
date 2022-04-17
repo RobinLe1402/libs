@@ -31,8 +31,8 @@ using GLfloat = float;
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
-#include <set>
 #include <string>
 #include <thread>
 #include <Windows.h>
@@ -61,110 +61,7 @@ namespace rl
 			HICON hIconSmall = NULL, hIconBig = NULL;
 			HMONITOR hMonintorFullscreen = NULL;
 		};
-
-		struct RendererConfig
-		{
-			bool bVSync = false;
-		};
-
-		struct OpenGLWinConfig
-		{
-			WindowConfig window;
-			RendererConfig renderer;
-		};
-
-
-		struct WindowMessage
-		{
-			UINT uMsg;
-			WPARAM wParam;
-			LPARAM lParam;
-		};
-
-
-
-		/// <summary>
-		/// An interface for the logic behind an OpenGL-based application
-		/// </summary>
-		class IApplication
-		{
-			friend class Window;
-			friend class IRenderer;
-
-
-		private: // static variables
-
-			static bool s_bRunning;
-
-
-		protected: // events
-
-			virtual bool OnStart() { return true; }
-			virtual bool OnUpdate(float fElapsedTime) = 0;
-			virtual bool OnStop() { return true; }
-
-			virtual void OnResize(LONG& iWidth, LONG& iHeight) { }
-
-			virtual void OnMinize() {}
-			virtual void OnRestore() {}
-			virtual void OnGainFocus() {}
-			virtual void OnLoseFocus() {}
-
-
-		public: // methods
-
-			IApplication() = default;
-			IApplication(const IApplication& other) = delete;
-			IApplication(IApplication&& rval) = delete;
-			virtual ~IApplication() = default;
-
-			bool execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer& oRenderer);
-
-
-		protected: // methods
-
-			// for use in the IApplication derivative and the IRenderer base class only
-			auto window() { return m_pWindow; }
-			auto renderer() { return m_pRenderer; }
-
-			/// <summary>
-			/// [Use by <c>Window</c>]
-			/// Inform the application thread that the user is attempting to close the window,
-			/// wait for a reply
-			/// </summary>
-			/// <returns>Did the application thread accept the closing request?</returns>
-			bool winClose();
-
-			/// <summary>
-			/// [Use by <c>Window</c>]
-			/// Send a message to the application thread and wait for it to handle it
-			/// </summary>
-			void winMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-			/// <summary>
-			/// [Use by <c>IApplication</c>]
-			/// Handle a message from the window if there is one
-			/// </summary>
-			bool handleMessage();
-
-
-		private: // variables
-
-			Window* m_pWindow = nullptr;
-			IRenderer* m_pRenderer = nullptr;
-			std::atomic_bool m_bAtomRunning = false;
-
-			std::mutex m_muxWindow;
-			std::condition_variable m_cvWinClose;
-			std::condition_variable m_cvWinMsg;
-			std::condition_variable m_cvMinimized;
-			bool m_bSleeping = false;
-			bool m_bMessageByApp = false;
-
-			const WindowMessage* m_pMessage = nullptr;
-
-		};
-
+		
 
 
 		/// <summary>
@@ -172,6 +69,12 @@ namespace rl
 		/// </summary>
 		class Window
 		{
+		public: // types
+
+			using MessageCallback = std::function<void(UINT uMsg, WPARAM wParam, LPARAM lParam)>;
+			using CloseCallback = std::function<bool()>;
+
+
 		protected: // events
 
 			/// <summary>
@@ -201,12 +104,13 @@ namespace rl
 
 		public: // methods
 
-			Window(IApplication& oApplication, const wchar_t* szClassName = L"RobinLeOpenGLWin");
+			Window(const wchar_t* szClassName = L"RobinLeOpenGLWin");
 			Window(const Window& other) = delete;
 			Window(Window&& rval) = delete;
 			~Window();
 
-			bool create(const WindowConfig& cfg);
+			bool create(const WindowConfig& cfg,
+				MessageCallback fnOnMessage, CloseCallback fnOnClose);
 			void destroy();
 
 			bool running() { return m_bMessageLoop; }
@@ -255,7 +159,6 @@ namespace rl
 
 		private: // variables
 
-			IApplication& m_oApplication;
 			std::thread m_trdMessageLoop;
 
 			const std::wstring m_sClassName;
@@ -267,6 +170,9 @@ namespace rl
 			bool m_bAppClose = false, m_bWinClose = false; // sender of a recent close request
 			bool m_bMessageLoop = false; // does the message loop currently run?
 			bool m_bThreadRunning = false; // is the message thread currently running?
+
+			MessageCallback m_fnOnMessage = nullptr;
+			std::function<bool()> m_fnOnClose;
 
 
 
@@ -295,23 +201,29 @@ namespace rl
 
 
 
+
+
+		struct RendererConfig
+		{
+			bool bVSync = false;
+		};
+
+
 		/// <summary>
 		/// An interface for OpenGL graphics
 		/// </summary>
 		class IRenderer
 		{
-			friend class IApplication;
-
 		protected: // events
 
 			virtual void OnCreate() {}
-			virtual void OnUpdate() = 0;
+			virtual void OnUpdate(const void* pGraph) = 0;
 			virtual void OnDestroy() {}
 
 
 		public: // methods
 
-			IRenderer(IApplication& oApplication);
+			IRenderer() = default;
 			IRenderer(const IRenderer& other) = delete;
 			IRenderer(IRenderer&& rval) = delete;
 			virtual ~IRenderer();
@@ -321,7 +233,7 @@ namespace rl
 			/// create the renderer
 			/// </summary>
 			/// <returns>Could the renderer be created?</returns>
-			bool create(HDC hDC, unsigned iWidth, unsigned iHeight, bool bVSync);
+			bool create(HDC hDC, unsigned iWidth, unsigned iHeight, const RendererConfig& cfg);
 
 			/// <summary>
 			/// Destroy the renderer
@@ -331,7 +243,7 @@ namespace rl
 			/// <summary>
 			/// Update the viewport
 			/// </summary>
-			void update();
+			void update(const void* pGraph);
 
 			/// <summary>
 			/// Resize the viewport
@@ -350,7 +262,6 @@ namespace rl
 
 		protected: // variables
 
-			IApplication& m_oApplication;
 			HDC m_hDC = NULL;
 			HGLRC m_hGLRC = NULL;
 
@@ -360,6 +271,123 @@ namespace rl
 		private: // variables
 
 			unsigned m_iWidth = 0, m_iHeight = 0;
+
+		};
+
+
+
+
+
+
+
+		struct AppConfig
+		{
+			WindowConfig window;
+			RendererConfig renderer;
+		};
+
+
+		/// <summary>
+		/// An interface for the logic behind an OpenGL-based application
+		/// </summary>
+		class IApplication
+		{
+		private: // types
+
+			struct WindowMessage
+			{
+				UINT uMsg;
+				WPARAM wParam;
+				LPARAM lParam;
+			};
+
+
+		private: // static variables
+
+			static bool s_bRunning;
+
+
+		protected: // events
+
+			virtual bool OnStart() { return true; }
+			virtual bool OnUpdate(float fElapsedTime) = 0;
+			virtual bool OnStop() { return true; }
+
+			virtual void OnResize(LONG& iWidth, LONG& iHeight) { }
+
+			virtual void OnMinize() {}
+			virtual void OnRestore() {}
+			virtual void OnGainFocus() {}
+			virtual void OnLoseFocus() {}
+
+
+			// events for working with graph classes
+
+			virtual void createGraph(void** pGraph) = 0;
+			virtual void copyGraph(void* pDest, const void* pSource) = 0;
+			virtual void destroyGraph(void* pGraph) = 0;
+
+
+		public: // methods
+
+			IApplication(Window& oWindow, IRenderer& oRenderer);
+			IApplication(const IApplication& other) = delete;
+			IApplication(IApplication&& rval) = delete;
+			virtual ~IApplication() = default;
+
+			bool execute(AppConfig& cfg);
+
+
+		protected: // methods
+
+			// for use in the IApplication derivative and the IRenderer base class only
+			auto& window() { return m_oWindow; }
+			auto& renderer() { return m_oRenderer; }
+			auto graph() { return m_pLiveGraph; }
+
+			/// <summary>
+			/// [Use by <c>Window</c>]
+			/// Inform the application thread that the user is attempting to close the window,
+			/// wait for a reply
+			/// </summary>
+			/// <returns>Did the application thread accept the closing request?</returns>
+			bool winClose();
+
+			/// <summary>
+			/// [Use by <c>Window</c>]
+			/// Send a message to the application thread and wait for it to handle it
+			/// </summary>
+			void winMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+			/// <summary>
+			/// [Use by <c>IApplication</c>]
+			/// Handle a message from the window if there is one
+			/// </summary>
+			bool handleMessage();
+
+
+		private: // methods
+
+			void cacheGraph() { copyGraph(m_pGraphForRenderer, m_pLiveGraph); }
+
+
+		private: // variables
+
+			Window& m_oWindow;
+			IRenderer& m_oRenderer;
+			std::atomic_bool m_bAtomRunning = false;
+
+			std::mutex m_muxWindow;
+			std::condition_variable m_cvWinClose;
+			std::condition_variable m_cvWinMsg;
+			std::condition_variable m_cvMinimized;
+			bool m_bSleeping = false;
+			bool m_bMessageByApp = false;
+
+			const WindowMessage* m_pMessage = nullptr;
+
+			void* m_pLiveGraph = nullptr;
+			void* m_pGraphForRenderer = nullptr;
 
 		};
 

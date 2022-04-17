@@ -10,7 +10,11 @@ namespace lib = rl::OpenGL;
 
 bool lib::IApplication::s_bRunning = false;
 
-bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer& oRenderer)
+lib::IApplication::IApplication(Window& oWindow, IRenderer& oRenderer) :
+	m_oWindow(oWindow), m_oRenderer(oRenderer)
+{}
+
+bool lib::IApplication::execute(AppConfig& cfg)
 {
 	if (s_bRunning)
 		return false;
@@ -18,41 +22,36 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 	s_bRunning = true;
 
 
-	m_pWindow = &oWindow;
-	m_pRenderer = &oRenderer;
-
-	if (!oWindow.create(cfg.window))
+	if (!m_oWindow.create(cfg.window,
+		[&](UINT uMsg, WPARAM wParam, LPARAM lParam) { winMessage(uMsg, wParam, lParam); },
+		[&]() -> bool { return winClose(); }))
 	{
-		m_pRenderer = nullptr;
-		m_pWindow = nullptr;
 		s_bRunning = false;
 		return false;
 	}
 
-	if (!oRenderer.create(GetDC(oWindow.handle()), oWindow.width(), oWindow.height(),
-		cfg.renderer.bVSync))
+	if (!m_oRenderer.create(GetDC(m_oWindow.handle()), m_oWindow.width(), m_oWindow.height(),
+		cfg.renderer))
 	{
-		oWindow.destroy();
-		m_pRenderer = nullptr;
-		m_pWindow = nullptr;
+		m_oWindow.destroy();
 		s_bRunning = false;
 		return false;
 	}
 
-	oRenderer.OnCreate();
+	createGraph(&m_pLiveGraph);
+	createGraph(&m_pGraphForRenderer);
 
 	if (!OnStart() || !OnUpdate(0.0f)) // initialize values
 	{
-		oRenderer.destroy();
-		oWindow.destroy();
-		m_pRenderer = nullptr;
-		m_pWindow = nullptr;
+		m_oRenderer.destroy();
+		m_oWindow.destroy();
 		s_bRunning = false;
 		return false;
 	}
-	oRenderer.update(); // try to draw first frame
+	cacheGraph();
+	m_oRenderer.update(m_pGraphForRenderer); // try to draw first frame
 	m_bMessageByApp = true;
-	oWindow.show();
+	m_oWindow.show();
 	m_bMessageByApp = false;
 
 	auto time1 = std::chrono::system_clock::now();
@@ -94,16 +93,19 @@ bool lib::IApplication::execute(OpenGLWinConfig& cfg, Window& oWindow, IRenderer
 
 
 		if (m_bAtomRunning)
-			m_pRenderer->update();
+		{
+			cacheGraph();
+			m_oRenderer.update(m_pGraphForRenderer);
+		}
 	}
-	oRenderer.destroy();
+	destroyGraph(m_pLiveGraph);
+	destroyGraph(m_pGraphForRenderer);
+	m_oRenderer.destroy();
 
 	// in case the window sent the quit request, notify it after destroying the renderer
 	m_cvWinClose.notify_one();
 
-	oWindow.destroy();
-	m_pRenderer = nullptr;
-	m_pWindow = nullptr;
+	m_oWindow.destroy();
 	s_bRunning = false;
 	return true;
 }
@@ -113,7 +115,7 @@ bool lib::IApplication::winClose()
 	std::unique_lock lm(m_muxWindow);
 	m_bAtomRunning = false;
 
-	if (m_pWindow->minimized())
+	if (m_oWindow.minimized())
 		m_cvMinimized.notify_one();
 
 	m_cvWinClose.wait(lm);
@@ -168,13 +170,13 @@ bool lib::IApplication::handleMessage()
 			return true;
 		}
 
-		m_pRenderer->resize(LOWORD(msg.lParam), HIWORD(msg.lParam));
+		m_oRenderer.resize(LOWORD(msg.lParam), HIWORD(msg.lParam));
 		break;
 
 	case WM_SIZING:
 	{
-		const unsigned iOldNativeWidth = m_pWindow->nativeWidth();
-		const unsigned iOldNativeHeight = m_pWindow->nativeHeight();
+		const unsigned iOldNativeWidth = m_oWindow.nativeWidth();
+		const unsigned iOldNativeHeight = m_oWindow.nativeHeight();
 
 		auto& rectNew = *reinterpret_cast<RECT*>(msg.lParam);
 		unsigned iNewNativeWidth = rectNew.right - rectNew.left;
@@ -182,7 +184,7 @@ bool lib::IApplication::handleMessage()
 
 		unsigned iNewClientWidth = iNewNativeWidth;
 		unsigned iNewClientHeight = iNewNativeHeight;
-		m_pWindow->windowToClient(iNewClientWidth, iNewClientHeight);
+		m_oWindow.windowToClient(iNewClientWidth, iNewClientHeight);
 
 		LONG iCustomWidth = (LONG)iNewClientWidth;
 		LONG iCustomHeight = (LONG)iNewClientHeight;
@@ -229,7 +231,8 @@ bool lib::IApplication::handleMessage()
 		break;
 	}
 
-	m_pRenderer->update(); // update display immediately
+	cacheGraph();
+	m_oRenderer.update(m_pGraphForRenderer); // update display immediately
 
 	m_pMessage = nullptr;
 	m_cvWinMsg.notify_one();

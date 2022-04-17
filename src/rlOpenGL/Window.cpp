@@ -17,11 +17,11 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	{
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
-		o.m_oApplication.winMessage(uMsg, wParam, lParam);
+		o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
 
 	case WM_SIZING:
-		o.m_oApplication.winMessage(uMsg, wParam, lParam);
+		o.m_fnOnMessage(uMsg, wParam, lParam);
 		{
 			auto& rect = *reinterpret_cast<RECT*>(lParam);
 			o.m_iNativeWidth = rect.right - rect.left;
@@ -47,7 +47,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		if (!o.m_bFullscreen)
 			o.m_bMaximized = (wParam == SIZE_MAXIMIZED);
 
-		o.m_oApplication.winMessage(uMsg, wParam, lParam);
+		o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
 
 	case WM_GETMINMAXINFO:
@@ -82,7 +82,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		if (!o.m_bAppClose)
 		{
 			o.m_bWinClose = true;
-			if (!o.m_oApplication.winClose())
+			if (!o.m_fnOnClose())
 				break;
 		}
 		DestroyWindow(hWnd);
@@ -105,12 +105,12 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	return 0;
 }
 
-lib::Window::Window(IApplication& oApplication, const wchar_t* szClassName) :
-	m_oApplication(oApplication), m_sClassName(szClassName) { }
+lib::Window::Window(const wchar_t* szClassName) : m_sClassName(szClassName) { }
 
 lib::Window::~Window() { destroy(); }
 
-bool lib::Window::create(const WindowConfig& cfg)
+bool lib::Window::create(const WindowConfig& cfg,
+	MessageCallback fnOnMessage, CloseCallback fnOnClose)
 {
 	destroy();
 
@@ -135,6 +135,10 @@ bool lib::Window::create(const WindowConfig& cfg)
 		return false; // invalid max width
 	if (cfg.iMaxHeight && (cfg.iHeight > cfg.iMaxHeight))
 		return false; // invalid max height
+
+
+	m_fnOnMessage = fnOnMessage;
+	m_fnOnClose = fnOnClose;
 
 	std::unique_lock lm(m_muxState);
 	m_trdMessageLoop = std::thread(&lib::Window::messageLoop, this, cfg);
@@ -406,16 +410,29 @@ void lib::Window::messageLoop(WindowConfig cfg)
 void lib::Window::clear()
 {
 	m_hWnd = NULL;
-	m_sTitle.clear();
+	m_bAppClose = m_bWinClose = false;
 	m_bMessageLoop = false;
-	m_bMinimized = false;
-	m_bFullscreen = false;
-	m_bResizable = false;
+	m_bThreadRunning = false;
+
+	m_fnOnMessage = nullptr;
+	m_fnOnClose = nullptr;
+
+	m_iWidth = m_iHeight = 0;
+	m_iNativeWidth = m_iNativeHeight = 0;
+	m_iClientToScreenX = m_iClientToScreenY = 0;
+	m_iMinWidth = m_iMinHeight = 0;
+	m_iMaxWidth = m_iMaxHeight = 0;
+	m_iRestoredWidth = m_iRestoredHeight = 0;
+
+	m_iWindowX = m_iWindowY = 0;
+	m_iMaximizedX = m_iMaximizedY = 0;
+
+	m_sTitle.clear();
 	m_hMonitorFullscreen = NULL;
-	m_iWidth = 0;
-	m_iHeight = 0;
-	m_iRestoredWidth = 0;
-	m_iRestoredHeight = 0;
+	m_bResizable = false;
+	m_bMinimized = false;
+	m_bMaximized = false;
+	m_bFullscreen = false;
 }
 
 DWORD lib::Window::refreshStyle()

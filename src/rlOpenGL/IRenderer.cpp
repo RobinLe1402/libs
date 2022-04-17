@@ -14,15 +14,14 @@ namespace lib = rl::OpenGL;
 typedef BOOL(WINAPI wglSwapInterval_t)(int interval);
 wglSwapInterval_t* wglSwapInterval = nullptr;
 
-lib::IRenderer::IRenderer(IApplication& oApplication) :
-	m_oApplication(oApplication) { }
+
 
 lib::IRenderer::~IRenderer()
 {
 	destroy();
 }
 
-bool lib::IRenderer::create(HDC hDC, unsigned iWidth, unsigned iHeight, bool bVSync)
+bool lib::IRenderer::create(HDC hDC, unsigned iWidth, unsigned iHeight, const RendererConfig& cfg)
 {
 	destroy();
 
@@ -54,8 +53,10 @@ bool lib::IRenderer::create(HDC hDC, unsigned iWidth, unsigned iHeight, bool bVS
 
 	wglSwapInterval = (wglSwapInterval_t*)wglGetProcAddress("wglSwapIntervalEXT");
 
-	m_bVSync = !bVSync;
-	setVSync(bVSync);
+	m_bVSync = !cfg.bVSync;
+	setVSync(cfg.bVSync);
+
+	OnCreate();
 
 	
 	return true;
@@ -73,12 +74,12 @@ void lib::IRenderer::destroy()
 	m_hDC = NULL;
 }
 
-void lib::IRenderer::update()
+void lib::IRenderer::update(const void* pGraph)
 {
 	if (m_hGLRC == NULL)
 		return;
 
-	OnUpdate();
+	OnUpdate(pGraph);
 	SwapBuffers(m_hDC); // refresh display
 	if (m_bVSync)
 		DwmFlush(); // wait for full redraw

@@ -31,6 +31,18 @@ Since this repository is the home of a multiple of unrelated applications and th
 
 
 ## Documentation
-For detailed documentation, visit [this repository's wiki](https://lnk.robinle.de/git/libs/wiki).
+I try to document my code as well as possible, while trying not to overdo it.
 
-Sorry it's currently in a poorly maintained, outdated state. But I'm working on it!
+Unfortunately, I currently document my code in several places, inconsistently. I'm planning on creating a unified documentation system, probably HTML-based, but that will take a while.
+
+
+These are the ways I document my code in the moment:
+
+### In the source code
+Mostly XML documentation (`summary`, `param`, `returns` etc.), but also regular comments (mostly with "internal" code)
+
+### The GitHub wiki
+I try to maintain the [wiki of this repo](https://lnk.robinle.de/git/libs/wiki), though most of the time I'm not invested enough to update it as it seems to be the most tedious type of documentation to me.
+ 
+### In `readme.md` files
+I put `readme.md` files in some directories containing more general documentation about their content.

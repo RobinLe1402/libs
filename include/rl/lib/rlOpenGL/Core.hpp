@@ -50,6 +50,9 @@ namespace rl
 
 
 
+		/// <summary>
+		/// The startup configuration for a <c>Window</c> object
+		/// </summary>
 		struct WindowConfig
 		{
 			std::wstring sTitle = L"RobinLe OpenGLWin";
@@ -59,7 +62,7 @@ namespace rl
 			unsigned iMinWidth = 0, iMinHeight = 0;
 			unsigned iMaxWidth = 0, iMaxHeight = 0;
 			HICON hIconSmall = NULL, hIconBig = NULL;
-			HMONITOR hMonintorFullscreen = NULL;
+			HMONITOR hMonintorFullscreen = NULL; // if NULL --> Default monitor
 		};
 		
 
@@ -148,13 +151,15 @@ namespace rl
 
 		private: // methods
 
-			void messageLoop(WindowConfig cfg);
-			void clear();
-			/// <summary>
-			/// Re-generate the <c>dwStyle</c> value based on the current state of the <c>Window</c>
-			/// class and update the Client-To-Window size values
-			/// </summary>
+			// the main thread function, containing the message loop
+			void threadFunction(WindowConfig cfg);
+
+			// Re-generate the dwStyle value based on the current state of the Window class
+			// and update the Client-To-Window size values
 			DWORD refreshStyle();
+
+			// reset the member variables
+			void clear();
 
 
 		private: // variables
@@ -203,6 +208,9 @@ namespace rl
 
 
 
+		/// <summary>
+		/// The startup configuration for a <c>IRenderer</c> derived object
+		/// </summary>
 		struct RendererConfig
 		{
 			bool bVSync = false;
@@ -210,7 +218,7 @@ namespace rl
 
 
 		/// <summary>
-		/// An interface for OpenGL graphics
+		/// An interface for an OpenGL frame renderer
 		/// </summary>
 		class IRenderer
 		{
@@ -229,25 +237,17 @@ namespace rl
 			virtual ~IRenderer();
 
 
-			/// <summary>
-			/// create the renderer
-			/// </summary>
-			/// <returns>Could the renderer be created?</returns>
+			/// <summary>Initialize the renderer</summary>
+			/// <returns>Did the renderer creation succeed?</returns>
 			bool create(HDC hDC, unsigned iWidth, unsigned iHeight, const RendererConfig& cfg);
 
-			/// <summary>
-			/// Destroy the renderer
-			/// </summary>
+			/// <summary>Destroy the renderer</summary>
 			void destroy();
 
-			/// <summary>
-			/// Update the viewport
-			/// </summary>
+			/// <summary>Re-draw the graphics</summary>
 			void update(const void* pGraph);
 
-			/// <summary>
-			/// Resize the viewport
-			/// </summary>
+			/// <summary>Resize the viewport</summary>
 			void resize(unsigned iWidth, unsigned iHeight);
 
 			void setVSync(bool bVSync);
@@ -280,6 +280,9 @@ namespace rl
 
 
 
+		/// <summary>
+		/// The startup configuration for a <c>IApplication</c> derived object
+		/// </summary>
 		struct AppConfig
 		{
 			WindowConfig window;
@@ -304,7 +307,7 @@ namespace rl
 
 		private: // static variables
 
-			static bool s_bRunning;
+			static bool s_bRunning; // only one object can run at once
 
 
 		protected: // events
@@ -340,7 +343,6 @@ namespace rl
 
 		protected: // methods
 
-			// for use in the IApplication derivative and the IRenderer base class only
 			auto& window() { return m_oWindow; }
 			auto& renderer() { return m_oRenderer; }
 			auto graph() { return m_pLiveGraph; }
@@ -368,6 +370,7 @@ namespace rl
 
 		private: // methods
 
+			// copy the current frame graph to the cache graph (for while the renderer is working)
 			void cacheGraph() { copyGraph(m_pGraphForRenderer, m_pLiveGraph); }
 
 

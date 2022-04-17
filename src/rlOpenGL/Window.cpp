@@ -141,7 +141,7 @@ bool lib::Window::create(const WindowConfig& cfg,
 	m_fnOnClose = fnOnClose;
 
 	std::unique_lock lm(m_muxState);
-	m_trdMessageLoop = std::thread(&lib::Window::messageLoop, this, cfg);
+	m_trdMessageLoop = std::thread(&lib::Window::threadFunction, this, cfg);
 	m_cvState.wait(lm);
 	if (!m_bMessageLoop && m_trdMessageLoop.joinable())
 		m_trdMessageLoop.join();
@@ -268,7 +268,7 @@ void lib::Window::setFullscreen(bool bFullscreen, HMONITOR hMon)
 	}
 }
 
-void lib::Window::messageLoop(WindowConfig cfg)
+void lib::Window::threadFunction(WindowConfig cfg)
 {
 	try
 	{
@@ -407,34 +407,6 @@ void lib::Window::messageLoop(WindowConfig cfg)
 	m_cvState.notify_one();
 }
 
-void lib::Window::clear()
-{
-	m_hWnd = NULL;
-	m_bAppClose = m_bWinClose = false;
-	m_bMessageLoop = false;
-	m_bThreadRunning = false;
-
-	m_fnOnMessage = nullptr;
-	m_fnOnClose = nullptr;
-
-	m_iWidth = m_iHeight = 0;
-	m_iNativeWidth = m_iNativeHeight = 0;
-	m_iClientToScreenX = m_iClientToScreenY = 0;
-	m_iMinWidth = m_iMinHeight = 0;
-	m_iMaxWidth = m_iMaxHeight = 0;
-	m_iRestoredWidth = m_iRestoredHeight = 0;
-
-	m_iWindowX = m_iWindowY = 0;
-	m_iMaximizedX = m_iMaximizedY = 0;
-
-	m_sTitle.clear();
-	m_hMonitorFullscreen = NULL;
-	m_bResizable = false;
-	m_bMinimized = false;
-	m_bMaximized = false;
-	m_bFullscreen = false;
-}
-
 DWORD lib::Window::refreshStyle()
 {
 	DWORD dwOldStyle = GetWindowLong(m_hWnd, GWL_STYLE);
@@ -461,4 +433,32 @@ DWORD lib::Window::refreshStyle()
 	}
 
 	return dwNewStyle;
+}
+
+void lib::Window::clear()
+{
+	m_hWnd = NULL;
+	m_bAppClose = m_bWinClose = false;
+	m_bMessageLoop = false;
+	m_bThreadRunning = false;
+
+	m_fnOnMessage = nullptr;
+	m_fnOnClose = nullptr;
+
+	m_iWidth = m_iHeight = 0;
+	m_iNativeWidth = m_iNativeHeight = 0;
+	m_iClientToScreenX = m_iClientToScreenY = 0;
+	m_iMinWidth = m_iMinHeight = 0;
+	m_iMaxWidth = m_iMaxHeight = 0;
+	m_iRestoredWidth = m_iRestoredHeight = 0;
+
+	m_iWindowX = m_iWindowY = 0;
+	m_iMaximizedX = m_iMaximizedY = 0;
+
+	m_sTitle.clear();
+	m_hMonitorFullscreen = NULL;
+	m_bResizable = false;
+	m_bMinimized = false;
+	m_bMaximized = false;
+	m_bFullscreen = false;
 }

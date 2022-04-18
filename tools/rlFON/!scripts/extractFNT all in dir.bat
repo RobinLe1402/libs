@@ -1,5 +1,5 @@
 @ECHO OFF
-REM Thie script tries to every FONT resource of every .fon file in a directory
+REM This script tries to every FONT resource of every .fon file in a directory
 
 IF NOT EXIST ".\extractFNT.exe" GOTO :NOEXE
 

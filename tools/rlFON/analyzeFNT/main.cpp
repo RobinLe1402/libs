@@ -6,7 +6,7 @@ A small command line utility for retrieving metadata of a Microsoft FNT bitmap f
 
 #include "../!include/parser.hpp"
 #include "../!include/consoleui.hpp"
-#include <rl/console.hpp>
+#include "rl/console.hpp"
 using Con = rl::Console;
 
 #include <cstdio> // printf

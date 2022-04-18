@@ -1,4 +1,4 @@
-#include <rl/splashscreen.hpp>
+#include "rl/splashscreen.hpp"
 #include "resource.h"
 
 #include <Windows.h>

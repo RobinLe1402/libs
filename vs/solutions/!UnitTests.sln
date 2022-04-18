@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "graphics.opengl.window", "..\projects\test\units\graphics.opengl.window.vcxproj", "{29ADBE36-20E1-4513-8B4D-3FA479DE1177}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "graphics.opengl.window", "..\..\test\units\graphics.opengl.window\graphics.opengl.window.vcxproj", "{29ADBE36-20E1-4513-8B4D-3FA479DE1177}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "splashscreen", "..\projects\test\units\splashscreen.vcxproj", "{36278131-5FA4-4994-8D41-C04DB4713CFB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "splashscreen", "..\..\test\units\splashscreen\splashscreen.vcxproj", "{36278131-5FA4-4994-8D41-C04DB4713CFB}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "!global", "..\projects\test\!global.vcxproj", "{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "!global", "..\..\test\!global\!global.vcxproj", "{5B2C69BA-26C2-4528-83CC-7BCEDF33AC54}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "audio.engine", "..\projects\test\units\audio.engine.vcxproj", "{AF4A32DB-A47B-4845-83DA-27920AB0DDE1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "audio.engine", "..\..\test\units\audio.engine\audio.engine.vcxproj", "{AF4A32DB-A47B-4845-83DA-27920AB0DDE1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "data.online", "..\projects\test\units\data.online.vcxproj", "{58A1E418-ACF2-4A51-9A6D-60CCE1C91FDB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "data.online", "..\..\test\units\data.online\data.online.vcxproj", "{58A1E418-ACF2-4A51-9A6D-60CCE1C91FDB}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RLGF", "..\projects\test\units\RLGF.vcxproj", "{8FE26D59-36CD-4980-9429-95367CDEC079}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "text.fileio", "..\..\test\units\text.fileio\text.fileio.vcxproj", "{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,14 +63,14 @@ Global
 		{58A1E418-ACF2-4A51-9A6D-60CCE1C91FDB}.Release|x64.Build.0 = Release|x64
 		{58A1E418-ACF2-4A51-9A6D-60CCE1C91FDB}.Release|x86.ActiveCfg = Release|Win32
 		{58A1E418-ACF2-4A51-9A6D-60CCE1C91FDB}.Release|x86.Build.0 = Release|Win32
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Debug|x64.ActiveCfg = Debug|x64
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Debug|x64.Build.0 = Debug|x64
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Debug|x86.ActiveCfg = Debug|Win32
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Debug|x86.Build.0 = Debug|Win32
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Release|x64.ActiveCfg = Release|x64
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Release|x64.Build.0 = Release|x64
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Release|x86.ActiveCfg = Release|Win32
-		{8FE26D59-36CD-4980-9429-95367CDEC079}.Release|x86.Build.0 = Release|Win32
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Debug|x64.ActiveCfg = Debug|x64
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Debug|x64.Build.0 = Debug|x64
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Debug|x86.ActiveCfg = Debug|Win32
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Debug|x86.Build.0 = Debug|Win32
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x64.ActiveCfg = Release|x64
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x64.Build.0 = Release|x64
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x86.ActiveCfg = Release|Win32
+		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -11,12 +11,13 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(GitHub_rl_libs)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Lib>
     </Lib>
     <Link>
-      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)lib\$(Configuration)\x32\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)lib\$(Configuration)\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

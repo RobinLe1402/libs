@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Resource Files\global">
+      <UniqueIdentifier>{3164b167-1c06-4680-9885-0e7e8e290561}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\general">
+      <UniqueIdentifier>{10fbb92c-a231-4711-8917-efbaf60f565e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\general">
+      <UniqueIdentifier>{5e980408-7190-47f7-ae6f-c01994e09a53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\general\global">
+      <UniqueIdentifier>{20794ee2-5930-453e-ab26-70fc69138a82}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.window.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\graphics.fonts.bitmap.reader.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.texture.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\input.mouse.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\splashscreen.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\input.keyboard.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="gui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.types.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GitHub_rl_libs)src\unicode.cpp">
+      <Filter>Source Files\general</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.fonts.bitmap.reader.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.texture.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.window.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\input.mouse.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="constants.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\splashscreen.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\input.keyboard.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+    <ClInclude Include="gui.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(GitHub_rl_libs)include\rl\unicode.hpp">
+      <Filter>Header Files\general</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\splash.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="$(GitHub_rl_libs)RobinLe.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E:\[Temp]\!DevFont.rlFNT" />
+  </ItemGroup>
+</Project>

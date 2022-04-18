@@ -1,11 +1,11 @@
 #include "resource.h"
 
-#include <rl/splashscreen.hpp>
-#include <rl/graphics.opengl.window.hpp>
-#include <rl/graphics.opengl.texture.hpp>
-#include <rl/input.keyboard.hpp>
-#include <rl/input.mouse.hpp>
-#include <rl/visualstyles.h>
+#include "rl/splashscreen.hpp"
+#include "rl/graphics.opengl.window.hpp"
+#include "rl/graphics.opengl.texture.hpp"
+#include "rl/input.keyboard.hpp"
+#include "rl/input.mouse.hpp"
+#include "rl/visualstyles.h"
 
 #include <string>
 #include <Windows.h>

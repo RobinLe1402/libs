@@ -19,7 +19,7 @@ bin/
 
 # Output directories - custom
 bin/
-lib/
+/lib/
 
 
 # Visual Studio cache

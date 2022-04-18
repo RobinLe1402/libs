@@ -8,9 +8,9 @@ Microsoft FON file (by filename and "font ordinal" = font ID)
 #include "../!include/parser.hpp"
 #include "../!include/consoleui.hpp"
 
-#include <rl/console.hpp>
+#include "rl/console.hpp"
 using Con = rl::Console;
-#include <rl/tools.gdiplus.hpp>
+#include "rl/tools.gdiplus.hpp"
 
 #include <Shlwapi.h>
 

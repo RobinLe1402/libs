@@ -6,7 +6,7 @@
 #include <Windows.h>
 #include <stdint.h>
 
-#include <rl/visualstyles.h>
+#include "rl/visualstyles.h"
 
 
 const wchar_t szCLASS_FORM_MAIN[] = L"formMain";

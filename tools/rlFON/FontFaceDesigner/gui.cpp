@@ -5,8 +5,8 @@
 #include <Windows.h>
 
 #define ROBINLE_OPENGL_FUNCTIONS
-#include <rl/graphics.opengl.types.hpp>
-#include <rl/unicode.hpp>
+#include "rl/graphics.opengl.types.hpp"
+#include "rl/unicode.hpp"
 
 #include "constants.hpp"
 

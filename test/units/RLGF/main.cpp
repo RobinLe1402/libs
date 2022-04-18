@@ -2,7 +2,7 @@
 #include <Windows.h>
 
 #include "../src/RLGF/rlgf.form.hpp"
-#include <rl/visualstyles.h>
+//#include <rl/visualstyles.h>
 
 
 
@@ -125,6 +125,7 @@ int WINAPI WinMain(
 	fid.szCaption = L"Test form";
 	fid.bVisible = true;
 	//fid.oBrushBackground.setColor(RGB(6, 77, 111));
+	fid.oBrushBackground.setColor(GetSysColor(COLOR_BTNFACE));
 
 	formMain form(fid);
 

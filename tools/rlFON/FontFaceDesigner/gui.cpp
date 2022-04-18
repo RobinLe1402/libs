@@ -674,21 +674,21 @@ namespace gui
 				p->setMouseStateAuto(oMouseScaled);
 
 			// CTRL shortcuts
-			if (kb.getKey(VK_CONTROL).bHeld)
+			if (kb.getKey(VK_CONTROL).held())
 			{
 				// CTRL+N --> Create
-				if (kb.getKey('N').bPressed)
+				if (kb.getKey('N').pressed())
 					btCreate->click();
 
 				// CTRL+O --> Open
-				else if (kb.getKey('O').bPressed)
+				else if (kb.getKey('O').pressed())
 					btOpen->click();
 
 				// CTRL+S --> Save/Save As...
-				else if (kb.getKey('S').bPressed)
+				else if (kb.getKey('S').pressed())
 				{
 					// CTRL+SHIFT+S --> Save As...
-					if (kb.getKey(VK_SHIFT).bHeld)
+					if (kb.getKey(VK_SHIFT).pressed())
 						btSaveAs->click();
 					// CTRL+S --> Save
 					else
@@ -696,11 +696,11 @@ namespace gui
 				}
 
 				// CTRL+Z --> Undo
-				else if (kb.getKey('Z').bPressed)
+				else if (kb.getKey('Z').pressed())
 					btUndo->click();
 
 				// CTRL+Y --> Redo
-				else if (kb.getKey('Y').bPressed)
+				else if (kb.getKey('Y').pressed())
 					btRedo->click();
 			}
 
@@ -711,7 +711,7 @@ namespace gui
 		default: // not in editor
 
 			// F4 or ESC --> return to editor
-			if (kb.getKey(VK_F4).bPressed || kb.getKey(VK_ESCAPE).bPressed)
+			if (kb.getKey(VK_F4).pressed() || kb.getKey(VK_ESCAPE).pressed())
 			{
 				m_eWin = CurrentWindow::Editor;
 				break;

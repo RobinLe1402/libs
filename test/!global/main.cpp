@@ -70,7 +70,7 @@ private:
 		kb.processInput();
 		mouse.processInput();
 
-		if (kb.getKey('A').bHeld)
+		if (kb.getKey('A').held())
 			MessageBoxA(NULL, "Test", NULL, MB_ICONINFORMATION | MB_SYSTEMMODAL);
 
 		auto& mousestate = mouse.getState();
@@ -109,7 +109,7 @@ private:
 
 	void OnAbout() override
 	{
-		if (kb.getKey(VK_SHIFT).bHeld)
+		if (kb.getKey(VK_SHIFT).held())
 			MessageBoxA(getHWND(), "Secret message :P", "Secret", NULL);
 		else
 			rl::OpenGLWin::OnAbout();

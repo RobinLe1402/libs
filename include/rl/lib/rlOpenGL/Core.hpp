@@ -64,7 +64,7 @@ namespace rl
 			HICON hIconSmall = NULL, hIconBig = NULL;
 			HMONITOR hMonintorFullscreen = NULL; // if NULL --> Default monitor
 		};
-		
+
 
 
 		/// <summary>
@@ -149,6 +149,21 @@ namespace rl
 			}
 
 
+		protected: // methods
+
+			// invoke a synchronous, window-related function that might get called from the
+			// application thread (if the calling thread is the application thread, a temporary
+			// thread is created and detached)
+
+			/// <summary>
+			/// Invoke a synchronous, window-related function.<para />
+			/// Use if the current thread might be the application thread
+			/// (--> "raw call" might lead to a softlock).
+			/// </summary>
+			template <typename TResult, typename... TArgsFn, typename... TArgsCall>
+			inline void invoke(TResult(*fn)(TArgsFn...), TArgsCall... args);
+
+
 		private: // methods
 
 			// the main thread function, containing the message loop
@@ -165,6 +180,7 @@ namespace rl
 		private: // variables
 
 			std::thread m_trdMessageLoop;
+			std::thread::id m_trdidApplication;
 
 			const std::wstring m_sClassName;
 
@@ -192,7 +208,7 @@ namespace rl
 			// window position data
 			int m_iWindowX = 0, m_iWindowY = 0;  // last restored position window position
 			int m_iMaximizedX = 0, m_iMaximizedY = 0;
-			
+
 			// window state data
 			std::wstring m_sTitle = L"";
 			HMONITOR m_hMonitorFullscreen = NULL;

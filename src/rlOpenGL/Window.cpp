@@ -115,6 +115,7 @@ bool lib::Window::create(const WindowConfig& cfg,
 	destroy();
 
 	s_pInstance = this;
+	m_trdidApplication = std::this_thread::get_id();
 
 	if (cfg.iWidth == 0 || cfg.iHeight == 0)
 		return false;
@@ -173,8 +174,8 @@ void lib::Window::destroy()
 
 void lib::Window::show()
 {
-	ShowWindow(m_hWnd, SW_SHOW);
-	SetForegroundWindow(m_hWnd);
+	invoke(ShowWindow, m_hWnd, SW_SHOW);
+	invoke(SetForegroundWindow, m_hWnd);
 }
 
 void lib::Window::setTitle(const wchar_t* szTitle)
@@ -183,7 +184,7 @@ void lib::Window::setTitle(const wchar_t* szTitle)
 		return;
 
 	m_sTitle = szTitle;
-	SetWindowTextW(m_hWnd, szTitle);
+	invoke(SetWindowTextW, m_hWnd, m_sTitle.c_str());
 }
 
 void lib::Window::minimize()
@@ -192,9 +193,9 @@ void lib::Window::minimize()
 		return;
 
 	if (!m_bFullscreen)
-		SendMessage(m_hWnd, WM_SIZE, SIZE_MINIMIZED, MAKELPARAM(m_iWidth, m_iHeight));
+		invoke(SendMessage, m_hWnd, WM_SIZE, SIZE_MINIMIZED, MAKELPARAM(m_iWidth, m_iHeight));
 	else
-		ShowWindow(m_hWnd, SW_MINIMIZE);
+		invoke(ShowWindow, m_hWnd, SW_MINIMIZE);
 }
 
 void lib::Window::setSize(unsigned iWidth, unsigned iHeight)
@@ -202,7 +203,7 @@ void lib::Window::setSize(unsigned iWidth, unsigned iHeight)
 	if (!m_bMessageLoop || m_bFullscreen)
 		return;
 
-	SendMessage(m_hWnd, WM_SIZE, SIZE_RESTORED, MAKELPARAM(iWidth, iHeight));
+	invoke(SendMessage, m_hWnd, WM_SIZE, SIZE_RESTORED, MAKELPARAM(iWidth, iHeight));
 }
 
 void lib::Window::setFullscreen(bool bFullscreen, HMONITOR hMon)
@@ -266,6 +267,22 @@ void lib::Window::setFullscreen(bool bFullscreen, HMONITOR hMon)
 			mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
 			SWP_FRAMECHANGED);
 	}
+}
+
+template <typename TResult, typename... TArgsFn, typename... TArgsCall>
+void lib::Window::invoke(TResult(*fn)(TArgsFn...), TArgsCall... args)
+{
+#pragma warning(disable : 4834) // discarding return value of function with 'nodiscard' attribute
+
+	if (m_trdidApplication == std::this_thread::get_id())
+	{
+		std::thread trdTMP(fn, args...);
+		trdTMP.detach();
+	}
+	else
+		fn(args...);
+
+#pragma warning(default : 4834)
 }
 
 void lib::Window::threadFunction(WindowConfig cfg)

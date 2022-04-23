@@ -244,6 +244,8 @@ namespace rl
 			virtual void OnUpdate(const void* pGraph) = 0;
 			virtual void OnDestroy() {}
 
+			virtual void OnResize() {}
+
 
 		public: // methods
 

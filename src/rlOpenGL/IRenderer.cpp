@@ -90,6 +90,7 @@ void lib::IRenderer::resize(unsigned iWidth, unsigned iHeight)
 	m_iWidth = iWidth;
 	m_iHeight = iHeight;
 	glViewport(0, 0, iWidth, iHeight);
+	OnResize();
 }
 
 void lib::IRenderer::setVSync(bool bVSync)

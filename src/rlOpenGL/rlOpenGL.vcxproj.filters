@@ -35,5 +35,8 @@
     <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Texture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Pixel.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

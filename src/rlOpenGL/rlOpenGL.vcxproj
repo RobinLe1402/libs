@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Core.hpp" />
+    <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Pixel.hpp" />
     <ClInclude Include="..\..\include\rl\lib\rlOpenGL\Texture.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

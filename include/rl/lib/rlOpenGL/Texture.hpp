@@ -152,7 +152,7 @@ namespace rl
 			virtual ~Texture();
 
 			bool create(GLuint iWidth, GLuint iHeight);
-			bool create(GLuint iWidth, GLuint iHeight, Pixel pxColor);
+			bool create(GLuint iWidth, GLuint iHeight, const Pixel& pxColor);
 			void destroy();
 
 			void upload();

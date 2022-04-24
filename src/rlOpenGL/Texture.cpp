@@ -127,7 +127,7 @@ bool lib::Texture::create(GLuint iWidth, GLuint iHeight)
 	return true;
 }
 
-bool lib::Texture::create(GLuint iWidth, GLuint iHeight, Pixel pxColor)
+bool lib::Texture::create(GLuint iWidth, GLuint iHeight, const Pixel& pxColor)
 {
 	if (!createUninitialized(iWidth, iHeight))
 		return false;

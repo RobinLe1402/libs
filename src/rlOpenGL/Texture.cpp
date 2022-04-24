@@ -119,21 +119,22 @@ lib::Texture::~Texture()
 
 bool lib::Texture::create(GLuint iWidth, GLuint iHeight)
 {
-	destroy();
-
-	if (iWidth == 0 || iHeight == 0)
-		return false;
-
-
-
-	m_pData = new Pixel[iWidth * iHeight];
-	if (!m_pData)
+	if (!createUninitialized(iWidth, iHeight))
 		return false;
 
 	memset(m_pData, 0, (size_t)iWidth * iHeight * sizeof(Pixel));
 
-	m_iWidth = iWidth;
-	m_iHeight = iHeight;
+	return true;
+}
+
+bool lib::Texture::create(GLuint iWidth, GLuint iHeight, Pixel pxColor)
+{
+	if (!createUninitialized(iWidth, iHeight))
+		return false;
+
+	const size_t iDataSize = (size_t)m_iWidth * m_iHeight;
+	for (size_t i = 0; i < iDataSize; ++i)
+		m_pData[i] = pxColor;
 
 	return true;
 }
@@ -257,7 +258,7 @@ lib::TextureDrawingCoordinates lib::Texture::coordsUnscaled(const TexturePixelRe
 }
 
 lib::TextureDrawingCoordinates lib::Texture::coordsScaled(const TexturePixelRect& oDestinationRect,
-	const TexturePixelSize& oViewportSize)
+	const TexturePixelSize& oViewportSize) const
 {
 	TextureDrawingCoordinates oResult =
 	{
@@ -281,7 +282,7 @@ lib::TextureDrawingCoordinates lib::Texture::coordsScaled(const TexturePixelRect
 }
 
 lib::TextureDrawingCoordinates lib::Texture::coordsScaled(const TexturePixelRect& oSourceRect,
-	const TexturePixelRect& oDestinationRect, const TexturePixelSize& oViewportSize)
+	const TexturePixelRect& oDestinationRect, const TexturePixelSize& oViewportSize) const
 {
 	TextureDrawingCoordinates oResult =
 	{
@@ -313,7 +314,7 @@ lib::TextureDrawingCoordinates lib::Texture::coordsScaled(const TexturePixelRect
 	return oResult;
 }
 
-void lib::Texture::draw(const TextureDrawingCoordinates& coords)
+void lib::Texture::draw(const TextureDrawingCoordinates& coords) const
 {
 	if (!uploaded())
 		return;
@@ -502,4 +503,23 @@ lib::Pixel lib::Texture::getPixel(GLuint iX, GLuint iY) const
 		return Color::Blank;
 
 	return m_pData[(m_iHeight - 1 - iY) * m_iWidth + iX];
+}
+
+bool lib::Texture::createUninitialized(GLuint iWidth, GLuint iHeight)
+{
+	destroy();
+
+	if (iWidth == 0 || iHeight == 0)
+		return false;
+
+
+
+	m_pData = new Pixel[iWidth * iHeight];
+	if (!m_pData)
+		return false;
+
+	m_iWidth = iWidth;
+	m_iHeight = iHeight;
+
+	return true;
 }

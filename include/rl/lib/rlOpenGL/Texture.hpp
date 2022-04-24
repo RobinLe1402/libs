@@ -237,6 +237,7 @@ namespace rl
 			virtual ~Texture();
 
 			bool create(GLuint iWidth, GLuint iHeight);
+			bool create(GLuint iWidth, GLuint iHeight, Pixel pxColor);
 			void destroy();
 
 			void upload();
@@ -248,12 +249,12 @@ namespace rl
 				GLint iX, GLint iY, const TexturePixelSize& oViewportSize) const;
 
 			TextureDrawingCoordinates coordsScaled(const TexturePixelRect& oDestinationRect,
-				const TexturePixelSize& oViewportSize);
+				const TexturePixelSize& oViewportSize) const;
 			TextureDrawingCoordinates coordsScaled(const TexturePixelRect& oSourceRect,
 				const TexturePixelRect& oDestinationRect,
-				const TexturePixelSize& oViewportSize);
+				const TexturePixelSize& oViewportSize) const;
 
-			void draw(const TextureDrawingCoordinates& coords);
+			void draw(const TextureDrawingCoordinates& coords) const;
 
 
 			// setters
@@ -282,6 +283,11 @@ namespace rl
 			auto upscalingMethod() const { return m_eUpscalingMethod; }
 			auto wrapMethodX() const { return m_eWrapMethodX; }
 			auto wrapMethodY() const { return m_eWrapMethodY; }
+
+
+		private: // methods
+
+			bool createUninitialized(GLuint iWidth, GLuint iHeight);
 
 
 		private: // variables

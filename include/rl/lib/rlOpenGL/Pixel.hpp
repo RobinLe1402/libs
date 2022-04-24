@@ -47,11 +47,11 @@ namespace rl
 			};
 
 			Pixel() : r(0), g(0), b(0), alpha(0) {}
-			constexpr Pixel(const Pixel& other) : iRaw(other.iRaw) {}
+			constexpr Pixel(const Pixel& other) = default;
 			constexpr Pixel(uint8_t r, uint8_t g, uint8_t b, uint8_t alpha = 0xFF) :
 				r(r), g(g), b(b), alpha(alpha) {}
 
-			Pixel& operator=(const Pixel& other) { iRaw = other.iRaw; return *this; }
+			Pixel& operator=(const Pixel& other) = default;
 
 
 

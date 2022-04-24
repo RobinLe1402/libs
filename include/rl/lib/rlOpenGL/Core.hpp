@@ -6,8 +6,8 @@
 
 
 #pragma once
-#ifndef ROBINLE_LIB_OPENGL_CORE
-#define ROBINLE_LIB_OPENGL_CORE
+#ifndef ROBINLE_LIB_OPENGL__CORE
+#define ROBINLE_LIB_OPENGL__CORE
 
 
 
@@ -421,4 +421,4 @@ namespace rl
 
 
 
-#endif // ROBINLE_LIB_OPENGL_CORE
+#endif // ROBINLE_LIB_OPENGL__CORE

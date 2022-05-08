@@ -12,6 +12,9 @@
       <AdditionalIncludeDirectories>$(GitHub_rl_libs)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(GitHub_rl_libs)lib\$(Configuration)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

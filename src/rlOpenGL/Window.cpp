@@ -372,23 +372,6 @@ void lib::Window::threadFunction(WindowConfig cfg)
 		m_iMaxHeight = cfg.iMaxHeight;
 		m_hMonitorFullscreen = cfg.hMonintorFullscreen;
 
-		// if windowed, check for the OS minimum size
-		if (!m_bFullscreen)
-		{
-			unsigned iOSMinX = 0, iOSMinY = 0;
-			Window::GetOSMinWindowedSize(m_bResizable, iOSMinX, iOSMinY);
-
-			if (m_iWidth < iOSMinX)
-				m_iWidth = iOSMinX;
-			if (m_iHeight < iOSMinY)
-				m_iHeight = iOSMinY;
-
-			if (m_iMaxWidth < iOSMinX)
-				m_iMaxWidth = iOSMinX;
-			if (m_iMaxHeight < iOSMinY)
-				m_iMaxHeight = iOSMinY;
-		}
-
 		if (m_hMonitorFullscreen == NULL)
 		{
 			const POINT pt = { 0, 0 };
@@ -407,6 +390,23 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			m_iHeight = cfg.iHeight;
 		}
 
+		// check for the OS minimum size
+		unsigned iOSMinX = 0, iOSMinY = 0;
+		Window::GetOSMinWindowedSize(m_bResizable, iOSMinX, iOSMinY);
+
+		if (!m_bFullscreen)
+		{
+			if (m_iWidth < iOSMinX)
+				m_iWidth = iOSMinX;
+			if (m_iHeight < iOSMinY)
+				m_iHeight = iOSMinY;
+		}
+
+		if (m_iMaxWidth > 0 && m_iMaxWidth < iOSMinX)
+			m_iMaxWidth = iOSMinX;
+		if (m_iMaxHeight > 0 && m_iMaxHeight < iOSMinY)
+			m_iMaxHeight = iOSMinY;
+
 
 
 		WNDCLASSEXW wc = {};
@@ -421,9 +421,6 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 		if (!RegisterClassExW(&wc))
 			throw std::exception();
-
-
-		const DWORD dwStyle = refreshStyle();
 
 
 
@@ -458,8 +455,10 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			m_iNativeWidth += m_iClientToScreenX;
 			m_iNativeHeight += m_iClientToScreenY;
 		}
+		
 
 
+		const DWORD dwStyle = refreshStyle();
 
 		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
 			m_iNativeWidth, m_iNativeHeight, NULL, NULL, NULL, NULL);

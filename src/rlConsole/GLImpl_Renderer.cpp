@@ -20,7 +20,7 @@ void ConsoleRenderer::OnUpdate(const void* pGraph)
 	auto& oGraph = *static_cast<const ConsoleGraph*>(pGraph);
 	if (!m_oTex || m_oTex.width() != width() || m_oTex.height() != height())
 	{
-		m_oTex.create(width(), height());
+		m_oTex.create(width(), height(), GL::Pixel::ByRGB(m_pConsole->getBackground()));
 		m_oTex.setScalingMethod(GL::TextureScalingMethod::NearestNeighbor);
 		m_oTex.setTransparency(false);
 	}
@@ -61,9 +61,4 @@ void ConsoleRenderer::OnUpdate(const void* pGraph)
 
 	m_oTex.upload();
 	m_oTex.draw({ GL::FullScreen, GL::FullTexture });
-}
-
-void ConsoleRenderer::OnResize()
-{
-	m_pConsole->notifyOfResize(width(), height());
 }

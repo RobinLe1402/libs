@@ -64,8 +64,6 @@ namespace impl
 
 		rlConsole_CharBuffer getBuffer();
 
-		void notifyOfResize(unsigned iColumns, unsigned iRows);
-
 
 	private: // variables
 

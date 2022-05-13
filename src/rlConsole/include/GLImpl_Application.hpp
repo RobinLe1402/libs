@@ -27,19 +27,20 @@ public: // methods
 
 	bool isRunning() { return m_bRunning; }
 
-	void handleResize(unsigned iColumns, unsigned iRows);
-
 
 private: // methods
 
 	bool OnStart() override;
 	bool OnUpdate(float fElapsedTime) override;
-	void OnResize(LONG& iWidth, LONG& iHeight) override;
+	void OnResizing(LONG& iWidth, LONG& iHeight) override;
+	void OnResized(unsigned iWidth, unsigned iHeight) override;
 	bool OnStop() override;
 
 	void createGraph(void** pGraph) override;
 	void copyGraph(void* pDest, const void* pSource) override;
 	void destroyGraph(void* pGraph) override;
+
+	void handleResize(unsigned iColumns, unsigned iRows);
 
 
 private: // variables

@@ -25,7 +25,6 @@ public: // methods
 
 	void OnCreate() override;
 	void OnUpdate(const void* pGraph) override;
-	void OnResize() override;
 
 
 private: // variables

@@ -98,12 +98,17 @@ bool ConsoleApplication::OnUpdate(float fElapsedTime)
 	return m_pConsole->OnUpdate(fElapsedTime, reinterpret_cast<HrlConsole>(m_pConsole));
 }
 
-void ConsoleApplication::OnResize(LONG& iWidth, LONG& iHeight)
+void ConsoleApplication::OnResizing(LONG& iWidth, LONG& iHeight)
 {
 	const auto iScale = m_pConsole->getScale();
 
 	iWidth -= (iWidth % (rlConsole_Font_Char_Width * iScale));
 	iHeight -= (iHeight % (rlConsole_Font_Char_Height * iScale));
+}
+
+void ConsoleApplication::OnResized(unsigned iWidth, unsigned iHeight)
+{
+	handleResize(iWidth / rlConsole_Font_Char_Width, iHeight / rlConsole_Font_Char_Height);
 }
 
 bool ConsoleApplication::OnStop()

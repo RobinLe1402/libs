@@ -81,7 +81,7 @@ impl::rlConsole::~rlConsole()
 
 bool impl::rlConsole::execute()
 {
-	return m_pApplication->execute(m_oConfig); // ToDo: find reason for wrong window size
+	return m_pApplication->execute(m_oConfig);
 }
 
 bool impl::rlConsole::isRunning() { return m_pApplication->isRunning(); }
@@ -89,9 +89,4 @@ bool impl::rlConsole::isRunning() { return m_pApplication->isRunning(); }
 rlConsole_CharBuffer impl::rlConsole::getBuffer()
 {
 	return m_pApplication->getGraph()->pBuf;
-}
-
-void impl::rlConsole::notifyOfResize(unsigned iColumns, unsigned iRows)
-{
-	m_pApplication->handleResize(iColumns, iRows);
 }

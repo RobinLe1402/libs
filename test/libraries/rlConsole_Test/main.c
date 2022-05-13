@@ -19,7 +19,8 @@ bool OnUpdate(float fElapsedTime, HrlConsole hConsole)
 		rlConsole_CharBuffer buf;
 		rlConsole_getBuf(hConsole, &buf);
 
-		buf[1].c = 'A';
+		buf[0].c = 'A';
+		buf[1].clBackground = 0xFF00FF;
 
 		bInitialized = true;
 	}

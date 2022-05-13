@@ -427,6 +427,19 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 
 
+		const DWORD dwStyle = refreshStyle();
+
+		// calculate the window width
+		m_iNativeWidth = m_iWidth;
+		m_iNativeHeight = m_iHeight;
+		if (!m_bFullscreen)
+		{
+			m_iNativeWidth += m_iClientToScreenX;
+			m_iNativeHeight += m_iClientToScreenY;
+		}
+
+
+
 		// calculate the window position
 
 		int iPosX, iPosY;
@@ -447,21 +460,8 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			iPosX = m_iWindowX;
 			iPosY = m_iWindowY;
 		}
-
-
-
-		// calculate the window width
-		m_iNativeWidth = m_iWidth;
-		m_iNativeHeight = m_iHeight;
-		if (!m_bFullscreen)
-		{
-			m_iNativeWidth += m_iClientToScreenX;
-			m_iNativeHeight += m_iClientToScreenY;
-		}
 		
 
-
-		const DWORD dwStyle = refreshStyle();
 
 		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
 			m_iNativeWidth, m_iNativeHeight, NULL, NULL, NULL, NULL);

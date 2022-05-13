@@ -73,8 +73,8 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			o.m_iNativeWidth = rect.right - rect.left;
 			o.m_iNativeHeight = rect.bottom - rect.top;
 
-			o.m_iWidth = o.m_iNativeWidth - o.m_iClientToScreenX;
-			o.m_iHeight = o.m_iNativeHeight - o.m_iClientToScreenY;
+			o.m_iWidth = o.m_iNativeWidth - o.m_iBorderWidth;
+			o.m_iHeight = o.m_iNativeHeight - o.m_iBorderHeight;
 		}
 		break;
 
@@ -85,8 +85,8 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			o.m_iWidth = LOWORD(lParam);
 			o.m_iHeight = HIWORD(lParam);
 
-			o.m_iNativeWidth = o.m_iWidth + o.m_iClientToScreenX;
-			o.m_iNativeHeight = o.m_iHeight + o.m_iClientToScreenY;
+			o.m_iNativeWidth = o.m_iWidth + o.m_iBorderWidth;
+			o.m_iNativeHeight = o.m_iHeight + o.m_iBorderHeight;
 		}
 
 		o.m_bMinimized = (wParam == SIZE_MINIMIZED);
@@ -105,18 +105,18 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			if (o.m_iMaxWidth > 0 || o.m_iMaxHeight > 0)
 			{
 				if (o.m_iMaxWidth > 0)
-					mmi.ptMaxTrackSize.x = o.m_iMaxWidth + o.m_iClientToScreenX;
+					mmi.ptMaxTrackSize.x = o.m_iMaxWidth + o.m_iBorderWidth;
 				if (o.m_iMaxHeight > 0)
-					mmi.ptMaxTrackSize.y = o.m_iMaxHeight + o.m_iClientToScreenY;
+					mmi.ptMaxTrackSize.y = o.m_iMaxHeight + o.m_iBorderHeight;
 			}
 
 			// minimum
 			if (o.m_iMinWidth > 0 || o.m_iMinHeight > 0)
 			{
 				if (o.m_iMinWidth > 0)
-					mmi.ptMinTrackSize.x = o.m_iMinWidth + o.m_iClientToScreenX;
+					mmi.ptMinTrackSize.x = o.m_iMinWidth + o.m_iBorderWidth;
 				if (o.m_iMinHeight > 0)
-					mmi.ptMinTrackSize.y = o.m_iMinHeight + o.m_iClientToScreenY;
+					mmi.ptMinTrackSize.y = o.m_iMinHeight + o.m_iBorderHeight;
 			}
 		}
 
@@ -427,6 +427,19 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 
 
+		const DWORD dwStyle = refreshStyle();
+
+		// calculate the window width
+		m_iNativeWidth = m_iWidth;
+		m_iNativeHeight = m_iHeight;
+		if (!m_bFullscreen)
+		{
+			m_iNativeWidth += m_iBorderWidth;
+			m_iNativeHeight += m_iBorderHeight;
+		}
+
+
+
 		// calculate the window position
 
 		int iPosX, iPosY;
@@ -447,21 +460,8 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			iPosX = m_iWindowX;
 			iPosY = m_iWindowY;
 		}
-
-
-
-		// calculate the window width
-		m_iNativeWidth = m_iWidth;
-		m_iNativeHeight = m_iHeight;
-		if (!m_bFullscreen)
-		{
-			m_iNativeWidth += m_iClientToScreenX;
-			m_iNativeHeight += m_iClientToScreenY;
-		}
 		
 
-
-		const DWORD dwStyle = refreshStyle();
 
 		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
 			m_iNativeWidth, m_iNativeHeight, NULL, NULL, NULL, NULL);
@@ -518,8 +518,8 @@ DWORD lib::Window::refreshStyle()
 	const auto oData = GetStyleAndSizes(m_bFullscreen, m_bResizable);
 	const DWORD dwNewStyle = oData.dwStyle | (GetWindowLong(m_hWnd, GWL_STYLE) & WS_VISIBLE);
 
-	m_iClientToScreenX = oData.iBorderWidth;
-	m_iClientToScreenY = oData.iBorderHeight;
+	m_iBorderWidth = oData.iBorderWidth;
+	m_iBorderHeight = oData.iBorderHeight;
 	m_iOSMinWidth = oData.iMinClientWidth;
 	m_iOSMinHeight = oData.iMinClientHeight;
 
@@ -538,7 +538,7 @@ void lib::Window::clear()
 
 	m_iWidth = m_iHeight = 0;
 	m_iNativeWidth = m_iNativeHeight = 0;
-	m_iClientToScreenX = m_iClientToScreenY = 0;
+	m_iBorderWidth = m_iBorderHeight = 0;
 	m_iMinWidth = m_iMinHeight = 0;
 	m_iMaxWidth = m_iMaxHeight = 0;
 	m_iRestoredWidth = m_iRestoredHeight = 0;

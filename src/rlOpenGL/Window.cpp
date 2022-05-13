@@ -5,8 +5,54 @@ namespace lib = rl::OpenGL;
 // ToDo: Fix screen flickering on gaining/losing focus when in fullscreen mode
 
 
+// private
+struct WindowStyleAndSizes
+{
+	DWORD dwStyle;
+	unsigned iBorderWidth, iBorderHeight;
+	unsigned iMinClientWidth, iMinClientHeight;
+};
+
+// private
+WindowStyleAndSizes GetStyleAndSizes(bool bFullscreen, bool bResizable)
+{
+	WindowStyleAndSizes oResult = {};
+
+	if (!bFullscreen)
+	{
+		oResult.dwStyle = WS_OVERLAPPEDWINDOW;
+
+		if (!bResizable)
+			oResult.dwStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
+
+		RECT rect = { 0, 0, 0, 0 };
+		AdjustWindowRect(&rect, oResult.dwStyle, false);
+		oResult.iBorderWidth = rect.right - rect.left;
+		oResult.iBorderHeight = rect.bottom - rect.top;
+	}
+	else
+	{
+		// iBorderWidth and iBorderHeight remain 0
+		oResult.dwStyle = WS_POPUP;
+	}
+
+	oResult.iMinClientWidth = GetSystemMetrics(SM_CXMIN) - oResult.iBorderWidth;
+	oResult.iMinClientHeight = GetSystemMetrics(SM_CYMIN) - oResult.iBorderHeight;
+
+	return oResult;
+}
+
 
 lib::Window* lib::Window::s_pInstance = nullptr;
+
+
+
+void lib::Window::GetOSMinWindowedSize(bool bResizable, unsigned& iX, unsigned& iY)
+{
+	const auto oData = GetStyleAndSizes(false, bResizable);
+	iX = oData.iMinClientWidth;
+	iY = oData.iMinClientHeight;
+}
 
 LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -187,6 +233,30 @@ void lib::Window::setTitle(const wchar_t* szTitle)
 	invoke(SetWindowTextW, m_hWnd, m_sTitle.c_str());
 }
 
+void lib::Window::setTitle(const char* szTitle)
+{
+	if (!m_bMessageLoop)
+		return;
+
+
+	const size_t len = strlen(szTitle);
+
+	m_sTitle.clear();
+	m_sTitle.reserve(len);
+	
+	while (szTitle[0] != 0)
+	{
+		if (szTitle[0] & 0x80)
+			m_sTitle += L'?';
+		else
+			m_sTitle += szTitle[0];
+
+		++szTitle;
+	}
+
+	invoke(SetWindowTextW, m_hWnd, m_sTitle.c_str());
+}
+
 void lib::Window::minimize()
 {
 	if (!m_bMessageLoop || m_bMinimized)
@@ -301,6 +371,23 @@ void lib::Window::threadFunction(WindowConfig cfg)
 		m_iMaxWidth = cfg.iMaxWidth;
 		m_iMaxHeight = cfg.iMaxHeight;
 		m_hMonitorFullscreen = cfg.hMonintorFullscreen;
+
+		// if windowed, check for the OS minimum size
+		if (!m_bFullscreen)
+		{
+			unsigned iOSMinX = 0, iOSMinY = 0;
+			Window::GetOSMinWindowedSize(m_bResizable, iOSMinX, iOSMinY);
+
+			if (m_iWidth < iOSMinX)
+				m_iWidth = iOSMinX;
+			if (m_iHeight < iOSMinY)
+				m_iHeight = iOSMinY;
+
+			if (m_iMaxWidth < iOSMinX)
+				m_iMaxWidth = iOSMinX;
+			if (m_iMaxHeight < iOSMinY)
+				m_iMaxHeight = iOSMinY;
+		}
 
 		if (m_hMonitorFullscreen == NULL)
 		{
@@ -426,28 +513,13 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 DWORD lib::Window::refreshStyle()
 {
-	DWORD dwOldStyle = GetWindowLong(m_hWnd, GWL_STYLE);
-	DWORD dwNewStyle = 0;
-	if (dwOldStyle & WS_VISIBLE)
-		dwNewStyle = WS_VISIBLE;
+	const auto oData = GetStyleAndSizes(m_bFullscreen, m_bResizable);
+	const DWORD dwNewStyle = oData.dwStyle | (GetWindowLong(m_hWnd, GWL_STYLE) & WS_VISIBLE);
 
-	if (!m_bFullscreen)
-	{
-		dwNewStyle |= WS_OVERLAPPEDWINDOW;
-
-		if (!m_bResizable)
-			dwNewStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
-
-		RECT rect = { 0, 0, 0, 0 };
-		AdjustWindowRect(&rect, dwNewStyle, false);
-		m_iClientToScreenX = rect.right - rect.left;
-		m_iClientToScreenY = rect.bottom - rect.top;
-	}
-	else
-	{
-		m_iClientToScreenX = m_iClientToScreenY = 0;
-		dwNewStyle |= WS_POPUP;
-	}
+	m_iClientToScreenX = oData.iBorderWidth;
+	m_iClientToScreenY = oData.iBorderHeight;
+	m_iOSMinWidth = oData.iMinClientWidth;
+	m_iOSMinHeight = oData.iMinClientHeight;
 
 	return dwNewStyle;
 }

@@ -95,6 +95,18 @@ namespace rl
 			virtual void OnDestroy() {}
 
 
+		public: // static methods
+
+			/// <summary>
+			/// Get the minimum client size of a window in the current OS.
+			/// </summary>
+			/// <param name="bResizable">Is the window resizable?</param>
+			/// <param name="iX">[Result] The minimum client width for a window.</param>
+			/// <param name="iY">[Result] The minimum client height for a window.</param>
+			/// <returns></returns>
+			static void GetOSMinWindowedSize(bool bResizable, unsigned& iX, unsigned& iY);
+
+
 		private: // static methods
 
 			static LRESULT WINAPI WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -133,6 +145,7 @@ namespace rl
 
 			void show();
 			void setTitle(const wchar_t* szTitle);
+			void setTitle(const char* szTitle); // ASCII only --> Non-ASCII gets replaced by "?"
 			void minimize();
 			void setSize(unsigned iWidth, unsigned iHeight);
 			void setFullscreen(bool bFullscreen, HMONITOR hMon = NULL);
@@ -147,6 +160,11 @@ namespace rl
 				iWidth += m_iClientToScreenX;
 				iHeight += m_iClientToScreenY;
 			}
+
+			/// <summary>Get the minimum client width allowed by the OS</summary>
+			auto getOSMinWidth() const { return m_iOSMinWidth; }
+			/// <summary>Get the minimum client height allowed by the OS</summary>
+			auto getOSMinHeight() const { return m_iOSMinHeight; }
 
 
 		protected: // methods
@@ -170,7 +188,7 @@ namespace rl
 			void threadFunction(WindowConfig cfg);
 
 			// Re-generate the dwStyle value based on the current state of the Window class
-			// and update the Client-To-Window size values
+			// and update the Client-To-Window size values as well as the system's size minimum
 			DWORD refreshStyle();
 
 			// reset the member variables
@@ -201,6 +219,7 @@ namespace rl
 			unsigned m_iWidth = 0, m_iHeight = 0; // current client size
 			unsigned m_iNativeWidth = 0, m_iNativeHeight = 0; // window size, including the border
 			int m_iClientToScreenX = 0, m_iClientToScreenY = 0;
+			unsigned m_iOSMinWidth = 0, m_iOSMinHeight = 0;
 			unsigned m_iMinWidth = 0, m_iMinHeight = 0; // minimum (windowed) client size
 			unsigned m_iMaxWidth = 0, m_iMaxHeight = 0; // maximum (windowed) client size
 			unsigned m_iRestoredWidth = 0, m_iRestoredHeight = 0; // last restored window size
@@ -334,7 +353,8 @@ namespace rl
 			virtual bool OnUpdate(float fElapsedTime) = 0;
 			virtual bool OnStop() { return true; }
 
-			virtual void OnResize(LONG& iWidth, LONG& iHeight) { }
+			virtual void OnResizing(LONG& iWidth, LONG& iHeight) {}
+			virtual void OnResized(unsigned iWidth, unsigned iHeight) {}
 
 			virtual void OnMinize() {}
 			virtual void OnRestore() {}
@@ -360,6 +380,9 @@ namespace rl
 
 
 		protected: // methods
+
+			unsigned getWidth() { return m_oWindow.width(); }
+			unsigned getHeight() { return m_oWindow.height(); }
 
 			auto& window() { return m_oWindow; }
 			auto& renderer() { return m_oRenderer; }

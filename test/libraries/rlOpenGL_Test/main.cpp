@@ -159,10 +159,21 @@ private: // methods
 		return true;
 	}
 
-	void OnResize(LONG& iWidth, LONG& iHeight) override
+	void OnResizing(LONG& iWidth, LONG& iHeight) override
 	{
 		iWidth -= iWidth % 8;
 		iHeight -= iHeight % 16;
+	}
+
+	char szSize[20] = {};
+
+	void OnResized(unsigned iWidth, unsigned iHeight) override
+	{
+		szSize[0] = 0;
+		_itoa_s(iWidth, szSize, 10);
+		strcat_s(szSize, "x");
+		_itoa_s(iWidth, szSize + strlen(szSize), 20 - strlen(szSize), 10);
+		window().setTitle(szSize);
 	}
 
 	void createGraph(void** pGraph) override { *pGraph = new GameGraph; }
@@ -260,7 +271,7 @@ int WINAPI WinMain(
 		"CONTROLS\n"
 		"  RMB = Toggle fullscreen\n"
 		"  MMB = Write info text to debug text stream\n",
-		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_APPLMODAL) != IDOK)
+		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_SYSTEMMODAL) != IDOK)
 		return 0; // user cancelled test
 	oGame.execute(cfg);
 

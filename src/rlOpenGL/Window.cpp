@@ -390,7 +390,10 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			m_iHeight = cfg.iHeight;
 		}
 
-		// check for the OS minimum size
+
+
+		// handle the minimum size by the OS
+
 		unsigned iOSMinX = 0, iOSMinY = 0;
 		Window::GetOSMinWindowedSize(m_bResizable, iOSMinX, iOSMinY);
 

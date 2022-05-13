@@ -152,13 +152,13 @@ namespace rl
 
 			void windowToClient(unsigned& iWidth, unsigned& iHeight)
 			{
-				iWidth -= m_iClientToScreenX;
-				iHeight -= m_iClientToScreenY;
+				iWidth -= m_iBorderWidth;
+				iHeight -= m_iBorderHeight;
 			}
 			void clientToWindow(unsigned& iWidth, unsigned& iHeight)
 			{
-				iWidth += m_iClientToScreenX;
-				iHeight += m_iClientToScreenY;
+				iWidth += m_iBorderWidth;
+				iHeight += m_iBorderHeight;
 			}
 
 			/// <summary>Get the minimum client width allowed by the OS</summary>
@@ -218,7 +218,7 @@ namespace rl
 			// window size data
 			unsigned m_iWidth = 0, m_iHeight = 0; // current client size
 			unsigned m_iNativeWidth = 0, m_iNativeHeight = 0; // window size, including the border
-			int m_iClientToScreenX = 0, m_iClientToScreenY = 0;
+			unsigned m_iBorderWidth = 0, m_iBorderHeight = 0;
 			unsigned m_iOSMinWidth = 0, m_iOSMinHeight = 0;
 			unsigned m_iMinWidth = 0, m_iMinHeight = 0; // minimum (windowed) client size
 			unsigned m_iMaxWidth = 0, m_iMaxHeight = 0; // maximum (windowed) client size

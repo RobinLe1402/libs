@@ -161,7 +161,7 @@ bool lib::IApplication::handleMessage()
 		// SIZE-RELATED MESSAGES
 
 	case WM_SIZE:
-
+	{
 		if (msg.wParam == SIZE_MINIMIZED)
 		{
 			m_pMessage = nullptr;
@@ -170,8 +170,12 @@ bool lib::IApplication::handleMessage()
 			return true;
 		}
 
-		m_oRenderer.resize(LOWORD(msg.lParam), HIWORD(msg.lParam));
+		const WORD wWidth = LOWORD(msg.lParam);
+		const WORD wHeight = HIWORD(msg.lParam);
+		m_oRenderer.resize(wWidth, wHeight);
+		OnResized(wWidth, wHeight);
 		break;
+	}
 
 	case WM_SIZING:
 	{
@@ -188,9 +192,14 @@ bool lib::IApplication::handleMessage()
 
 		LONG iCustomWidth = (LONG)iNewClientWidth;
 		LONG iCustomHeight = (LONG)iNewClientHeight;
-		OnResize(iCustomWidth, iCustomHeight);
+		OnResizing(iCustomWidth, iCustomHeight);
 		if (iCustomWidth >= 0 && iCustomHeight >= 0)
 		{
+			if ((unsigned)iCustomWidth < window().getOSMinWidth())
+				iCustomWidth = window().getOSMinWidth();
+			if ((unsigned)iCustomHeight < window().getOSMinHeight())
+				iCustomHeight = window().getOSMinHeight();
+
 			const int64_t iDiffX = (uint64_t)iCustomWidth - iNewClientWidth;
 			const int64_t iDiffY = (uint64_t)iCustomHeight - iNewClientHeight;
 
@@ -213,7 +222,11 @@ bool lib::IApplication::handleMessage()
 				else
 					rectNew.top = LONG((int64_t)rectNew.top - iDiffY);
 			}
+
+			OnResized(iCustomWidth, iCustomHeight);
 		}
+		else
+			OnResized(iNewClientWidth, iNewClientHeight);
 
 		break;
 	}

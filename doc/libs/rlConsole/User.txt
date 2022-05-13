@@ -1,0 +1,47 @@
+﻿Core.h
+	type rlConsole_Color
+		summary
+			32-bit unsigned integer containing RGB color information.
+		remarks
+			The most significant byte is ignored.
+			
+			Memory representation depends on system endian - It's always ??RRGGBB when used in code:
+			
+			LITTLE ENDIAN:
+				BB GG RR ??
+			BIG ENDIAN:
+				?? RR GG BB
+			
+			Example:
+				#FF0000 (red) is represented as 0xFF0000
+	
+	
+	type rlConsole_CharInfo
+		summary
+			Data for a single character in the console.
+		members
+			[ui32] c
+				The raw Unicode value of the character.
+			rlConsole_Color clForeground
+				The color of the character.
+			rlConsole_Color clBackground
+				The background color.
+	
+	type rlConsole_CharBuffer
+		summary
+			A character buffer for the console.
+			Represented as a pointer to a 1-dimensional array of `rlConsole_CharInfo`.
+			
+		remarks
+			The array is of size Width * Height, where Width is the count of characters per row and Height is the count of rows visible.
+			The data is stored row after row.
+			
+			Never created by the user.
+			The user is only supposed to update the contents when asked to.
+	
+	type HrlConsole
+		summary
+			A handle for an instance of a console.
+			Receive from a call to `rlConsole_create`.
+		remarks
+			Is an opaque pointer. Do not modify the contents of the pointed to struct.

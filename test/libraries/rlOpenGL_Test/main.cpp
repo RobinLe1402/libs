@@ -159,7 +159,7 @@ private: // methods
 		return true;
 	}
 
-	void OnResizing(LONG& iWidth, LONG& iHeight) override
+	void OnResizing(unsigned& iWidth, unsigned& iHeight) override
 	{
 		iWidth -= iWidth % 8;
 		iHeight -= iHeight % 16;
@@ -172,7 +172,7 @@ private: // methods
 		szSize[0] = 0;
 		_itoa_s(iWidth, szSize, 10);
 		strcat_s(szSize, "x");
-		_itoa_s(iWidth, szSize + strlen(szSize), 20 - strlen(szSize), 10);
+		_itoa_s(iHeight, szSize + strlen(szSize), 20 - strlen(szSize), 10);
 		window().setTitle(szSize);
 	}
 

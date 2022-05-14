@@ -2,8 +2,6 @@
 
 namespace lib = rl::OpenGL;
 
-// ToDo: Fix screen flickering on gaining/losing focus when in fullscreen mode
-
 
 // private
 struct WindowStyleAndSizes
@@ -61,22 +59,57 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
 	switch (uMsg)
 	{
+	case WM_SYSCOMMAND:
+		switch (wParam)
+		{
+		case SC_MAXIMIZE:
+			o.m_bMaximized = true;
+			if (o.m_bMinimized)
+			{
+				o.m_bMinimized = false;
+				o.m_fnOnRestore();
+			}
+			break;
+
+		case SC_RESTORE:
+			// if the window is minimized, "restored" means exiting the minimized state.
+			if (o.m_bMinimized)
+			{
+				o.m_bMinimized = false;
+				o.m_fnOnRestore();
+			}
+			// if the window is not minimized, "restored" means undoing the maximization.
+			else
+				o.m_bMaximized = false;
+			break;
+
+		case SC_MINIMIZE:
+			o.m_bMinimized = true;
+			o.m_fnOnMinimize();
+			break;
+		}
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
 		o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
 
-	case WM_SIZING:
-		o.m_fnOnMessage(uMsg, wParam, lParam);
-		{
-			auto& rect = *reinterpret_cast<RECT*>(lParam);
-			o.m_iNativeWidth = rect.right - rect.left;
-			o.m_iNativeHeight = rect.bottom - rect.top;
-
-			o.m_iWidth = o.m_iNativeWidth - o.m_iBorderWidth;
-			o.m_iHeight = o.m_iNativeHeight - o.m_iBorderHeight;
-		}
+	case WM_WINDOWPOSCHANGING:
+	{
+		auto& oWindowPos = *reinterpret_cast<WINDOWPOS*>(lParam);
+		if ((oWindowPos.flags & SWP_NOSIZE) == 0)
+			o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
+	}
+
+	case WM_WINDOWPOSCHANGED:
+	{
+		auto& oWindowPos = *reinterpret_cast<const WINDOWPOS*>(lParam);
+		if ((oWindowPos.flags & SWP_NOSIZE) == 0)
+			o.m_fnOnMessage(uMsg, wParam, lParam);
+		break; // don't call DefWindowProc --> no WM_SIZE and WM_MOVE
+	}
 
 	case WM_SIZE:
 
@@ -93,7 +126,8 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		if (!o.m_bFullscreen)
 			o.m_bMaximized = (wParam == SIZE_MAXIMIZED);
 
-		o.m_fnOnMessage(uMsg, wParam, lParam);
+		if (o.m_bMinimized) // application only cares about minimization
+			o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
 
 	case WM_GETMINMAXINFO:
@@ -125,13 +159,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
 
 	case WM_CLOSE:
-		if (!o.m_bAppClose)
-		{
-			o.m_bWinClose = true;
-			if (!o.m_fnOnClose())
-				break;
-		}
-		DestroyWindow(hWnd);
+		o.m_bCloseRequested = true;
 		break;
 
 	case WM_DESTROY:
@@ -153,10 +181,8 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
 lib::Window::Window(const wchar_t* szClassName) : m_sClassName(szClassName) { }
 
-lib::Window::~Window() { destroy(); }
-
-bool lib::Window::create(const WindowConfig& cfg,
-	MessageCallback fnOnMessage, CloseCallback fnOnClose)
+bool lib::Window::create(const WindowConfig& cfg, MessageCallback fnOnMessage,
+	VoidCallback fnOnMinimize, VoidCallback fnOnRestore)
 {
 	destroy();
 
@@ -185,7 +211,8 @@ bool lib::Window::create(const WindowConfig& cfg,
 
 
 	m_fnOnMessage = fnOnMessage;
-	m_fnOnClose = fnOnClose;
+	m_fnOnMinimize = fnOnMinimize;
+	m_fnOnRestore = fnOnRestore;
 
 	std::unique_lock lm(m_muxState);
 	m_trdMessageLoop = std::thread(&lib::Window::threadFunction, this, cfg);
@@ -203,19 +230,14 @@ void lib::Window::destroy()
 	if (!m_bThreadRunning)
 		return;
 
-	if (!m_bWinClose)
-	{
-		std::unique_lock lm(m_muxState);
-		m_bAppClose = true;
-		SendMessage(m_hWnd, WM_CLOSE, 0, 0); // CloseWindow() doesn't always work here
-		m_cvState.wait(lm);
-	}
+	std::unique_lock lm(m_muxState);
+	PostMessage(m_hWnd, WM_DESTROY, 0, 0);
+	m_cvState.wait(lm);
 
 	if (m_trdMessageLoop.joinable())
 		m_trdMessageLoop.join();
 
 	clear();
-	m_bThreadRunning = false;
 }
 
 void lib::Window::show()
@@ -243,7 +265,7 @@ void lib::Window::setTitle(const char* szTitle)
 
 	m_sTitle.clear();
 	m_sTitle.reserve(len);
-	
+
 	while (szTitle[0] != 0)
 	{
 		if (szTitle[0] & 0x80)
@@ -460,7 +482,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			iPosX = m_iWindowX;
 			iPosY = m_iWindowY;
 		}
-		
+
 
 
 		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
@@ -486,7 +508,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 	while (true)
 	{
 		// process full message queue before doing anything else
-		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) && msg.message != WM_QUIT)
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) && msg.message != WM_QUIT)
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -497,7 +519,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 		if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
 		{
-			GetMessageW(&msg, NULL, 0, 0);
+			GetMessage(&msg, NULL, 0, 0);
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 
@@ -510,6 +532,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 	OnDestroy();
 
 	std::unique_lock lm(m_muxState);
+	m_bThreadRunning = false;
 	m_cvState.notify_one();
 }
 
@@ -529,16 +552,17 @@ DWORD lib::Window::refreshStyle()
 void lib::Window::clear()
 {
 	m_hWnd = NULL;
-	m_bAppClose = m_bWinClose = false;
 	m_bMessageLoop = false;
 	m_bThreadRunning = false;
 
 	m_fnOnMessage = nullptr;
-	m_fnOnClose = nullptr;
+	m_fnOnMinimize = nullptr;
+	m_fnOnRestore = nullptr;
 
 	m_iWidth = m_iHeight = 0;
 	m_iNativeWidth = m_iNativeHeight = 0;
 	m_iBorderWidth = m_iBorderHeight = 0;
+	m_iOSMinWidth = m_iOSMinHeight = 0;
 	m_iMinWidth = m_iMinHeight = 0;
 	m_iMaxWidth = m_iMaxHeight = 0;
 	m_iRestoredWidth = m_iRestoredHeight = 0;
@@ -552,4 +576,5 @@ void lib::Window::clear()
 	m_bMinimized = false;
 	m_bMaximized = false;
 	m_bFullscreen = false;
+	m_bCloseRequested = false;
 }

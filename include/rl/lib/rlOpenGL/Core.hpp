@@ -75,7 +75,7 @@ namespace rl
 		public: // types
 
 			using MessageCallback = std::function<void(UINT uMsg, WPARAM wParam, LPARAM lParam)>;
-			using CloseCallback = std::function<bool()>;
+			using VoidCallback = std::function<void()>;
 
 
 		protected: // events
@@ -122,10 +122,12 @@ namespace rl
 			Window(const wchar_t* szClassName = L"RobinLeOpenGLWin");
 			Window(const Window& other) = delete;
 			Window(Window&& rval) = delete;
-			~Window();
+			virtual ~Window() = default;
 
+			// both create() and destroy() are only called by IApplication
 			bool create(const WindowConfig& cfg,
-				MessageCallback fnOnMessage, CloseCallback fnOnClose);
+				MessageCallback fnOnMessage,
+				VoidCallback fnOnMinimize, VoidCallback fnOnRestore);
 			void destroy();
 
 			bool running() { return m_bMessageLoop; }
@@ -165,6 +167,9 @@ namespace rl
 			auto getOSMinWidth() const { return m_iOSMinWidth; }
 			/// <summary>Get the minimum client height allowed by the OS</summary>
 			auto getOSMinHeight() const { return m_iOSMinHeight; }
+
+			bool getCloseRequested() const { return m_bCloseRequested; }
+			void clearCloseRequest() { m_bCloseRequested = false; }
 
 
 		protected: // methods
@@ -206,12 +211,13 @@ namespace rl
 			std::condition_variable m_cvState; // on create() and destroy()
 
 			HWND m_hWnd = NULL;
-			bool m_bAppClose = false, m_bWinClose = false; // sender of a recent close request
 			bool m_bMessageLoop = false; // does the message loop currently run?
 			bool m_bThreadRunning = false; // is the message thread currently running?
+			std::atomic_bool m_bCloseRequested = false;
 
 			MessageCallback m_fnOnMessage = nullptr;
-			std::function<bool()> m_fnOnClose;
+			VoidCallback m_fnOnMinimize = nullptr;
+			VoidCallback m_fnOnRestore = nullptr;
 
 
 
@@ -351,9 +357,11 @@ namespace rl
 
 			virtual bool OnStart() { return true; }
 			virtual bool OnUpdate(float fElapsedTime) = 0;
-			virtual bool OnStop() { return true; }
+			virtual void OnStop() { }
 
-			virtual void OnResizing(LONG& iWidth, LONG& iHeight) {}
+			virtual bool OnUserCloseQuery() { return true; }
+
+			virtual void OnResizing(unsigned& iWidth, unsigned& iHeight) {}
 			virtual void OnResized(unsigned iWidth, unsigned iHeight) {}
 
 			virtual void OnMinize() {}
@@ -388,13 +396,22 @@ namespace rl
 			auto& renderer() { return m_oRenderer; }
 			auto graph() { return m_pLiveGraph; }
 
+
+		private: // methods
+
+			// copy the current frame graph to the cache graph (for while the renderer is working)
+			void cacheGraph() { copyGraph(m_pGraphForRenderer, m_pLiveGraph); }
+
 			/// <summary>
 			/// [Use by <c>Window</c>]
-			/// Inform the application thread that the user is attempting to close the window,
-			/// wait for a reply
+			/// Inform the application thread that the window has been minimized.
 			/// </summary>
-			/// <returns>Did the application thread accept the closing request?</returns>
-			bool winClose();
+			void winMinimized();
+			/// <summary>
+			/// [Use by <c>Window</c>]
+			/// Inform the application thread that the window has been restored from minimization.
+			/// </summary>
+			void winRestored();
 
 			/// <summary>
 			/// [Use by <c>Window</c>]
@@ -409,12 +426,6 @@ namespace rl
 			bool handleMessage();
 
 
-		private: // methods
-
-			// copy the current frame graph to the cache graph (for while the renderer is working)
-			void cacheGraph() { copyGraph(m_pGraphForRenderer, m_pLiveGraph); }
-
-
 		private: // variables
 
 			Window& m_oWindow;
@@ -422,7 +433,6 @@ namespace rl
 			std::atomic_bool m_bAtomRunning = false;
 
 			std::mutex m_muxWindow;
-			std::condition_variable m_cvWinClose;
 			std::condition_variable m_cvWinMsg;
 			std::condition_variable m_cvMinimized;
 			bool m_bSleeping = false;

@@ -106,29 +106,13 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	case WM_WINDOWPOSCHANGED:
 	{
 		auto& oWindowPos = *reinterpret_cast<const WINDOWPOS*>(lParam);
+		o.m_iWidth = oWindowPos.cx - o.m_iBorderWidth;
+		o.m_iHeight = oWindowPos.cy - o.m_iBorderHeight;
+
 		if ((oWindowPos.flags & SWP_NOSIZE) == 0)
 			o.m_fnOnMessage(uMsg, wParam, lParam);
 		break; // don't call DefWindowProc --> no WM_SIZE and WM_MOVE
 	}
-
-	case WM_SIZE:
-
-		if (wParam != SIZE_MINIMIZED)
-		{
-			o.m_iWidth = LOWORD(lParam);
-			o.m_iHeight = HIWORD(lParam);
-
-			o.m_iNativeWidth = o.m_iWidth + o.m_iBorderWidth;
-			o.m_iNativeHeight = o.m_iHeight + o.m_iBorderHeight;
-		}
-
-		o.m_bMinimized = (wParam == SIZE_MINIMIZED);
-		if (!o.m_bFullscreen)
-			o.m_bMaximized = (wParam == SIZE_MAXIMIZED);
-
-		if (o.m_bMinimized) // application only cares about minimization
-			o.m_fnOnMessage(uMsg, wParam, lParam);
-		break;
 
 	case WM_GETMINMAXINFO:
 		if (!o.m_bFullscreen)
@@ -190,6 +174,11 @@ bool lib::Window::create(const WindowConfig& cfg, MessageCallback fnOnMessage,
 	m_trdidApplication = std::this_thread::get_id();
 
 	if (cfg.iWidth == 0 || cfg.iHeight == 0)
+		return false;
+
+	if (cfg.iWidth > INT_MAX || cfg.iHeight > INT_MAX ||
+		cfg.iMinWidth > INT_MAX || cfg.iMinHeight > INT_MAX ||
+		cfg.iMaxWidth > INT_MAX || cfg.iMaxHeight > INT_MAX)
 		return false;
 
 	if (cfg.iMinWidth > 0)
@@ -452,12 +441,12 @@ void lib::Window::threadFunction(WindowConfig cfg)
 		const DWORD dwStyle = refreshStyle();
 
 		// calculate the window width
-		m_iNativeWidth = m_iWidth;
-		m_iNativeHeight = m_iHeight;
+		unsigned iNativeWidth = m_iWidth;
+		unsigned iNativeHeight = m_iHeight;
 		if (!m_bFullscreen)
 		{
-			m_iNativeWidth += m_iBorderWidth;
-			m_iNativeHeight += m_iBorderHeight;
+			iNativeWidth += m_iBorderWidth;
+			iNativeHeight += m_iBorderHeight;
 		}
 
 
@@ -469,8 +458,10 @@ void lib::Window::threadFunction(WindowConfig cfg)
 		GetMonitorInfo(m_hMonitorFullscreen, &mi);
 
 		// default windowed position
-		m_iWindowX = mi.rcWork.left + ((mi.rcWork.right - mi.rcWork.left - m_iWidth) / 2);
-		m_iWindowY = mi.rcWork.top + ((mi.rcWork.bottom - mi.rcWork.top - m_iHeight) / 2);
+		m_iWindowX =
+			mi.rcWork.left + (int(mi.rcWork.right - mi.rcWork.left) / 2 - (int)iNativeWidth / 2);
+		m_iWindowY =
+			mi.rcWork.top + (int(mi.rcWork.bottom - mi.rcWork.top) / 2 - (int)iNativeHeight / 2);
 
 		if (m_bFullscreen) // fullscreen --> top left
 		{
@@ -486,7 +477,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 
 		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
-			m_iNativeWidth, m_iNativeHeight, NULL, NULL, NULL, NULL);
+			iNativeWidth, iNativeHeight, NULL, NULL, NULL, NULL);
 
 		if (m_hWnd == NULL)
 			throw std::exception();
@@ -560,7 +551,6 @@ void lib::Window::clear()
 	m_fnOnRestore = nullptr;
 
 	m_iWidth = m_iHeight = 0;
-	m_iNativeWidth = m_iNativeHeight = 0;
 	m_iBorderWidth = m_iBorderHeight = 0;
 	m_iOSMinWidth = m_iOSMinHeight = 0;
 	m_iMinWidth = m_iMinHeight = 0;

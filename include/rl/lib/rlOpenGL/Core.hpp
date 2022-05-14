@@ -141,8 +141,6 @@ namespace rl
 			auto minHeigth() { return m_iMinHeight; }
 			auto maxWidth() { return m_iMaxWidth; }
 			auto maxHeigth() { return m_iMaxHeight; }
-			auto nativeWidth() { return m_iNativeWidth; }
-			auto nativeHeight() { return m_iNativeHeight; }
 			const std::wstring& title() { return m_sTitle; }
 
 			void show();
@@ -223,7 +221,6 @@ namespace rl
 
 			// window size data
 			unsigned m_iWidth = 0, m_iHeight = 0; // current client size
-			unsigned m_iNativeWidth = 0, m_iNativeHeight = 0; // window size, including the border
 			unsigned m_iBorderWidth = 0, m_iBorderHeight = 0;
 			unsigned m_iOSMinWidth = 0, m_iOSMinHeight = 0;
 			unsigned m_iMinWidth = 0, m_iMinHeight = 0; // minimum (windowed) client size

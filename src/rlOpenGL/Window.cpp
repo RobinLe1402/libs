@@ -104,10 +104,12 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	case WM_SIZING:
 		switch (wParam)
 		{
+		case WMSZ_BOTTOMLEFT:
 		case WMSZ_LEFT:
 			s_bSizingLeft = true;
 			break;
 
+		case WMSZ_TOPRIGHT:
 		case WMSZ_TOP:
 			s_bSizingTop = true;
 			break;

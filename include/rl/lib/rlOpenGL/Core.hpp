@@ -62,7 +62,8 @@ namespace rl
 			unsigned iMinWidth = 0, iMinHeight = 0;
 			unsigned iMaxWidth = 0, iMaxHeight = 0;
 			HICON hIconSmall = NULL, hIconBig = NULL;
-			HMONITOR hMonintorFullscreen = NULL; // if NULL --> Default monitor
+			HMONITOR hMonitor = NULL; // if NULL --> monitor of currently active window
+			HMONITOR hMonitorFullscreen = NULL; // if NULL --> default monitor
 		};
 
 
@@ -233,6 +234,7 @@ namespace rl
 
 			// window state data
 			std::wstring m_sTitle = L"";
+			HMONITOR m_hMonitor = NULL;
 			HMONITOR m_hMonitorFullscreen = NULL;
 			bool m_bResizable = false;
 			bool m_bMinimized = false;

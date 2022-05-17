@@ -94,6 +94,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			o.m_fnOnMinimize();
 			break;
 		}
+		o.OnMessage(uMsg, wParam, lParam);
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 
 	case WM_SETFOCUS:
@@ -192,9 +193,6 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		PostQuitMessage(0);
 		break;
 
-	case WM_QUIT:
-		break;
-
 	default:
 		if (o.OnMessage(uMsg, wParam, lParam))
 			return 0;
@@ -202,6 +200,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	o.OnMessage(uMsg, wParam, lParam);
 	return 0;
 }
 
@@ -423,13 +422,16 @@ void lib::Window::threadFunction(WindowConfig cfg)
 		m_iMinHeight = cfg.iMinHeight;
 		m_iMaxWidth = cfg.iMaxWidth;
 		m_iMaxHeight = cfg.iMaxHeight;
-		m_hMonitorFullscreen = cfg.hMonintorFullscreen;
+		m_hMonitor = cfg.hMonitor;
+		m_hMonitorFullscreen = cfg.hMonitorFullscreen;
 
+		if (m_hMonitor == NULL)
+			m_hMonitor = MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY);
 		if (m_hMonitorFullscreen == NULL)
-		{
-			const POINT pt = { 0, 0 };
-			m_hMonitorFullscreen = MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
-		}
+			m_hMonitorFullscreen = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+
+
+		// set the initial size
 		if (m_bFullscreen)
 		{
 			MONITORINFO mi = { sizeof(mi) };
@@ -497,7 +499,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 		int iPosX, iPosY;
 		MONITORINFO mi = { sizeof(mi) };
-		GetMonitorInfo(m_hMonitorFullscreen, &mi);
+		GetMonitorInfo(m_hMonitor, &mi);
 
 		// default windowed position
 		m_iWindowX =
@@ -507,6 +509,8 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 		if (m_bFullscreen) // fullscreen --> top left
 		{
+			GetMonitorInfo(m_hMonitorFullscreen, &mi);
+
 			iPosX = mi.rcMonitor.left;
 			iPosY = mi.rcMonitor.top;
 		}

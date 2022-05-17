@@ -284,6 +284,9 @@ namespace rl
 			/// <summary>Destroy the renderer</summary>
 			void destroy();
 
+			/// <summary>Wait for the thread to finish drawing the last frame</summary>
+			void waitForFinishedFrame();
+
 			/// <summary>Re-draw the graphics</summary>
 			void update(const void* pGraph);
 
@@ -300,17 +303,30 @@ namespace rl
 			auto height() { return m_iHeight; }
 
 
-		protected: // variables
+		private: // methods
 
-			HDC m_hDC = NULL;
-			HGLRC m_hGLRC = NULL;
-
-			bool m_bVSync = false;
+			void threadFunc(HDC hDC, unsigned iWidth, unsigned iHeight, const RendererConfig& cfg);
 
 
 		private: // variables
 
 			unsigned m_iWidth = 0, m_iHeight = 0;
+			unsigned m_iNewWidth = 0, m_iNewHeight = 0;
+			std::thread m_trdRenderer;
+			std::mutex m_mux;
+			std::condition_variable m_cv;
+			bool m_bRunning = false;
+			bool m_bWorking = false;
+
+			HDC m_hDC = NULL;
+			HGLRC m_hGLRC = NULL;
+
+			// both booleans are always exactly either 1 or 0 for faster comparisons
+			bool m_bVSync = false;
+			bool m_bNewVSync = false;
+
+			const void* m_pGraph = nullptr;
+
 
 		};
 
@@ -421,6 +437,11 @@ namespace rl
 			/// Handle a message from the window if there is one
 			/// </summary>
 			bool handleMessage();
+
+			/// <summary>
+			/// Submit a new graph to the renderer
+			/// </summary>
+			void updateRenderer();
 
 
 		private: // variables

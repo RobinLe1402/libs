@@ -120,10 +120,6 @@ private: // methods
 		const GameGraph& oGraph = *reinterpret_cast<const GameGraph*>(pGraph);
 
 
-		//m_oTex.draw({ rl::OpenGL::FullScreen, rl::OpenGL::FullTexture });
-		/*const auto pos1 = m_oTex.coordsUnscaled({ 0, 0, (int)width(), (int)height() },
-			0, 0, { width(), height() });*/
-
 		if (oGraph.bPixelWhite)
 			m_oTex.setPixel(3, 1, Color::White);
 		else

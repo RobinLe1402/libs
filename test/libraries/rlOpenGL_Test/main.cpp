@@ -237,7 +237,8 @@ private: // methods
 
 		case WM_SYSCOMMAND:
 			if (wParam == s_iMenuAbout)
-				MessageBoxA(handle(), "ABOUT!!!", "About", MB_ICONINFORMATION | MB_APPLMODAL);
+				MessageBoxA(handle(), "This is a test applicaton for the rlOpenGL library.",
+					"About", MB_ICONINFORMATION | MB_APPLMODAL);
 			break;
 		}
 
@@ -258,12 +259,22 @@ int WINAPI WinMain(
 	(void)szCmdLine;
 	(void)iCmdShow;
 
+	if (MessageBoxA(NULL,
+		"The following window is a test for the RobinLe OpenGLWin library.\n"
+		"\n"
+		"CONTROLS\n"
+		"  RMB = Toggle fullscreen\n"
+		"  MMB = Write info text to debug text stream\n",
+		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_SYSTEMMODAL) != IDOK)
+		return 0; // user cancelled test
+
 	GameWindow oWindow(L"OpenGLWin_Test");
 	GameRenderer oRenderer;
 	Game oGame(oWindow, oRenderer);
 
 	rl::OpenGL::AppConfig cfg;
-	cfg.renderer.bVSync = true;
+	cfg.renderer.bVSync =
+		MessageBoxA(NULL, "Use VSync?", "Question", MB_ICONQUESTION | MB_YESNO) == IDYES;
 	cfg.window.bResizable = true;
 	cfg.window.iMinWidth = 256;
 	cfg.window.iMinHeight = 240;
@@ -273,15 +284,6 @@ int WINAPI WinMain(
 	cfg.window.iWidth = 512;
 	cfg.window.iHeight = 480;
 	//cfg.window.bFullscreen = true;
-
-	if (MessageBoxA(NULL,
-		"The following window is a test for the RobinLe OpenGLWin library.\n"
-		"\n"
-		"CONTROLS\n"
-		"  RMB = Toggle fullscreen\n"
-		"  MMB = Write info text to debug text stream\n",
-		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_SYSTEMMODAL) != IDOK)
-		return 0; // user cancelled test
 	oGame.execute(cfg);
 
 	return 0;

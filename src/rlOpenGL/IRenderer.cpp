@@ -35,9 +35,9 @@ void lib::IRenderer::destroy()
 	if (!m_bRunning)
 		return;
 
-	m_mux.lock(); // wait for thread to finish rendering the current graph
-	m_mux.unlock();
+	std::unique_lock lm(m_mux); // wait for thread to finish rendering the current graph
 	m_bRunning = false;
+	lm.unlock();
 	m_cv.notify_one();
 
 	if (m_trdRenderer.joinable())
@@ -65,11 +65,9 @@ void lib::IRenderer::update(const void* pGraph)
 	++iCountUpdate;
 
 	std::unique_lock lm(m_mux); // wait for thread to finish drawing current frame
-	m_bWorking = false;
 	m_pGraph = pGraph;
-	lm.unlock();
 	m_cv.notify_one(); // continue thread
-	while (!m_bWorking) {}
+	m_cv.wait(lm);
 }
 
 void lib::IRenderer::resize(unsigned iWidth, unsigned iHeight)
@@ -151,7 +149,7 @@ void lib::IRenderer::threadFunc(HDC hDC, unsigned iWidth, unsigned iHeight,
 		m_cv.wait(lm); // wait for new graph
 		if (!m_bRunning)
 			break; // destruction was requested
-		m_bWorking = true;
+		m_cv.notify_one();
 		m_bNewVSync = m_bNewVSync ? 1 : 0;
 		if (m_bNewVSync != m_bVSync)
 		{

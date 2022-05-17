@@ -94,6 +94,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			o.m_fnOnMinimize();
 			break;
 		}
+		o.OnMessage(uMsg, wParam, lParam);
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 
 	case WM_SETFOCUS:
@@ -192,9 +193,6 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		PostQuitMessage(0);
 		break;
 
-	case WM_QUIT:
-		break;
-
 	default:
 		if (o.OnMessage(uMsg, wParam, lParam))
 			return 0;
@@ -202,6 +200,7 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	o.OnMessage(uMsg, wParam, lParam);
 	return 0;
 }
 

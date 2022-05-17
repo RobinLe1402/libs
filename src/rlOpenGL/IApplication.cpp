@@ -101,9 +101,9 @@ bool lib::IApplication::execute(AppConfig& cfg)
 	}
 	m_bAtomRunning = false;
 	OnStop();
+	m_oRenderer.destroy();
 	destroyGraph(m_pLiveGraph);
 	destroyGraph(m_pGraphForRenderer);
-	m_oRenderer.destroy();
 
 	m_oWindow.destroy();
 	s_bRunning = false;

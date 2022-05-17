@@ -265,7 +265,7 @@ int WINAPI WinMain(
 		"CONTROLS\n"
 		"  RMB = Toggle fullscreen\n"
 		"  MMB = Write info text to debug text stream\n",
-		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_SYSTEMMODAL) != IDOK)
+		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
 		return 0; // user cancelled test
 
 	GameWindow oWindow(L"OpenGLWin_Test");

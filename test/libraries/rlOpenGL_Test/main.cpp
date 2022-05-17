@@ -120,10 +120,6 @@ private: // methods
 		const GameGraph& oGraph = *reinterpret_cast<const GameGraph*>(pGraph);
 
 
-		//m_oTex.draw({ rl::OpenGL::FullScreen, rl::OpenGL::FullTexture });
-		/*const auto pos1 = m_oTex.coordsUnscaled({ 0, 0, (int)width(), (int)height() },
-			0, 0, { width(), height() });*/
-
 		if (oGraph.bPixelWhite)
 			m_oTex.setPixel(3, 1, Color::White);
 		else
@@ -151,8 +147,21 @@ public: // methods
 
 private: // methods
 
+	float m_fTime = 0.0f;
+	unsigned m_iFrames = 0;
+
 	bool OnUpdate(float fElapsedTime) override
 	{
+		m_fTime += fElapsedTime;
+		if (m_fTime >= 1.0f)
+		{
+			const std::string sFPS = std::to_string(m_iFrames / (unsigned)m_fTime) + " FPS";
+			window().setTitle(sFPS.c_str());
+			m_fTime -= (unsigned)m_fTime;
+			m_iFrames = 0;
+		}
+		++m_iFrames;
+
 		GameGraph& oGraph = *reinterpret_cast<GameGraph*>(graph());
 
 		oGraph.bPixelWhite = !oGraph.bPixelWhite;

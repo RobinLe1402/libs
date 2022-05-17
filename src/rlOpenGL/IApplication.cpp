@@ -49,8 +49,7 @@ bool lib::IApplication::execute(AppConfig& cfg)
 		s_bRunning = false;
 		return false;
 	}
-	cacheGraph();
-	m_oRenderer.update(m_pGraphForRenderer); // try to draw first frame
+	updateRenderer(); // try to draw the first frame
 	m_bMessageByApp = true;
 	m_oWindow.show();
 	m_bMessageByApp = false;
@@ -96,10 +95,7 @@ bool lib::IApplication::execute(AppConfig& cfg)
 		time1 = time2;
 
 		if (OnUpdate(oElapsed.count()))
-		{
-			cacheGraph();
-			m_oRenderer.update(m_pGraphForRenderer);
-		}
+			updateRenderer();
 		else
 			break; // exit the application loop
 	}
@@ -236,12 +232,16 @@ bool lib::IApplication::handleMessage()
 	}
 
 	if (bRedraw)
-	{
-		cacheGraph();
-		m_oRenderer.update(m_pGraphForRenderer); // update display immediately
-	}
+		updateRenderer(); // update display immediately
 
 	m_pMessage = nullptr;
 	m_cvWinMsg.notify_one();
 	return bHandled;
+}
+
+void lib::IApplication::updateRenderer()
+{
+	m_oRenderer.waitForFinishedFrame();
+	cacheGraph();
+	m_oRenderer.update(m_pGraphForRenderer);
 }

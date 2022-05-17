@@ -55,7 +55,13 @@ void lib::Window::GetOSMinWindowedSize(bool bResizable, unsigned& iX, unsigned& 
 LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static Window& o = *s_pInstance;
-	static bool s_bFirstRestore = true;
+
+	// Keeping track of the sizing position when the user tries to resize the window.
+	// Must be left and top: Defaulting to not changing the position of the window when maximizing.
+	// Get set on WM_SIZING, get cleared after WM_EXITSIZEMOVE.
+	static bool s_bSizingLeft = false;
+	static bool s_bSizingTop = false;
+
 
 	switch (uMsg)
 	{
@@ -95,11 +101,42 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
 
+	case WM_SIZING:
+		switch (wParam)
+		{
+		case WMSZ_BOTTOMLEFT:
+		case WMSZ_LEFT:
+			s_bSizingLeft = true;
+			break;
+
+		case WMSZ_TOPRIGHT:
+		case WMSZ_TOP:
+			s_bSizingTop = true;
+			break;
+
+		case WMSZ_TOPLEFT:
+			s_bSizingLeft = true;
+			s_bSizingTop = true;
+		}
+		break;
+
 	case WM_WINDOWPOSCHANGING:
 	{
 		auto& oWindowPos = *reinterpret_cast<WINDOWPOS*>(lParam);
-		if ((oWindowPos.flags & SWP_NOSIZE) == 0)
+		if ((oWindowPos.flags & SWP_NOSIZE) == 0 &&
+			(oWindowPos.cx - o.m_iBorderWidth != o.m_iWidth ||
+				oWindowPos.cy - o.m_iBorderHeight != o.m_iHeight))
+		{
+			const auto cx = oWindowPos.cx;
+			const auto cy = oWindowPos.cy;
+
 			o.m_fnOnMessage(uMsg, wParam, lParam);
+
+			if (cx != oWindowPos.cx && s_bSizingLeft)
+				oWindowPos.x += (int)cx - oWindowPos.cx;
+			if (cy != oWindowPos.cy && s_bSizingTop)
+				oWindowPos.y += (int)cy - oWindowPos.cy;
+		}
 		break;
 	}
 
@@ -138,6 +175,11 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			}
 		}
 
+		break;
+
+	case WM_EXITSIZEMOVE:
+		s_bSizingLeft = false;
+		s_bSizingTop = false;
 		break;
 
 

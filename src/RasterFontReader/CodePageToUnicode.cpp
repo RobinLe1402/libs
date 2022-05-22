@@ -35,7 +35,7 @@ bool CodePageToUnicode(uint16_t iCodePage, uint16_t iCodePageID, char32_t& iDest
 	{
 		switch (iCodePage)
 		{
-			// DOS codepages --> special lookup table
+			// DOS codepages --> special lookup tables
 			// (invalid conversion for actual text, but this function provides conversion for
 			// font files, so it's appropriate here)
 		case 437:
@@ -58,14 +58,14 @@ bool CodePageToUnicode(uint16_t iCodePage, uint16_t iCodePageID, char32_t& iDest
 				iDest = 0x2302;
 			else // sz[0] <= 0x1F
 				iDest = cDOS[sz[0]];
-			break;
+			return true;
 
 		case 864:
 			if (sz[0] == 0x7F)
 				iDest = 0x2302;
 			else // sz[0] <= 0x1F
 				iDest = cIBM[sz[0]];
-			break;
+			return true;
 		}
 	}
 

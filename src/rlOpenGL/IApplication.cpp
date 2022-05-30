@@ -24,7 +24,8 @@ bool lib::IApplication::execute(AppConfig& cfg)
 
 	if (!m_oWindow.create(cfg.window,
 		[&](UINT uMsg, WPARAM wParam, LPARAM lParam) { winMessage(uMsg, wParam, lParam); },
-		[&]() -> bool { return winClose(); }))
+		[&]() { winMinimized(); },
+		[&]() { winRestored(); }))
 	{
 		s_bRunning = false;
 		return false;
@@ -48,8 +49,7 @@ bool lib::IApplication::execute(AppConfig& cfg)
 		s_bRunning = false;
 		return false;
 	}
-	cacheGraph();
-	m_oRenderer.update(m_pGraphForRenderer); // try to draw first frame
+	updateRenderer(); // try to draw the first frame
 	m_bMessageByApp = true;
 	m_oWindow.show();
 	m_bMessageByApp = false;
@@ -59,18 +59,15 @@ bool lib::IApplication::execute(AppConfig& cfg)
 	std::chrono::duration<float> oElapsed;
 
 	m_bAtomRunning = true;
-	while (m_bAtomRunning)
+	while (true)
 	{
-		// calculate time
-		time2 = std::chrono::system_clock::now();
-		oElapsed = time2 - time1;
-		time1 = time2;
-
+		// process Windows message (if available)
 		{
-			// block access to m_bAtomRunning while accessing it
+			// block access to the window IO while reading from it
 			std::unique_lock lm(m_muxWindow);
+			handleMessage();
 
-			if (handleMessage() && m_bSleeping)
+			if (m_bSleeping)
 			{
 				OnMinize();
 				m_cvMinimized.wait(lm);
@@ -81,45 +78,51 @@ bool lib::IApplication::execute(AppConfig& cfg)
 				time2 = time1;
 				oElapsed = time1 - time2;
 			}
-
-			if (!m_bAtomRunning || !OnUpdate(oElapsed.count()))
-			{
-				m_bAtomRunning = !OnStop();
-
-				if (m_bAtomRunning) // quit request denied --> notify window instantly
-					m_cvWinClose.notify_one();
-			}
 		}
 
-
-		if (m_bAtomRunning)
+		if (m_oWindow.getCloseRequested())
 		{
-			cacheGraph();
-			m_oRenderer.update(m_pGraphForRenderer);
+			if (OnUserCloseQuery())
+				break; // immediately exit the application loop
+			else
+				m_oWindow.clearCloseRequest();
 		}
+
+
+		// calculate time
+		time2 = std::chrono::system_clock::now();
+		oElapsed = time2 - time1;
+		time1 = time2;
+
+		if (OnUpdate(oElapsed.count()))
+			updateRenderer();
+		else
+			break; // exit the application loop
 	}
+	m_bAtomRunning = false;
+	OnStop();
+	m_oRenderer.destroy();
 	destroyGraph(m_pLiveGraph);
 	destroyGraph(m_pGraphForRenderer);
-	m_oRenderer.destroy();
-
-	// in case the window sent the quit request, notify it after destroying the renderer
-	m_cvWinClose.notify_one();
 
 	m_oWindow.destroy();
 	s_bRunning = false;
 	return true;
 }
 
-bool lib::IApplication::winClose()
+void lib::IApplication::winMinimized()
 {
 	std::unique_lock lm(m_muxWindow);
-	m_bAtomRunning = false;
+	m_bSleeping = true;
+}
 
-	if (m_oWindow.minimized())
-		m_cvMinimized.notify_one();
+void lib::IApplication::winRestored()
+{
+	std::unique_lock lm(m_muxWindow);
+	if (!m_bSleeping)
+		return;
 
-	m_cvWinClose.wait(lm);
-	return !m_bAtomRunning;
+	m_cvMinimized.notify_one();
 }
 
 void lib::IApplication::winMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -155,64 +158,61 @@ bool lib::IApplication::handleMessage()
 	const auto& msg = *m_pMessage;
 
 	bool bHandled = true;
+	bool bRedraw = false;
 	switch (msg.uMsg)
 	{
 		//------------------------------------------------------------------------------------------
 		// SIZE-RELATED MESSAGES
 
-	case WM_SIZE:
+	case WM_WINDOWPOSCHANGING:
+	{
+		if (!m_oWindow.fullscreen())
+		{
+			auto& wp = *reinterpret_cast<WINDOWPOS*>(msg.lParam);
 
+			unsigned iNewWidth = (unsigned)wp.cx;
+			unsigned iNewHeight = (unsigned)wp.cy;
+			m_oWindow.windowToClient(iNewWidth, iNewHeight);
+
+			OnResizing(iNewWidth, iNewHeight);
+
+			if (iNewWidth > INT_MAX)
+				iNewWidth = INT_MAX;
+			if (iNewHeight > INT_MAX)
+				iNewHeight = INT_MAX;
+
+			m_oWindow.clientToWindow(iNewWidth, iNewHeight);
+			wp.cx = (int)iNewWidth;
+			wp.cy = (int)iNewHeight;
+		}
+
+		break;
+	}
+
+	case WM_WINDOWPOSCHANGED:
+	{
+		bRedraw = true;
+		auto& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lParam);
+
+		unsigned iNewWidth = (unsigned)wp.cx;
+		unsigned iNewHeight = (unsigned)wp.cy;
+
+		m_oWindow.windowToClient(iNewWidth, iNewHeight);
+
+		m_oRenderer.resize(iNewWidth, iNewHeight);
+		OnResized(iNewWidth, iNewHeight);
+
+		break;
+	}
+
+	case WM_SIZE:
+	{
 		if (msg.wParam == SIZE_MINIMIZED)
 		{
 			m_pMessage = nullptr;
 			m_cvWinMsg.notify_one();
 			m_bSleeping = true;
 			return true;
-		}
-
-		m_oRenderer.resize(LOWORD(msg.lParam), HIWORD(msg.lParam));
-		break;
-
-	case WM_SIZING:
-	{
-		const unsigned iOldNativeWidth = m_oWindow.nativeWidth();
-		const unsigned iOldNativeHeight = m_oWindow.nativeHeight();
-
-		auto& rectNew = *reinterpret_cast<RECT*>(msg.lParam);
-		unsigned iNewNativeWidth = rectNew.right - rectNew.left;
-		unsigned iNewNativeHeight = rectNew.bottom - rectNew.top;
-
-		unsigned iNewClientWidth = iNewNativeWidth;
-		unsigned iNewClientHeight = iNewNativeHeight;
-		m_oWindow.windowToClient(iNewClientWidth, iNewClientHeight);
-
-		LONG iCustomWidth = (LONG)iNewClientWidth;
-		LONG iCustomHeight = (LONG)iNewClientHeight;
-		OnResize(iCustomWidth, iCustomHeight);
-		if (iCustomWidth >= 0 && iCustomHeight >= 0)
-		{
-			const int64_t iDiffX = (uint64_t)iCustomWidth - iNewClientWidth;
-			const int64_t iDiffY = (uint64_t)iCustomHeight - iNewClientHeight;
-
-			if (iDiffX || iDiffY)
-			{
-				const bool bRight =
-					(msg.wParam == WMSZ_TOPRIGHT || msg.wParam == WMSZ_RIGHT ||
-						msg.wParam == WMSZ_BOTTOMRIGHT);
-				const bool bBottom =
-					(msg.wParam == WMSZ_BOTTOM || msg.wParam == WMSZ_BOTTOMLEFT ||
-						msg.wParam == WMSZ_BOTTOMRIGHT);
-
-				if (bRight)
-					rectNew.right = LONG((int64_t)rectNew.right + iDiffX);
-				else
-					rectNew.left = LONG((int64_t)rectNew.left - iDiffX);
-
-				if (bBottom)
-					rectNew.bottom = LONG((int64_t)rectNew.bottom + iDiffY);
-				else
-					rectNew.top = LONG((int64_t)rectNew.top - iDiffY);
-			}
 		}
 
 		break;
@@ -231,10 +231,17 @@ bool lib::IApplication::handleMessage()
 		break;
 	}
 
-	cacheGraph();
-	m_oRenderer.update(m_pGraphForRenderer); // update display immediately
+	if (bRedraw)
+		updateRenderer(); // update display immediately
 
 	m_pMessage = nullptr;
 	m_cvWinMsg.notify_one();
 	return bHandled;
+}
+
+void lib::IApplication::updateRenderer()
+{
+	m_oRenderer.waitForFinishedFrame();
+	cacheGraph();
+	m_oRenderer.update(m_pGraphForRenderer);
 }

@@ -120,10 +120,6 @@ private: // methods
 		const GameGraph& oGraph = *reinterpret_cast<const GameGraph*>(pGraph);
 
 
-		//m_oTex.draw({ rl::OpenGL::FullScreen, rl::OpenGL::FullTexture });
-		/*const auto pos1 = m_oTex.coordsUnscaled({ 0, 0, (int)width(), (int)height() },
-			0, 0, { width(), height() });*/
-
 		if (oGraph.bPixelWhite)
 			m_oTex.setPixel(3, 1, Color::White);
 		else
@@ -151,18 +147,42 @@ public: // methods
 
 private: // methods
 
+	float m_fTime = 0.0f;
+	unsigned m_iFrames = 0;
+
 	bool OnUpdate(float fElapsedTime) override
 	{
+		m_fTime += fElapsedTime;
+		if (m_fTime >= 1.0f)
+		{
+			const std::string sFPS = std::to_string(m_iFrames / (unsigned)m_fTime) + " FPS";
+			window().setTitle(sFPS.c_str());
+			m_fTime -= (unsigned)m_fTime;
+			m_iFrames = 0;
+		}
+		++m_iFrames;
+
 		GameGraph& oGraph = *reinterpret_cast<GameGraph*>(graph());
 
 		oGraph.bPixelWhite = !oGraph.bPixelWhite;
 		return true;
 	}
 
-	void OnResize(LONG& iWidth, LONG& iHeight) override
+	void OnResizing(unsigned& iWidth, unsigned& iHeight) override
 	{
 		iWidth -= iWidth % 8;
 		iHeight -= iHeight % 16;
+	}
+
+	char szSize[20] = {};
+
+	void OnResized(unsigned iWidth, unsigned iHeight) override
+	{
+		szSize[0] = 0;
+		_itoa_s(iWidth, szSize, 10);
+		strcat_s(szSize, "x");
+		_itoa_s(iHeight, szSize + strlen(szSize), 20 - strlen(szSize), 10);
+		window().setTitle(szSize);
 	}
 
 	void createGraph(void** pGraph) override { *pGraph = new GameGraph; }
@@ -217,7 +237,8 @@ private: // methods
 
 		case WM_SYSCOMMAND:
 			if (wParam == s_iMenuAbout)
-				MessageBoxA(handle(), "ABOUT!!!", "About", MB_ICONINFORMATION | MB_APPLMODAL);
+				MessageBoxA(handle(), "This is a test applicaton for the rlOpenGL library.",
+					"About", MB_ICONINFORMATION | MB_APPLMODAL);
 			break;
 		}
 
@@ -238,12 +259,22 @@ int WINAPI WinMain(
 	(void)szCmdLine;
 	(void)iCmdShow;
 
+	if (MessageBoxA(NULL,
+		"The following window is a test for the RobinLe OpenGLWin library.\n"
+		"\n"
+		"CONTROLS\n"
+		"  RMB = Toggle fullscreen\n"
+		"  MMB = Write info text to debug text stream\n",
+		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+		return 0; // user cancelled test
+
 	GameWindow oWindow(L"OpenGLWin_Test");
 	GameRenderer oRenderer;
 	Game oGame(oWindow, oRenderer);
 
 	rl::OpenGL::AppConfig cfg;
-	cfg.renderer.bVSync = true;
+	cfg.renderer.bVSync =
+		MessageBoxA(NULL, "Use VSync?", "Question", MB_ICONQUESTION | MB_YESNO) == IDYES;
 	cfg.window.bResizable = true;
 	cfg.window.iMinWidth = 256;
 	cfg.window.iMinHeight = 240;
@@ -253,15 +284,6 @@ int WINAPI WinMain(
 	cfg.window.iWidth = 512;
 	cfg.window.iHeight = 480;
 	//cfg.window.bFullscreen = true;
-
-	if (MessageBoxA(NULL,
-		"The following window is a test for the RobinLe OpenGLWin library.\n"
-		"\n"
-		"CONTROLS\n"
-		"  RMB = Toggle fullscreen\n"
-		"  MMB = Write info text to debug text stream\n",
-		"OpenGLWin_Test", MB_OKCANCEL | MB_ICONINFORMATION | MB_APPLMODAL) != IDOK)
-		return 0; // user cancelled test
 	oGame.execute(cfg);
 
 	return 0;

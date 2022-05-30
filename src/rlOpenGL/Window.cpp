@@ -2,53 +2,155 @@
 
 namespace lib = rl::OpenGL;
 
-// ToDo: Fix screen flickering on gaining/losing focus when in fullscreen mode
 
+// private
+struct WindowStyleAndSizes
+{
+	DWORD dwStyle;
+	unsigned iBorderWidth, iBorderHeight;
+	unsigned iMinClientWidth, iMinClientHeight;
+};
+
+// private
+WindowStyleAndSizes GetStyleAndSizes(bool bFullscreen, bool bResizable)
+{
+	WindowStyleAndSizes oResult = {};
+
+	if (!bFullscreen)
+	{
+		oResult.dwStyle = WS_OVERLAPPEDWINDOW;
+
+		if (!bResizable)
+			oResult.dwStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
+
+		RECT rect = { 0, 0, 0, 0 };
+		AdjustWindowRect(&rect, oResult.dwStyle, false);
+		oResult.iBorderWidth = rect.right - rect.left;
+		oResult.iBorderHeight = rect.bottom - rect.top;
+	}
+	else
+	{
+		// iBorderWidth and iBorderHeight remain 0
+		oResult.dwStyle = WS_POPUP;
+	}
+
+	oResult.iMinClientWidth = GetSystemMetrics(SM_CXMIN) - oResult.iBorderWidth;
+	oResult.iMinClientHeight = GetSystemMetrics(SM_CYMIN) - oResult.iBorderHeight;
+
+	return oResult;
+}
 
 
 lib::Window* lib::Window::s_pInstance = nullptr;
 
+
+
+void lib::Window::GetOSMinWindowedSize(bool bResizable, unsigned& iX, unsigned& iY)
+{
+	const auto oData = GetStyleAndSizes(false, bResizable);
+	iX = oData.iMinClientWidth;
+	iY = oData.iMinClientHeight;
+}
+
 LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static Window& o = *s_pInstance;
-	static bool s_bFirstRestore = true;
+
+	// Keeping track of the sizing position when the user tries to resize the window.
+	// Must be left and top: Defaulting to not changing the position of the window when maximizing.
+	// Get set on WM_SIZING, get cleared after WM_EXITSIZEMOVE.
+	static bool s_bSizingLeft = false;
+	static bool s_bSizingTop = false;
+
 
 	switch (uMsg)
 	{
+	case WM_SYSCOMMAND:
+		switch (wParam)
+		{
+		case SC_MAXIMIZE:
+			o.m_bMaximized = true;
+			if (o.m_bMinimized)
+			{
+				o.m_bMinimized = false;
+				o.m_fnOnRestore();
+			}
+			break;
+
+		case SC_RESTORE:
+			// if the window is minimized, "restored" means exiting the minimized state.
+			if (o.m_bMinimized)
+			{
+				o.m_bMinimized = false;
+				o.m_fnOnRestore();
+			}
+			// if the window is not minimized, "restored" means undoing the maximization.
+			else
+				o.m_bMaximized = false;
+			break;
+
+		case SC_MINIMIZE:
+			o.m_bMinimized = true;
+			o.m_fnOnMinimize();
+			break;
+		}
+		o.OnMessage(uMsg, wParam, lParam);
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
 		o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
 
 	case WM_SIZING:
-		o.m_fnOnMessage(uMsg, wParam, lParam);
+		switch (wParam)
 		{
-			auto& rect = *reinterpret_cast<RECT*>(lParam);
-			o.m_iNativeWidth = rect.right - rect.left;
-			o.m_iNativeHeight = rect.bottom - rect.top;
+		case WMSZ_BOTTOMLEFT:
+		case WMSZ_LEFT:
+			s_bSizingLeft = true;
+			break;
 
-			o.m_iWidth = o.m_iNativeWidth - o.m_iClientToScreenX;
-			o.m_iHeight = o.m_iNativeHeight - o.m_iClientToScreenY;
+		case WMSZ_TOPRIGHT:
+		case WMSZ_TOP:
+			s_bSizingTop = true;
+			break;
+
+		case WMSZ_TOPLEFT:
+			s_bSizingLeft = true;
+			s_bSizingTop = true;
 		}
 		break;
 
-	case WM_SIZE:
-
-		if (wParam != SIZE_MINIMIZED)
+	case WM_WINDOWPOSCHANGING:
+	{
+		auto& oWindowPos = *reinterpret_cast<WINDOWPOS*>(lParam);
+		if ((oWindowPos.flags & SWP_NOSIZE) == 0 &&
+			(oWindowPos.cx - o.m_iBorderWidth != o.m_iWidth ||
+				oWindowPos.cy - o.m_iBorderHeight != o.m_iHeight))
 		{
-			o.m_iWidth = LOWORD(lParam);
-			o.m_iHeight = HIWORD(lParam);
+			const auto cx = oWindowPos.cx;
+			const auto cy = oWindowPos.cy;
 
-			o.m_iNativeWidth = o.m_iWidth + o.m_iClientToScreenX;
-			o.m_iNativeHeight = o.m_iHeight + o.m_iClientToScreenY;
+			o.m_fnOnMessage(uMsg, wParam, lParam);
+
+			if (cx != oWindowPos.cx && s_bSizingLeft)
+				oWindowPos.x += (int)cx - oWindowPos.cx;
+			if (cy != oWindowPos.cy && s_bSizingTop)
+				oWindowPos.y += (int)cy - oWindowPos.cy;
 		}
-
-		o.m_bMinimized = (wParam == SIZE_MINIMIZED);
-		if (!o.m_bFullscreen)
-			o.m_bMaximized = (wParam == SIZE_MAXIMIZED);
-
-		o.m_fnOnMessage(uMsg, wParam, lParam);
 		break;
+	}
+
+	case WM_WINDOWPOSCHANGED:
+	{
+		auto& oWindowPos = *reinterpret_cast<const WINDOWPOS*>(lParam);
+		o.m_iWidth = oWindowPos.cx - o.m_iBorderWidth;
+		o.m_iHeight = oWindowPos.cy - o.m_iBorderHeight;
+
+		if ((oWindowPos.flags & SWP_NOSIZE) == 0)
+			o.m_fnOnMessage(uMsg, wParam, lParam);
+		break; // don't call DefWindowProc --> no WM_SIZE and WM_MOVE
+	}
 
 	case WM_GETMINMAXINFO:
 		if (!o.m_bFullscreen)
@@ -59,40 +161,36 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			if (o.m_iMaxWidth > 0 || o.m_iMaxHeight > 0)
 			{
 				if (o.m_iMaxWidth > 0)
-					mmi.ptMaxTrackSize.x = o.m_iMaxWidth + o.m_iClientToScreenX;
+					mmi.ptMaxTrackSize.x = o.m_iMaxWidth + o.m_iBorderWidth;
 				if (o.m_iMaxHeight > 0)
-					mmi.ptMaxTrackSize.y = o.m_iMaxHeight + o.m_iClientToScreenY;
+					mmi.ptMaxTrackSize.y = o.m_iMaxHeight + o.m_iBorderHeight;
 			}
 
 			// minimum
 			if (o.m_iMinWidth > 0 || o.m_iMinHeight > 0)
 			{
 				if (o.m_iMinWidth > 0)
-					mmi.ptMinTrackSize.x = o.m_iMinWidth + o.m_iClientToScreenX;
+					mmi.ptMinTrackSize.x = o.m_iMinWidth + o.m_iBorderWidth;
 				if (o.m_iMinHeight > 0)
-					mmi.ptMinTrackSize.y = o.m_iMinHeight + o.m_iClientToScreenY;
+					mmi.ptMinTrackSize.y = o.m_iMinHeight + o.m_iBorderHeight;
 			}
 		}
 
 		break;
 
+	case WM_EXITSIZEMOVE:
+		s_bSizingLeft = false;
+		s_bSizingTop = false;
+		break;
+
 
 
 	case WM_CLOSE:
-		if (!o.m_bAppClose)
-		{
-			o.m_bWinClose = true;
-			if (!o.m_fnOnClose())
-				break;
-		}
-		DestroyWindow(hWnd);
+		o.m_bCloseRequested = true;
 		break;
 
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		break;
-
-	case WM_QUIT:
 		break;
 
 	default:
@@ -102,15 +200,14 @@ LRESULT WINAPI lib::Window::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	o.OnMessage(uMsg, wParam, lParam);
 	return 0;
 }
 
 lib::Window::Window(const wchar_t* szClassName) : m_sClassName(szClassName) { }
 
-lib::Window::~Window() { destroy(); }
-
-bool lib::Window::create(const WindowConfig& cfg,
-	MessageCallback fnOnMessage, CloseCallback fnOnClose)
+bool lib::Window::create(const WindowConfig& cfg, MessageCallback fnOnMessage,
+	VoidCallback fnOnMinimize, VoidCallback fnOnRestore)
 {
 	destroy();
 
@@ -118,6 +215,11 @@ bool lib::Window::create(const WindowConfig& cfg,
 	m_trdidApplication = std::this_thread::get_id();
 
 	if (cfg.iWidth == 0 || cfg.iHeight == 0)
+		return false;
+
+	if (cfg.iWidth > INT_MAX || cfg.iHeight > INT_MAX ||
+		cfg.iMinWidth > INT_MAX || cfg.iMinHeight > INT_MAX ||
+		cfg.iMaxWidth > INT_MAX || cfg.iMaxHeight > INT_MAX)
 		return false;
 
 	if (cfg.iMinWidth > 0)
@@ -139,7 +241,8 @@ bool lib::Window::create(const WindowConfig& cfg,
 
 
 	m_fnOnMessage = fnOnMessage;
-	m_fnOnClose = fnOnClose;
+	m_fnOnMinimize = fnOnMinimize;
+	m_fnOnRestore = fnOnRestore;
 
 	std::unique_lock lm(m_muxState);
 	m_trdMessageLoop = std::thread(&lib::Window::threadFunction, this, cfg);
@@ -157,19 +260,14 @@ void lib::Window::destroy()
 	if (!m_bThreadRunning)
 		return;
 
-	if (!m_bWinClose)
-	{
-		std::unique_lock lm(m_muxState);
-		m_bAppClose = true;
-		SendMessage(m_hWnd, WM_CLOSE, 0, 0); // CloseWindow() doesn't always work here
-		m_cvState.wait(lm);
-	}
+	std::unique_lock lm(m_muxState);
+	PostMessage(m_hWnd, WM_DESTROY, 0, 0);
+	m_cvState.wait(lm);
 
 	if (m_trdMessageLoop.joinable())
 		m_trdMessageLoop.join();
 
 	clear();
-	m_bThreadRunning = false;
 }
 
 void lib::Window::show()
@@ -184,6 +282,30 @@ void lib::Window::setTitle(const wchar_t* szTitle)
 		return;
 
 	m_sTitle = szTitle;
+	invoke(SetWindowTextW, m_hWnd, m_sTitle.c_str());
+}
+
+void lib::Window::setTitle(const char* szTitle)
+{
+	if (!m_bMessageLoop)
+		return;
+
+
+	const size_t len = strlen(szTitle);
+
+	m_sTitle.clear();
+	m_sTitle.reserve(len);
+
+	while (szTitle[0] != 0)
+	{
+		if (szTitle[0] & 0x80)
+			m_sTitle += L'?';
+		else
+			m_sTitle += szTitle[0];
+
+		++szTitle;
+	}
+
 	invoke(SetWindowTextW, m_hWnd, m_sTitle.c_str());
 }
 
@@ -300,13 +422,16 @@ void lib::Window::threadFunction(WindowConfig cfg)
 		m_iMinHeight = cfg.iMinHeight;
 		m_iMaxWidth = cfg.iMaxWidth;
 		m_iMaxHeight = cfg.iMaxHeight;
-		m_hMonitorFullscreen = cfg.hMonintorFullscreen;
+		m_hMonitor = cfg.hMonitor;
+		m_hMonitorFullscreen = cfg.hMonitorFullscreen;
 
+		if (m_hMonitor == NULL)
+			m_hMonitor = MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY);
 		if (m_hMonitorFullscreen == NULL)
-		{
-			const POINT pt = { 0, 0 };
-			m_hMonitorFullscreen = MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
-		}
+			m_hMonitorFullscreen = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+
+
+		// set the initial size
 		if (m_bFullscreen)
 		{
 			MONITORINFO mi = { sizeof(mi) };
@@ -319,6 +444,26 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			m_iWidth = cfg.iWidth;
 			m_iHeight = cfg.iHeight;
 		}
+
+
+
+		// handle the minimum size by the OS
+
+		unsigned iOSMinX = 0, iOSMinY = 0;
+		Window::GetOSMinWindowedSize(m_bResizable, iOSMinX, iOSMinY);
+
+		if (!m_bFullscreen)
+		{
+			if (m_iWidth < iOSMinX)
+				m_iWidth = iOSMinX;
+			if (m_iHeight < iOSMinY)
+				m_iHeight = iOSMinY;
+		}
+
+		if (m_iMaxWidth > 0 && m_iMaxWidth < iOSMinX)
+			m_iMaxWidth = iOSMinX;
+		if (m_iMaxHeight > 0 && m_iMaxHeight < iOSMinY)
+			m_iMaxHeight = iOSMinY;
 
 
 
@@ -336,7 +481,17 @@ void lib::Window::threadFunction(WindowConfig cfg)
 			throw std::exception();
 
 
+
 		const DWORD dwStyle = refreshStyle();
+
+		// calculate the window width
+		unsigned iNativeWidth = m_iWidth;
+		unsigned iNativeHeight = m_iHeight;
+		if (!m_bFullscreen)
+		{
+			iNativeWidth += m_iBorderWidth;
+			iNativeHeight += m_iBorderHeight;
+		}
 
 
 
@@ -344,14 +499,18 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 		int iPosX, iPosY;
 		MONITORINFO mi = { sizeof(mi) };
-		GetMonitorInfo(m_hMonitorFullscreen, &mi);
+		GetMonitorInfo(m_hMonitor, &mi);
 
 		// default windowed position
-		m_iWindowX = mi.rcWork.left + ((mi.rcWork.right - mi.rcWork.left - m_iWidth) / 2);
-		m_iWindowY = mi.rcWork.top + ((mi.rcWork.bottom - mi.rcWork.top - m_iHeight) / 2);
+		m_iWindowX =
+			mi.rcWork.left + (int(mi.rcWork.right - mi.rcWork.left) / 2 - (int)iNativeWidth / 2);
+		m_iWindowY =
+			mi.rcWork.top + (int(mi.rcWork.bottom - mi.rcWork.top) / 2 - (int)iNativeHeight / 2);
 
 		if (m_bFullscreen) // fullscreen --> top left
 		{
+			GetMonitorInfo(m_hMonitorFullscreen, &mi);
+
 			iPosX = mi.rcMonitor.left;
 			iPosY = mi.rcMonitor.top;
 		}
@@ -363,19 +522,8 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 
 
-		// calculate the window width
-		m_iNativeWidth = m_iWidth;
-		m_iNativeHeight = m_iHeight;
-		if (!m_bFullscreen)
-		{
-			m_iNativeWidth += m_iClientToScreenX;
-			m_iNativeHeight += m_iClientToScreenY;
-		}
-
-
-
 		m_hWnd = CreateWindowW(m_sClassName.c_str(), cfg.sTitle.c_str(), dwStyle, iPosX, iPosY,
-			m_iNativeWidth, m_iNativeHeight, NULL, NULL, NULL, NULL);
+			iNativeWidth, iNativeHeight, NULL, NULL, NULL, NULL);
 
 		if (m_hWnd == NULL)
 			throw std::exception();
@@ -397,7 +545,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 	while (true)
 	{
 		// process full message queue before doing anything else
-		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) && msg.message != WM_QUIT)
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) && msg.message != WM_QUIT)
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -408,7 +556,7 @@ void lib::Window::threadFunction(WindowConfig cfg)
 
 		if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
 		{
-			GetMessageW(&msg, NULL, 0, 0);
+			GetMessage(&msg, NULL, 0, 0);
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 
@@ -421,33 +569,19 @@ void lib::Window::threadFunction(WindowConfig cfg)
 	OnDestroy();
 
 	std::unique_lock lm(m_muxState);
+	m_bThreadRunning = false;
 	m_cvState.notify_one();
 }
 
 DWORD lib::Window::refreshStyle()
 {
-	DWORD dwOldStyle = GetWindowLong(m_hWnd, GWL_STYLE);
-	DWORD dwNewStyle = 0;
-	if (dwOldStyle & WS_VISIBLE)
-		dwNewStyle = WS_VISIBLE;
+	const auto oData = GetStyleAndSizes(m_bFullscreen, m_bResizable);
+	const DWORD dwNewStyle = oData.dwStyle | (GetWindowLong(m_hWnd, GWL_STYLE) & WS_VISIBLE);
 
-	if (!m_bFullscreen)
-	{
-		dwNewStyle |= WS_OVERLAPPEDWINDOW;
-
-		if (!m_bResizable)
-			dwNewStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
-
-		RECT rect = { 0, 0, 0, 0 };
-		AdjustWindowRect(&rect, dwNewStyle, false);
-		m_iClientToScreenX = rect.right - rect.left;
-		m_iClientToScreenY = rect.bottom - rect.top;
-	}
-	else
-	{
-		m_iClientToScreenX = m_iClientToScreenY = 0;
-		dwNewStyle |= WS_POPUP;
-	}
+	m_iBorderWidth = oData.iBorderWidth;
+	m_iBorderHeight = oData.iBorderHeight;
+	m_iOSMinWidth = oData.iMinClientWidth;
+	m_iOSMinHeight = oData.iMinClientHeight;
 
 	return dwNewStyle;
 }
@@ -455,16 +589,16 @@ DWORD lib::Window::refreshStyle()
 void lib::Window::clear()
 {
 	m_hWnd = NULL;
-	m_bAppClose = m_bWinClose = false;
 	m_bMessageLoop = false;
 	m_bThreadRunning = false;
 
 	m_fnOnMessage = nullptr;
-	m_fnOnClose = nullptr;
+	m_fnOnMinimize = nullptr;
+	m_fnOnRestore = nullptr;
 
 	m_iWidth = m_iHeight = 0;
-	m_iNativeWidth = m_iNativeHeight = 0;
-	m_iClientToScreenX = m_iClientToScreenY = 0;
+	m_iBorderWidth = m_iBorderHeight = 0;
+	m_iOSMinWidth = m_iOSMinHeight = 0;
 	m_iMinWidth = m_iMinHeight = 0;
 	m_iMaxWidth = m_iMaxHeight = 0;
 	m_iRestoredWidth = m_iRestoredHeight = 0;
@@ -478,4 +612,5 @@ void lib::Window::clear()
 	m_bMinimized = false;
 	m_bMaximized = false;
 	m_bFullscreen = false;
+	m_bCloseRequested = false;
 }

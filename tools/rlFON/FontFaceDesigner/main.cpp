@@ -151,13 +151,13 @@ int WINAPI WinMain(
 	_In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
-	rl::SplashScreen_Config splashcfg(IDB_SPLASH);
+	rl::SplashScreen_Config splashcfg;
 #ifndef _DEBUG
 	splashcfg.bAlwaysOnTop = true;
 #endif // _DEBUG
 
 	splashcfg.bDropShadow = true;
-	rl::SplashScreen::Show(splashcfg);
+	rl::SplashScreen::ShowBitmap(splashcfg, IDB_SPLASH);
 
 
 	GUI gui;

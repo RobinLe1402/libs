@@ -11,12 +11,12 @@ int WINAPI WinMain(
 	_In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
-	rl::SplashScreen_Config config(IDB_SPLASH);
+	rl::SplashScreen_Config config;
 	config.bAlwaysOnTop = true;
 	config.bDropShadow = true;
 
 
-	if (rl::SplashScreen::Show(config))
+	if (rl::SplashScreen::ShowBitmap(config, IDB_SPLASH))
 		Sleep(5000);
 	rl::SplashScreen::Close();
 

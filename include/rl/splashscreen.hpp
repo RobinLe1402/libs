@@ -17,15 +17,6 @@
 // FORWARD DECLARATIONS
 
 //--------------------------------------------------------------------------------------------------
-// <atomic>
-namespace std
-{
-	template <class _Ty>
-	struct atomic;
-}
-
-
-//--------------------------------------------------------------------------------------------------
 // <thread>
 namespace std
 {
@@ -33,8 +24,10 @@ namespace std
 }
 
 
+#include <condition_variable>
+#include <mutex>
+
 #include <Windows.h>
-#include <atomic>
 
 
 
@@ -48,12 +41,10 @@ namespace rl
 	/// </summary>
 	struct SplashScreen_Config
 	{
-		int iBitmapID; // resource ID of the bitmap to show
 		bool bAlwaysOnTop = false; // should the splashscreen be shown on top of every other window?
 		bool bDropShadow = false; // should a drop shadow be added?
-		HMONITOR hMonitor = NULL; // monito to show the splashscreen on. NULL --> default monitor
-
-		SplashScreen_Config(int iBitmapID) : iBitmapID(iBitmapID) {}
+		HMONITOR hMonitor = NULL; // monitor to show the splashscreen on. NULL --> default monitor
+		uint32_t iBackgroundColor = 0xFFFFFF; // background color for transparent images.
 	};
 
 
@@ -64,15 +55,29 @@ namespace rl
 	/// </summary>
 	class SplashScreen
 	{
-	public: // methods
+	public: // static methods
 
 		/// <summary>
-		/// Show the splashscreen<para/>
-		/// Does nothing if a splashscreen is already shown<para/>
-		/// Calls <c>GetLastError()</c> until it returns 0 to keep track of it's own state
+		/// Show a splashscreen with a BITMAP resource.<para/>
+		/// Does nothing if a splashscreen is already shown.<para/>
+		/// Initially sets <c>GetLastError()</c> to 0 to keep track of it's own state.
 		/// </summary>
+		/// <param name="iBitmapID">Resource ID of the BITMAP resource to show.</param>
 		/// <returns>Could the splashscreen be shown?</returns>
-		static bool Show(SplashScreen_Config config);
+		static bool ShowBitmap(const SplashScreen_Config& cfg, int iBitmapID);
+
+		/// <summary>
+		/// Show a splashscreen with an image resource.<para/>
+		/// Does nothing if a splashscreen is already shown.<para/>
+		/// Initially sets <c>GetLastError()</c> to 0 to keep track of it's own state.
+		/// </summary>
+		/// <param name="ResType">Name/ID of the resource type.</param>
+		/// <param name="iResID">
+		/// ID of the image resource to show.<para />
+		/// The resource data must be of a type supported by GDI+ (BMP/GIF/ICO/JPEG/PNG/TIFF).
+		/// </param>
+		/// <returns>Could the splashscreen be shown?</returns>
+		static bool ShowImage(const SplashScreen_Config& cfg, const wchar_t* ResType, int iResID);
 
 		/// <summary>
 		/// Close the splashscreen
@@ -80,25 +85,38 @@ namespace rl
 		static void Close();
 
 
+	private: // static methods
+
+		static LRESULT WINAPI WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+
+	private: // static variables
+
+		static const wchar_t s_szWinClassName[]; // window class name
+		static SplashScreen s_oSplash; // singleton for guaranteed GDI+ shutdown
+
+
 	private: // methods
 
 		SplashScreen() {} // no need for creating an instance
 		~SplashScreen(); // for guaranteed call to Gdiplus::shutdown
 
-		static void threadFunc(SplashScreen_Config config, unsigned int iWidth, unsigned int iHeight);
-		static LRESULT WINAPI WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		void threadFunc();
+		bool showInternal();
+		void closeInternal();
 
 
 	private: // variables
 
-		static bool m_bShowing; // is a splashscreen currently shown?
-		static std::atomic<bool> m_bAtomShow; // should the window be shown?
-		static std::thread m_trd; // window thread
-		static HBITMAP m_hBmp;
-		static const wchar_t m_szWinClassName[]; // window class name
-		static bool m_bDropShadow;
+		SplashScreen_Config m_oCfg;
+		unsigned m_iWidth = 0, m_iHeight = 0;
 
-		static SplashScreen m_bs; // singleton for guaranteed GDI+ shutdown
+		bool m_bVisible = false; // is the splashscreen currently shown?
+		std::mutex m_mux;
+		std::condition_variable m_cv;
+		bool m_bRunning = false;
+		std::thread m_trd; // window thread
+		HBITMAP m_hBmp = NULL;
 
 	};
 

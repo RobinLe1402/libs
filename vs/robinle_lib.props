@@ -2,18 +2,35 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  
+  <!-- global -->
   <PropertyGroup>
     <IntDir>$(GitHub_rl_libs)lib\!intermediate\$(SolutionName)\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
-    <OutDir Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)lib\$(Configuration)\x32\</OutDir>
-    <OutDir Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration)\</OutDir>
   </PropertyGroup>
+  
+  <!-- 32-bit -->
+  <PropertyGroup Condition="'$(Platform)' == 'Win32'">
+    <OutDir>$(GitHub_rl_libs)lib\$(Configuration)\x32\</OutDir>
+	<LocalDebuggerEnvironment>PATH=%GitHub_rl_libs%lib\$(Configuration)\x32;%PATH%</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  
+  <!-- 64-bit -->
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <OutDir>$(GitHub_rl_libs)lib\$(Configuration)\</OutDir>
+    <LocalDebuggerEnvironment>PATH=%GitHub_rl_libs%lib\$(Configuration);%PATH%</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(GitHub_rl_libs)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(GitHub_rl_libs)lib\$(Configuration)</AdditionalLibraryDirectories>
+      <!-- 32-bit -->
+      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)lib\$(Configuration)\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+       <!-- 64-bit -->
+      <AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

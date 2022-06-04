@@ -205,19 +205,6 @@ bool lib::IApplication::handleMessage()
 		break;
 	}
 
-	case WM_SIZE:
-	{
-		if (msg.wParam == SIZE_MINIMIZED)
-		{
-			m_pMessage = nullptr;
-			m_cvWinMsg.notify_one();
-			m_bSleeping = true;
-			return true;
-		}
-
-		break;
-	}
-
 	case WM_SETFOCUS:
 		OnGainFocus();
 		break;

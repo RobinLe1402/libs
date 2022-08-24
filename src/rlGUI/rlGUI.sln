@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32819.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlGUI", "rlGUI.vcxproj", "{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rlGUI_Test", "..\..\test\libraries\rlGUI_Test\rlGUI_Test.vcxproj", "{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}.Debug|x64.ActiveCfg = Debug|x64
+		{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}.Debug|x64.Build.0 = Debug|x64
+		{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}.Debug|x86.ActiveCfg = Debug|x64
+		{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}.Release|x64.ActiveCfg = Release|x64
+		{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}.Release|x64.Build.0 = Release|x64
+		{D793DAED-0D11-4E59-BDA6-EB6BF74931E2}.Release|x86.ActiveCfg = Release|x64
+		{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}.Debug|x64.ActiveCfg = Debug|x64
+		{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}.Debug|x64.Build.0 = Debug|x64
+		{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}.Debug|x86.ActiveCfg = Debug|x64
+		{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}.Release|x64.ActiveCfg = Release|x64
+		{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}.Release|x64.Build.0 = Release|x64
+		{C49E7751-3DA3-4060-9C2B-D8E91F50B5E3}.Release|x86.ActiveCfg = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {39C46CFB-D31D-4020-B3A3-BF3B44CDF50D}
+	EndGlobalSection
+EndGlobal

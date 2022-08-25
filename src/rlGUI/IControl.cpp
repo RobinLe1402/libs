@@ -32,7 +32,7 @@ namespace rl
 				const GLCoord oTopLeft = clientToScreen({ 0, 0 });
 				m_oTexBG.drawStretched(oTopLeft.X, oTopLeft.Y, m_iWidth, m_iHeight);
 			}
-			performPaint();
+			onPaint();
 
 			for (auto pControl : m_oChildControls)
 			{

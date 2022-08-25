@@ -90,8 +90,14 @@ namespace rl
 				return false;
 			}
 
+			virtual void onCreate() {}
+			virtual void onDestroy() {}
+
+			virtual void onTryClose(bool &bAllow) {}
+
 			virtual void onGainFocus() {}
 			virtual void onLoseFocus() {}
+			virtual void onTryResize(unsigned& iWidth, unsigned& iHeight, bool& bAccept) {}
 			virtual void onResized(unsigned iWidth, unsigned iHeight) {}
 
 			virtual void onFileDragEnter() {}

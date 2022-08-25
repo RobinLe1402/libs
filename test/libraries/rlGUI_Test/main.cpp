@@ -35,23 +35,31 @@ public: // methods
 
 protected: // methods
 
+	void onTryResize(unsigned& iWidth, unsigned& iHeight, bool& bAccept) override
+	{
+		iWidth -= iWidth % 8;
+		iHeight -= iHeight % 8;
+	}
+
+	void onCreate() override
+	{
+		m_oTex.setPixel(0, 0, Colors::Black);
+		m_oTex.setPixel(0, 1, Colors::Black);
+		m_oTex.setPixel(0, 2, Colors::Black);
+		m_oTex.setPixel(0, 3, Colors::Black);
+		m_oTex.setPixel(1, 3, Colors::Black);
+		m_oTex.setPixel(2, 3, Colors::Black);
+		m_oTex.setPixel(3, 3, Colors::Black);
+		m_oTex.setPixel(1, 2, Colors::Black);
+		m_oTex.setPixel(2, 1, Colors::Black);
+		m_oTex.setPixel(3, 0, Colors::Black);
+		m_oTex.upload();
+	}
+
 	bool onMessage(LRESULT& result, UINT uMsg, WPARAM wParam, LPARAM lParam) override
 	{
 		switch (uMsg)
 		{
-		case WM_CREATE:
-			m_oTex.setPixel(0, 0, Colors::Black);
-			m_oTex.setPixel(0, 1, Colors::Black);
-			m_oTex.setPixel(0, 2, Colors::Black);
-			m_oTex.setPixel(0, 3, Colors::Black);
-			m_oTex.setPixel(1, 3, Colors::Black);
-			m_oTex.setPixel(2, 3, Colors::Black);
-			m_oTex.setPixel(3, 3, Colors::Black);
-			m_oTex.setPixel(1, 2, Colors::Black);
-			m_oTex.setPixel(2, 1, Colors::Black);
-			m_oTex.setPixel(3, 0, Colors::Black);
-			break;
-
 		case WM_LBUTTONDOWN:
 		{
 			Window& win = *getChildWindows()[0];
@@ -70,7 +78,7 @@ protected: // methods
 		return true;
 	}
 
-	void performPaint() override
+	void onPaint() override
 	{
 		m_oTex.draw(1, 1);
 		m_oTex.drawStretched(10, 10, 100, 100);

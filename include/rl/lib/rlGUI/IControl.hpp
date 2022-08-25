@@ -46,7 +46,8 @@ namespace rl
 
 		protected: // methods
 
-			virtual void performPaint() {}
+			virtual void onPaint() {}
+
 			void setBackgroundColor(Color cl) { m_oTexBG.setPixel(0, 0, cl); }
 			GLCoord clientToScreen(GLCoord oClientCoord);
 

@@ -50,6 +50,8 @@ namespace rl
 			void draw(PxPos iX, PxPos iY);
 			void drawStretched(PxPos iX, PxPos iY, PxSize iWidth, PxSize iHeight);
 
+			void upload();
+
 
 		private: // types
 
@@ -58,11 +60,6 @@ namespace rl
 				bool bUpToDate;
 				GLuint iTextureID;
 			};
-
-
-		private: // methods
-
-			void upload();
 
 
 		private: // variables

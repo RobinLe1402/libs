@@ -179,10 +179,15 @@ namespace rl
 
 		LRESULT Window::internalWindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
+			static bool s_bSizingLeft = false;
+			static bool s_bSizingTop = false;
+
 			bool bHandled = true;
 			switch (uMsg)
 			{
-				// todo: proper OnPaint
+			case WM_CREATE:
+				onCreate();
+				break;
 
 			case WM_SHOWWINDOW:
 				if (wParam == TRUE) // window is now visible
@@ -204,6 +209,87 @@ namespace rl
 				m_bFocused = false;
 				onLoseFocus();
 				break;
+
+			case WM_SIZING:
+				switch (wParam)
+				{
+				case WMSZ_BOTTOMLEFT:
+				case WMSZ_LEFT:
+					s_bSizingLeft = true;
+					break;
+
+				case WMSZ_TOPRIGHT:
+				case WMSZ_TOP:
+					s_bSizingTop = true;
+					break;
+
+				case WMSZ_TOPLEFT:
+					s_bSizingLeft = true;
+					s_bSizingTop = true;
+				}
+				break;
+
+			case WM_EXITSIZEMOVE:
+				s_bSizingLeft = false;
+				s_bSizingTop = false;
+				break;
+
+			case WM_WINDOWPOSCHANGING:
+			{
+				auto& wp = *reinterpret_cast<WINDOWPOS*>(lParam);
+				if (wp.flags & SWP_NOSIZE)
+				{
+					bHandled = false;
+					break;
+				}
+
+				const DWORD dwStyle = GetWindowLong(m_hWnd, GWL_STYLE);
+				const DWORD dwExStyle = GetWindowLong(m_hWnd, GWL_EXSTYLE);
+
+				RECT rc = { 0, 0, 0, 0 };
+				AdjustWindowRectEx(&rc, dwStyle, FALSE, dwExStyle);
+
+				const unsigned iBorderWidth = rc.right - rc.left;
+				const unsigned iBorderHeight = rc.bottom - rc.top;
+
+				const unsigned iProposedWidth = (unsigned)wp.cx - iBorderWidth;
+				const unsigned iProposedHeight = (unsigned)wp.cy - iBorderHeight;
+
+				if (iProposedWidth == m_oClientRect.right - m_oClientRect.left &&
+					iProposedHeight == m_oClientRect.bottom - m_oClientRect.top)
+				{
+					bHandled = false;
+					break;
+				}
+
+				unsigned iCustomWidth = iProposedWidth;
+				unsigned iCustomHeight = iProposedHeight;
+				bool bAcceptChanges = true;
+
+				onTryResize(iCustomWidth, iCustomHeight, bAcceptChanges);
+				if (!bAcceptChanges)
+				{
+					wp.flags |= SWP_NOSIZE | SWP_NOMOVE;
+					break;
+				}
+				if (iCustomWidth > INT32_MAX)
+					iCustomWidth = INT32_MAX;
+				if (iCustomHeight > INT32_MAX)
+					iCustomHeight = INT32_MAX;
+
+				const int iWidthChange = iProposedWidth - iCustomWidth;
+				const int iHeightChange = iProposedHeight - iCustomHeight;
+
+				wp.cx = iCustomWidth + iBorderWidth;
+				wp.cy = iCustomHeight + iBorderHeight;
+
+				if (iWidthChange && s_bSizingLeft)
+					wp.x += iWidthChange;
+				if (iHeightChange && s_bSizingTop)
+					wp.y += iHeightChange;
+
+				break;
+			}
 
 			case WM_WINDOWPOSCHANGED:
 			{
@@ -244,18 +330,23 @@ namespace rl
 			}
 
 			case WM_CLOSE:
+			{
+				bool bCloseAllowed = true;
+				onTryClose(bCloseAllowed);
+				if (!bCloseAllowed)
+					break;
+
 				// ToDo: handle properly for multi-window apps
 				if (m_bWinClosesApp)
 					DestroyWindow(m_hWnd);
 				else
 					hide();
 				break;
-
+			}
+				
 			case WM_DESTROY:
+				onDestroy();
 				PostQuitMessage(0);
-				break;
-
-			case WM_QUIT:
 				break;
 
 			default:

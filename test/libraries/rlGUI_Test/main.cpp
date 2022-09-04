@@ -3,6 +3,7 @@
 #include "rl/lib/rlGUI/Application.hpp"
 #include "rl/lib/rlGUI/Window.hpp"
 #include "rl/lib/rlGUI/Texture.hpp"
+#include "rl/lib/rlGUI/FontData_TestFont.hpp"
 
 #include <cwctype> // std::towupper
 
@@ -83,6 +84,10 @@ protected: // methods
 		m_oTex.draw(1, 1);
 		m_oTex.drawStretched(10, 10, 100, 100);
 		m_oTex.draw(getWidth() - 1 - m_oTex.getWidth(), getHeight() - 1 - m_oTex.getHeight());
+
+		TestFont.drawText("Starting MS-DOS...", 200, 10);
+		TestFont.drawText("HIMEM is testing extended memory...done.", 200, 58);
+		TestFont.drawText("C:\\>", 200, 90);
 	}
 
 	void onFileDrag(int32_t iX, int32_t iY, DropEffect& eEffect,
@@ -134,16 +139,29 @@ int WINAPI WinMain(
 	(void)szCmdLine;
 	(void)iCmdShow;
 
-	CustomWin wnd(L"MainWnd", nullptr, nullptr, 0, 0, 500, 250, Colors::White);
-	Window wnd2(L"PopupWnd", nullptr, &wnd, 100, 100, 250, 250, Colors::Black);
+	try
+	{
+		CustomWin wnd(L"MainWnd", nullptr, nullptr, 0, 0, 500, 250, Colors::White);
+		Window wnd2(L"PopupWnd", nullptr, &wnd, 100, 100, 250, 250, Colors::Black);
 
-	wnd2.setAcceptsFiles(true);
+		wnd2.setAcceptsFiles(true);
 
-	//wnd.setTitleASCII("ASDF");
-	wnd.setClosesApp(true);
-	wnd.show();
+		//wnd.setTitleASCII("ASDF");
+		wnd.setClosesApp(true);
+		wnd.show();
 
-	ThisApp.run();
+		ThisApp.run();
+	}
+	catch (const std::exception& e)
+	{
+		MessageBoxA(NULL, e.what(), "Exception", MB_ICONERROR | MB_SYSTEMMODAL);
+		return EXIT_FAILURE;
+	}
+	catch (...)
+	{
+		MessageBoxA(NULL, "Something was thrown.", "Exception", MB_ICONERROR | MB_SYSTEMMODAL);
+		return EXIT_FAILURE;
+	}
 
 	return 0;
 }

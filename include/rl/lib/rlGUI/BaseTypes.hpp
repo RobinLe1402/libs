@@ -6,6 +6,10 @@
 
 
 
+#include <memory>
+
+
+
 // forward declarations
 using uint8_t = unsigned char;
 using uint16_t = unsigned short;
@@ -67,6 +71,15 @@ namespace rl
 					/* b */ uint8_t(iARGB),
 					/* a */ uint8_t(iARGB >> 24)
 				);
+			}
+
+			bool operator==(const Color& other) const noexcept
+			{
+				return memcmp(this, &other, sizeof(Color)) == 0;
+			}
+			bool operator!=(const Color& other) const noexcept
+			{
+				return !(*this == other);
 			}
 		};
 

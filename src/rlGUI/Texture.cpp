@@ -57,7 +57,7 @@ namespace rl
 			}
 		}
 
-		void Texture::draw(PxPos iX, PxPos iY)
+		void Texture::draw(PxPos iX, PxPos iY) const
 		{
 			const auto hGLRC = wglGetCurrentContext();
 			if (hGLRC == NULL)
@@ -75,7 +75,7 @@ namespace rl
 			glEnd();
 		}
 
-		void Texture::drawStretched(PxPos iX, PxPos iY, PxSize iWidth, PxSize iHeight)
+		void Texture::drawStretched(PxPos iX, PxPos iY, PxSize iWidth, PxSize iHeight) const
 		{
 			const auto hGLRC = wglGetCurrentContext();
 
@@ -91,7 +91,7 @@ namespace rl
 			glEnd();
 		}
 
-		void Texture::upload()
+		void Texture::upload() const
 		{
 			const HGLRC hGLRC = wglGetCurrentContext();
 			if (hGLRC == NULL)

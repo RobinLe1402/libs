@@ -47,10 +47,10 @@ namespace rl
 			PxSize getWidth() const { return m_iWidth; }
 			PxSize getHeight() const { return m_iHeight; }
 
-			void draw(PxPos iX, PxPos iY);
-			void drawStretched(PxPos iX, PxPos iY, PxSize iWidth, PxSize iHeight);
+			void draw(PxPos iX, PxPos iY) const;
+			void drawStretched(PxPos iX, PxPos iY, PxSize iWidth, PxSize iHeight) const;
 
-			void upload();
+			void upload() const;
 
 
 		private: // types
@@ -69,7 +69,7 @@ namespace rl
 			const TextureScalingMethod m_eScalingMethod;
 			std::unique_ptr<Color[]> m_upData;
 
-			std::map<HGLRC, Upload> m_oUploads;
+			mutable std::map<HGLRC, Upload> m_oUploads;
 		};
 
 	}

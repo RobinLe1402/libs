@@ -74,8 +74,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\unicode.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="FontData_TestFont.cpp" />
+    <ClCompile Include="Font_8x16.cpp" />
     <ClCompile Include="IControl.cpp" />
+    <ClCompile Include="IFont.cpp" />
     <ClCompile Include="OpenGL.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -83,7 +87,10 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\rl\lib\rlGUI\Application.hpp" />
     <ClInclude Include="..\..\include\rl\lib\rlGUI\BaseTypes.hpp" />
+    <ClInclude Include="..\..\include\rl\lib\rlGUI\FontData_TestFont.hpp" />
+    <ClInclude Include="..\..\include\rl\lib\rlGUI\Font_8x16.hpp" />
     <ClInclude Include="..\..\include\rl\lib\rlGUI\IControl.hpp" />
+    <ClInclude Include="..\..\include\rl\lib\rlGUI\IFont.hpp" />
     <ClInclude Include="..\..\include\rl\lib\rlGUI\OpenGL.hpp" />
     <ClInclude Include="..\..\include\rl\lib\rlGUI\Texture.hpp" />
     <ClInclude Include="..\..\include\rl\lib\rlGUI\Window.hpp" />

@@ -128,6 +128,22 @@ private: // variables
 };
 
 
+class CustomWin2 : public Window
+{
+public: // methods
+
+	using Window::Window;
+
+
+protected: // methods
+
+	void onPaint() override
+	{
+		TestFont.drawText("Hallo Welt!", 0, 0);
+	}
+};
+
+
 
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
@@ -142,7 +158,7 @@ int WINAPI WinMain(
 	try
 	{
 		CustomWin wnd(L"MainWnd", nullptr, nullptr, 0, 0, 500, 250, Colors::White);
-		Window wnd2(L"PopupWnd", nullptr, &wnd, 100, 100, 250, 250, Colors::Black);
+		CustomWin2 wnd2(L"PopupWnd", nullptr, &wnd, 100, 100, 250, 250, Colors::White);
 
 		wnd2.setAcceptsFiles(true);
 

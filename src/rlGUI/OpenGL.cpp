@@ -21,6 +21,7 @@ lib::OpenGL* lib::OpenGL::CreateInstance(HDC hDC, GLsizei iWidth, GLsizei iHeigh
 {
 	try
 	{
+		// check for already existing instance
 		const auto it = s_oInstances.find(hDC);
 		if (it != s_oInstances.end())
 			return it->second;
@@ -28,6 +29,20 @@ lib::OpenGL* lib::OpenGL::CreateInstance(HDC hDC, GLsizei iWidth, GLsizei iHeigh
 		s_oInstances[hDC] = new lib::OpenGL(hDC, iWidth, iHeight);
 		auto& oInstance = *s_oInstances.at(hDC);
 		oInstance.setSize(iWidth, iHeight);
+
+		// not the first rendering context --> share list with previous instance
+		if (s_oInstances.size() > 1)
+		{
+			for (const auto& it : s_oInstances)
+			{
+				if (it.first == hDC)
+					continue;
+
+				// todo: delete all previous textures (rebuild on painting them)
+				wglShareLists(oInstance.getRenderingContext(), it.second->getRenderingContext());
+				break;
+			}
+		}
 		return &oInstance;
 	}
 	catch (const std::exception& e)

@@ -10,14 +10,14 @@
   
   <!-- 32-bit -->
   <PropertyGroup Condition="'$(Platform)' == 'Win32'">
-    <OutDir>$(GitHub_rl_libs)bin\$(Configuration)\x32\</OutDir>
-	<LocalDebuggerEnvironment>PATH=%GitHub_rl_libs%lib\$(Configuration)\x32;%PATH%</LocalDebuggerEnvironment>
+    <OutDir>$(GitHub_rl_libs)bin\$(Configuration)\x32\$(SolutionName)\</OutDir>
+	<LocalDebuggerEnvironment>PATH=%GitHub_rl_libs%lib\$(Configuration)\x32\$(SolutionName)\;%PATH%</LocalDebuggerEnvironment>
   </PropertyGroup>
   
   <!-- 64-bit -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <OutDir>$(GitHub_rl_libs)bin\$(Configuration)\</OutDir>
-    <LocalDebuggerEnvironment>PATH=%GitHub_rl_libs%lib\$(Configuration);%PATH%</LocalDebuggerEnvironment>
+    <OutDir>$(GitHub_rl_libs)bin\$(Configuration)\x64\$(SolutionName)\</OutDir>
+    <LocalDebuggerEnvironment>PATH=%GitHub_rl_libs%lib\$(Configuration)\x64\$(SolutionName)\;%PATH%</LocalDebuggerEnvironment>
   </PropertyGroup>
   
   <ItemDefinitionGroup>

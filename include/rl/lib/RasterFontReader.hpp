@@ -227,10 +227,12 @@ namespace rl
 
 			/// <summary>Load an old Windows raster font file.</summary>
 			/// <returns>Could the fontface be loaded?</returns>
-			LoadResult_FNT loadFromFile_FNT(const wchar_t* szFilepath);
+			LoadResult_FNT loadFromFile_FNT(const wchar_t* szFilepath,
+				uint16_t iFallbackCodepage = 0);
 			/// <summary>Load an old Windows raster font from memory.</summary>
 			/// <returns>Could the fontface be loaded?</returns>
-			LoadResult_FNT loadFromData_FNT(const void* pData, size_t iSize);
+			LoadResult_FNT loadFromData_FNT(const void* pData, size_t iSize,
+				uint16_t iFallbackCodepage = 0);
 			/// <summary>Clear all data associated with this fontface.</summary>
 			void clear();
 

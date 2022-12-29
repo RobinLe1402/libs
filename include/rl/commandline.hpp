@@ -27,20 +27,53 @@
 namespace rl
 {
 
+	/// <summary>The different types of arguments.</summary>
+	enum class CommandlineArgumentType
+	{
+		/// <summary>
+		/// Informal argument. Only the raw text is set.<para/>
+		/// Example: "<c>TestArg</c>"
+		/// </summary>
+		Text,
+
+		/// <summary>
+		/// A flag without an associated value. Raw text and name are set.<para/>
+		/// Example: "<c>/TestArg</c>"
+		/// </summary>
+		Flag,
+
+		/// <summary>
+		/// Informal argument. Raw text, name and value are set.<para/>
+		/// Example: "<c>/TestArg:TestVal</c>"<para/>
+		/// The value might still be empty.
+		/// </summary>
+		NamedVal
+	};
+
+	/// <summary>A commandline argument.</summary>
 	class CommandlineArgument
 	{
 	public: // methods
 
 		void initialize(const wchar_t *szRawArg);
 
+		auto type() const noexcept { return m_eType; }
+
+		/// <summary>The raw text value of the argument.</summary>
 		auto &raw() const noexcept { return m_sRaw; }
+		/// <summary>The name of the argument.</summary>
+		/// <remarks>Consists only of ASCII letters, numbers and underscore.</remarks>
 		auto &name() const noexcept { return m_sName; }
+		/// <summary>The name of the argument, in all uppercase.</summary>
+		/// <remarks>Uppercase version of <c>name()</c>.</remarks>
 		auto &nameUppercase() const noexcept { return m_sNameUpper; }
+		/// <summary>The value of the argument.</summary>
 		auto &value() const noexcept { return m_sValue; }
 
 
 	private: // variables
 
+		CommandlineArgumentType m_eType = CommandlineArgumentType::Text;
 		std::wstring m_sRaw;
 		std::wstring m_sName;
 		std::wstring m_sNameUpper;
@@ -76,13 +109,22 @@ namespace rl
 		reverse_iterator rbegin() const noexcept { return m_oArgs.rbegin(); }
 		reverse_iterator rend() const noexcept { return m_oArgs.rend(); }
 
+		/// <summary>Search for a flag/named value.</summary>
 		iterator find(const wchar_t *szArgName, bool bCaseSensitive, size_t iStartArg = 0) const;
+		/// <summary>Search for a flag.</summary>
+		iterator findFlag(const wchar_t *szName, bool bCaseSensitive, size_t iStartArg = 0) const;
+		/// <summary>Search for a named value.</summary>
+		iterator findNamedValue(const wchar_t *szName, bool bCaseSensitive, size_t iStartArg = 0)
+			const;
 
 
 	private: // methods
 
 		Commandline();
 		~Commandline() = default;
+
+		iterator findArgInternal(const wchar_t *szArgName, bool bCaseSensitive, size_t iStartArg,
+			bool bFlag, bool bNamedValue) const noexcept;
 
 
 	private: // variables

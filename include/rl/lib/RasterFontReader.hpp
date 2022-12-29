@@ -227,10 +227,12 @@ namespace rl
 
 			/// <summary>Load an old Windows raster font file.</summary>
 			/// <returns>Could the fontface be loaded?</returns>
-			LoadResult_FNT loadFromFile_FNT(const wchar_t* szFilepath);
+			LoadResult_FNT loadFromFile_FNT(const wchar_t* szFilepath,
+				uint16_t iFallbackCodepage = 0);
 			/// <summary>Load an old Windows raster font from memory.</summary>
 			/// <returns>Could the fontface be loaded?</returns>
-			LoadResult_FNT loadFromData_FNT(const void* pData, size_t iSize);
+			LoadResult_FNT loadFromData_FNT(const void* pData, size_t iSize,
+				uint16_t iFallbackCodepage = 0);
 			/// <summary>Clear all data associated with this fontface.</summary>
 			void clear();
 
@@ -300,7 +302,8 @@ namespace rl
 			LoadResult_CPI loadFromFile_CPI(const wchar_t* szFilepath);
 			/// <summary>Load all fontfaces from an old Windows raster font file.</summary>
 			/// <returns>Could the fontfaces be loaded?</returns>
-			LoadResult_FON loadFromFile_FON(const wchar_t* szFilepath);
+			LoadResult_FON loadFromFile_FON(const wchar_t* szFilepath,
+				uint16_t iFallbackCodepage = 0);
 
 
 			/// <summary>Load all fontfaces from MS-DOS CodePageInfo data.</summary>
@@ -308,7 +311,8 @@ namespace rl
 			LoadResult_CPI loadFromData_CPI(const void* pData, size_t iSize);
 			/// <summary>Load all fontfaces from old Windows raster font data.</summary>
 			/// <returns>Could the fontfaces be loaded?</returns>
-			LoadResult_FON loadFromData_FON(const void* pData, size_t iSize);
+			LoadResult_FON loadFromData_FON(const void* pData, size_t iSize,
+				uint16_t iFallbackCodepage = 0);
 
 			/// <summary>Unload all font data.</summary>
 			void clear() { m_oFonts.clear(); }

@@ -256,9 +256,10 @@ lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, siz
 			else
 				reader.readVar(dfBitmapOffset);
 
-			const uint8_t* const pBase = reader.begin() + dfBitmapOffset;
+			if (!CodePageToUnicode(m_oMeta.iCodepage, (uint8_t)i, cRaw))
+				continue;
 
-			CodePageToUnicode((uint8_t)i, m_oMeta.iCodepage, cRaw);
+			const uint8_t* const pBase = reader.begin() + dfBitmapOffset;
 
 			m_oChars.emplace(cRaw, RasterChar(dfCharWidth, hdr.dfPixHeight));
 			auto& oChar = m_oChars.at(cRaw);

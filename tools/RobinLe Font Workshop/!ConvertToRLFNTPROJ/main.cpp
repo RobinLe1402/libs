@@ -32,6 +32,8 @@ rlFont::TypefaceClassification LibFontTypeToProjectFontType(rl::RasterFontReader
 
 const wchar_t *WeightDisplayName(unsigned iWeight);
 
+void GeneralizeSettings(rlFont::Project &oProject);
+
 
 
 int wmain(int argc, wchar_t *argv[])
@@ -46,14 +48,23 @@ int wmain(int argc, wchar_t *argv[])
 
 
 	// parse [O]utput argument
-	auto it = cmd.find(L"O", false);
+	auto it = cmd.findNamedValue(L"O", false);
 	const bool bOutputArg = it != cmd.end();
+	if (!bOutputArg)
+	{
+		it = cmd.find(L"O", false);
+		if (it != cmd.end())
+		{
+			printf("Error: Invalid \"O\" parameter.\n");
+			return 1;
+		}
+	}
 	std::wstring sOutputFile;
 	if (bOutputArg)
 		sOutputFile = it->value();
 
 	// parse fallback [C]ode[P]age argument
-	it = cmd.find(L"CP", false);
+	it = cmd.findNamedValue(L"CP", false);
 	uint16_t iFallbackCP = 0; // Fallback Codepage. 0 if not given.
 	const bool bFallbackCPArg = it != cmd.end();
 	if (bFallbackCPArg)
@@ -73,6 +84,12 @@ int wmain(int argc, wchar_t *argv[])
 			printf("Error: Invalid fallback codepage.\n");
 			return 1;
 		}
+	}
+	else
+	{
+		it = cmd.find(L"CP", false);
+		if (it != cmd.end())
+			printf("Warning: Invalid \"CP\" parameter; will be ignored.\n");
 	}
 
 
@@ -402,11 +419,7 @@ int wmain(int argc, wchar_t *argv[])
 
 	// try to apply settings from bottom to top
 
-	// copyright
-	// TODO
-
-	// fallback character
-	// TODO
+	GeneralizeSettings(oProject);
 
 
 
@@ -561,4 +574,153 @@ const wchar_t *WeightDisplayName(unsigned iWeight)
 			return oDisplayName.szDisplayName;
 	}
 	return szUnknown;
+}
+
+
+
+bool internal_GetCopyright(rlFont::Font &oFont, std::wstring &sDest)
+{
+	sDest.clear();
+	auto &oFaces = oFont.getFaces();
+
+	for (const auto &oFace: oFaces)
+	{
+		const auto &sCopyright = oFace.getMetadata().sCopyright;
+		if (sCopyright.empty())
+			continue;
+
+		if (sDest.empty())
+			sDest = sCopyright;
+		else if (sDest != sCopyright)
+		{
+			sDest.clear();
+			return false;
+		}
+	}
+
+
+	// copyright notes are all equal.
+
+	// remove redundant copies in faces
+	for (auto &oFace : oFaces)
+	{
+		rlFont::FontFaceMeta oMeta = oFace.getMetadata();
+		oMeta.sCopyright.clear();
+		oFace.setMetadata(oMeta);
+	}
+
+	rlFont::FontMeta oMeta = oFont.getMetadata();
+	oMeta.sCopyright = sDest;
+	oFont.setMetadata(oMeta);
+	return true;
+}
+
+bool internal_GetFallbackChar(rlFont::Font &oFont, char32_t &cDest)
+{
+	cDest = 0xFFFF;
+	auto &oFaces = oFont.getFaces();
+
+	for (const auto &oFace : oFaces)
+	{
+		const auto cFallback = oFace.getMetadata().cFallback;
+		if (cFallback == 0xFFFF)
+			continue;
+
+		if (cDest == 0xFF)
+			cDest = cFallback;
+		else if (cDest != cFallback)
+		{
+			cDest = 0xFFFF;
+			return false;
+		}
+	}
+
+
+	// fallback characters are all equal.
+
+	// remove redundant copies in faces
+	for (auto &oFace : oFaces)
+	{
+		rlFont::FontFaceMeta oMeta = oFace.getMetadata();
+		oMeta.cFallback = 0xFFFF;
+		oFace.setMetadata(oMeta);
+	}
+
+	rlFont::FontMeta oMeta = oFont.getMetadata();
+	oMeta.cFallback = cDest;
+	oFont.setMetadata(oMeta);
+	return true;
+}
+
+void GeneralizeSettings(rlFont::Project &oProject)
+{
+	auto &oFontFamily = oProject.getFontFamily();
+
+	rlFont::FontFamilyMeta oMeta = oFontFamily.getMetdata();
+
+	bool bSingleValue = true;
+
+
+
+	// copyright
+
+	std::wstring sCopyright;
+	std::wstring sTMP;
+	for (auto &oFont : oFontFamily.getFonts())
+	{
+		bSingleValue = internal_GetCopyright(oFont, sTMP);
+		if (!bSingleValue)
+			break;
+		if (sCopyright.empty())
+			sCopyright = sTMP;
+		else if (!sTMP.empty() &&  sCopyright != sTMP)
+		{
+			bSingleValue = false;
+			break;
+		}
+	}
+	if (bSingleValue)
+	{
+		oMeta.sCopyright = sCopyright;
+
+		for (auto &oFont : oFontFamily.getFonts())
+		{
+			rlFont::FontMeta oFontMeta = oFont.getMetadata();
+			oFontMeta.sCopyright.clear();
+			oFont.setMetadata(oFontMeta);
+		}
+	}
+
+
+
+	// fallback character
+	char32_t cFallback = 0xFFFF;
+	char32_t cTMP;
+	for (auto &oFont : oFontFamily.getFonts())
+	{
+		bSingleValue = internal_GetFallbackChar(oFont, cTMP);
+		if (!bSingleValue)
+			break;
+		if (cFallback == 0xFFFF)
+			cFallback = cTMP;
+		else if (cTMP != 0xFFFF && cFallback != cTMP)
+		{
+			bSingleValue = false;
+			break;
+		}
+	}
+	if (bSingleValue)
+	{
+		oMeta.cFallback = cFallback;
+
+		for (auto &oFont : oFontFamily.getFonts())
+		{
+			rlFont::FontMeta oFontMeta = oFont.getMetadata();
+			oFontMeta.cFallback = 0xFFFF;
+			oFont.setMetadata(oFontMeta);
+		}
+	}
+
+
+	oFontFamily.setMetadata(oMeta);
 }

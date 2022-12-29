@@ -151,11 +151,15 @@
   <ItemGroup>
     <ClInclude Include="..\!Include\rlFNTPROJ.hpp" />
     <ClInclude Include="..\..\..\include\rl\commandline.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\RasterFontReader\RasterFontReader.vcxproj">
       <Project>{c1da117f-b51f-47cc-b953-f6963cfeee7d}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

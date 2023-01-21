@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "data.online", "..\..\test\u
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "text.fileio", "..\..\test\units\text.fileio\text.fileio.vcxproj", "{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "input.keyboard", "..\..\test\units\input.keyboard\input.keyboard.vcxproj", "{7EBB4F62-793C-4396-B7EF-D03D88454CDF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -71,6 +73,14 @@ Global
 		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x64.Build.0 = Release|x64
 		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x86.ActiveCfg = Release|Win32
 		{00FD69F0-E7E8-4A5C-93E5-DF9DD89FD4C4}.Release|x86.Build.0 = Release|Win32
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Debug|x64.ActiveCfg = Debug|x64
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Debug|x64.Build.0 = Debug|x64
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Debug|x86.ActiveCfg = Debug|Win32
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Debug|x86.Build.0 = Debug|Win32
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Release|x64.ActiveCfg = Release|x64
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Release|x64.Build.0 = Release|x64
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Release|x86.ActiveCfg = Release|Win32
+		{7EBB4F62-793C-4396-B7EF-D03D88454CDF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

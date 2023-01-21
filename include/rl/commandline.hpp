@@ -1,7 +1,7 @@
 /***************************************************************************************************
  FILE:	commandline.hpp
  CPP:	commandline.cpp
- DESCR:	Functions for parsing command line arguments
+ DESCR:	Helper singleton for working with command-line arguments.
 ***************************************************************************************************/
 
 
@@ -14,14 +14,11 @@
 
 
 //==================================================================================================
-// FORWARD DECLARATIONS
+// INCLUDES
 
-//--------------------------------------------------------------------------------------------------
-// <Windows.h>
-#define MAX_PATH 260
-
-
-#pragma comment(lib, "Shlwapi.lib")
+#include <cstdint>
+#include <string>
+#include <vector>
 
 
 
@@ -29,36 +26,117 @@
 // DECLARATION
 namespace rl
 {
-	
-	/// <summary>
-	/// Get the length of a filepath in the command line
-	/// </summary>
-	/// <param name="szCMD">= command-line, should start with the path right away</param>
-	/// <returns>
-	/// Was there a possible file path found?<para/>
-	/// Note: The path is not validated. It could contain illegal characters/be completely invalid.
-	/// </returns>
-	bool CmdGetPathLen(const wchar_t* szCMD, int* pLen);
 
-	/// <summary>
-	/// Get input and output path from the command line<para/>
-	/// Only works with the most basic syntax (exe inputfile outputfile)
-	/// <para/>
-	/// Removes quotes at beginning and end, doesn't validate paths<para/>
-	/// </summary>
-	/// <param name="szCMD">= the full command line, including the executable path</param>
-	/// <param name="szPathIn">= the buffer that should receive the input path</param>
-	/// <param name="szPathOut">= the buffer that should receive the output path</param>
-	/// <returns>Could the arguments be extracted?</returns>
-	bool CmdGetInOutPaths(const wchar_t* szCMD, wchar_t(&szPathIn)[MAX_PATH + 1],
-		wchar_t(&szPathOut)[MAX_PATH + 1]);
-	
+	/// <summary>The different types of arguments.</summary>
+	enum class CommandlineArgumentType
+	{
+		/// <summary>
+		/// Informal argument. Only the raw text is set.<para/>
+		/// Example: "<c>TestArg</c>"
+		/// </summary>
+		Text,
+
+		/// <summary>
+		/// A flag without an associated value. Raw text and name are set.<para/>
+		/// Example: "<c>/TestArg</c>"
+		/// </summary>
+		Flag,
+
+		/// <summary>
+		/// Informal argument. Raw text, name and value are set.<para/>
+		/// Example: "<c>/TestArg:TestVal</c>"<para/>
+		/// The value might still be empty.
+		/// </summary>
+		NamedVal
+	};
+
+	/// <summary>A commandline argument.</summary>
+	class CommandlineArgument
+	{
+	public: // methods
+
+		void initialize(const wchar_t *szRawArg);
+
+		auto type() const noexcept { return m_eType; }
+
+		/// <summary>The raw text value of the argument.</summary>
+		auto &raw() const noexcept { return m_sRaw; }
+		/// <summary>The name of the argument.</summary>
+		/// <remarks>Consists only of ASCII letters, numbers and underscore.</remarks>
+		auto &name() const noexcept { return m_sName; }
+		/// <summary>The name of the argument, in all uppercase.</summary>
+		/// <remarks>Uppercase version of <c>name()</c>.</remarks>
+		auto &nameUppercase() const noexcept { return m_sNameUpper; }
+		/// <summary>The value of the argument.</summary>
+		auto &value() const noexcept { return m_sValue; }
+
+
+	private: // variables
+
+		CommandlineArgumentType m_eType = CommandlineArgumentType::Text;
+		std::wstring m_sRaw;
+		std::wstring m_sName;
+		std::wstring m_sNameUpper;
+		std::wstring m_sValue;
+
+	};
+
+	class Commandline
+	{
+	public: // types
+
+		using iterator = std::vector<CommandlineArgument>::const_iterator;
+		using reverse_iterator = std::vector<CommandlineArgument>::const_reverse_iterator;
+
+
+	public: // static methods
+
+		static Commandline &Instance() noexcept { return s_oInstance; }
+
+
+	private: // static variables
+
+		static Commandline s_oInstance;
+
+
+	public: // methods
+
+		auto size() const noexcept { return m_oArgs.size(); }
+		const CommandlineArgument &operator[](size_t iIndex) const { return m_oArgs.at(iIndex); }
+
+		iterator begin() const noexcept { return m_oArgs.begin(); }
+		iterator end() const noexcept { return m_oArgs.end(); }
+		reverse_iterator rbegin() const noexcept { return m_oArgs.rbegin(); }
+		reverse_iterator rend() const noexcept { return m_oArgs.rend(); }
+
+		/// <summary>Search for a flag/named value.</summary>
+		iterator find(const wchar_t *szArgName, bool bCaseSensitive, size_t iStartArg = 0) const;
+		/// <summary>Search for a flag.</summary>
+		iterator findFlag(const wchar_t *szName, bool bCaseSensitive, size_t iStartArg = 0) const;
+		/// <summary>Search for a named value.</summary>
+		iterator findNamedValue(const wchar_t *szName, bool bCaseSensitive, size_t iStartArg = 0)
+			const;
+
+
+	private: // methods
+
+		Commandline();
+		~Commandline() = default;
+
+		iterator findArgInternal(const wchar_t *szArgName, bool bCaseSensitive, size_t iStartArg,
+			bool bFlag, bool bNamedValue) const noexcept;
+
+
+	private: // variables
+
+		std::vector<CommandlineArgument> m_oArgs;
+
+	};
+
 }
 
 
 
 
-
-#undef MAX_PATH
 
 #endif // ROBINLE_COMMANDLINE

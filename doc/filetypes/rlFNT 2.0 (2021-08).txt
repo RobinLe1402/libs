@@ -1,4 +1,4 @@
-﻿Designed for desktop text editors
+﻿PDF version: https://download.robinle.de/specifications/rlFNT-2.0.pdf
 ════════════════════════════════════════════════════════════════════════════════════════════════════
 
 
@@ -146,9 +146,9 @@ ABOUT THIS DOCUMENT
 This document is designed to combine the storage efficiency of text files with the design options
 that the Unicode character set provides (mostly box drawing characters).
 
-As mentioned at the top, this file should be viewed in a desktop text editor - preferrably
-Notepad++, which I am also using to create this document. But in practice, every text file viewer
-that supports UTF-8 and uses monospaced fonts should work.
+This file should be viewed in a desktop text editor - preferrably Notepad++, which I am also using
+to create this document. But in practice, every text file viewer that supports UTF-8 and uses
+monospaced fonts should work.
 Also, the minimum required width for this document's content to displayed as intended is 100
 characters. You can use the horizontal rulers all over this document for reference.
 
@@ -735,7 +735,7 @@ Now on to a detailed list of all possible formats, sorted by <iBinaryFormat>:
                                     0 0 0 0 0 0
                 
                 
-                2. Binary values:   10 01 01 01 10 00
+                3. Binary values:   10 01 01 01 10 00
                                     01 00 00 00 01 00
                                     01 00 00 00 00 00
                                     01 00 00 00 00 00
@@ -746,7 +746,7 @@ Now on to a detailed list of all possible formats, sorted by <iBinaryFormat>:
                                     10 01 01 01 10 00
                                     00 00 00 00 00 00               padding
                                     ││ ││ ││ ││ ││ ││               vv vvvv            │
-                3. Bit layers    #0 │╘═╪╪═╪╪═╪╪═╪╪═╪╪═>0111 0001  0000 0000     = { $71, $00 }
+                4. Bit layers    #0 │╘═╪╪═╪╪═╪╪═╪╪═╪╪═>0111 0001  0000 0000     = { $71, $00 }
                    (per column): #1 ╘══╪╪═╪╪═╪╪═╪╪═╪╪═>1000 1000  1000 0000     = { $88, $80 }
                                        ││ ││ ││ ││ ││                                  │
                                  #0    │╘═╪╪═╪╪═╪╪═╪╪═>1000 1000  1000 0000     = { $88, $80 }
@@ -766,7 +766,7 @@ Now on to a detailed list of all possible formats, sorted by <iBinaryFormat>:
                                                                                        │
                                     ┌──────────────────────────────────────────────────┘
                                     │
-                4. Serialized data: └─> { $71, $00, $88, $80, $88, $80, $00, $00,
+                5. Serialized data: └─> { $71, $00, $88, $80, $88, $80, $00, $00,
                                           $88, $80, $00, $00, $88, $80, $00, $00,
                                           $47, $00, $88, $80, $00, $00, $00, $00 }
                 

@@ -34,7 +34,8 @@ lib::LoadResult_CPI lib::RasterFontFaceCollection::loadFromFile_CPI(const wchar_
 	return loadFromData_CPI(&oData[0], oData.size());
 }
 
-lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromFile_FON(const wchar_t* szFilepath)
+lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromFile_FON(const wchar_t* szFilepath,
+	uint16_t iFallbackCodepage)
 {
 	clear();
 
@@ -43,7 +44,7 @@ lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromFile_FON(const wchar_
 	if (!LoadFileToMemory(szFilepath, oData))
 		return lib::LoadResult_FON::FileNotOpened;
 
-	return loadFromData_FON(&oData[0], oData.size());
+	return loadFromData_FON(&oData[0], oData.size(), iFallbackCodepage);
 }
 
 lib::LoadResult_CPI lib::RasterFontFaceCollection::loadFromData_CPI(const void* pData, size_t iSize)
@@ -229,7 +230,8 @@ lib::LoadResult_CPI lib::RasterFontFaceCollection::loadFromData_CPI(const void* 
 	return result::Success;
 }
 
-lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromData_FON(const void* pData, size_t iSize)
+lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromData_FON(const void* pData, size_t iSize,
+	uint16_t iFallbackCodepage)
 {
 	using result = lib::LoadResult_FON;
 	clear();
@@ -278,9 +280,6 @@ lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromData_FON(const void* 
 
 
 		// go through all resources, try to load FONT data
-		// 
-		// [ToDo: "parser.cpp", line 616 ...]
-
 		while (reader.readVar(rr.wTypeID), rr.wTypeID != 0)
 		{
 			bool bRead = rr.wTypeID == 0x8008; // 0x8000 --> numeric ID; 8 --> font
@@ -303,7 +302,7 @@ lib::LoadResult_FON lib::RasterFontFaceCollection::loadFromData_FON(const void* 
 				const auto result =
 					oFont.loadFromData_FNT(
 						reader.begin() + ((size_t)rte.wOffset << wAlignShift),
-						(size_t)rte.wLength << wAlignShift);
+						(size_t)rte.wLength << wAlignShift, iFallbackCodepage);
 
 				if (result == LoadResult_FNT::Success)
 					m_oFonts.push_back(std::move(oFont));

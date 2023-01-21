@@ -1,9 +1,9 @@
-#include <rl/graphics.opengl.window.hpp>
-#include <rl/graphics.opengl.texture.hpp>
-#include <rl/graphics.fonts.bitmap.reader.hpp>
-#include <rl/input.mouse.hpp>
-#include <rl/input.keyboard.hpp>
-#include <rl/splashscreen.hpp>
+#include "rl/graphics.opengl.window.hpp"
+#include "rl/graphics.opengl.texture.hpp"
+#include "rl/graphics.fonts.bitmap.reader.hpp"
+#include "rl/input.mouse.hpp"
+#include "rl/input.keyboard.hpp"
+#include "rl/splashscreen.hpp"
 
 #include <Windows.h>
 #include <gdiplus.h>
@@ -151,13 +151,13 @@ int WINAPI WinMain(
 	_In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
-	rl::SplashScreen_Config splashcfg(IDB_SPLASH);
+	rl::SplashScreen_Config splashcfg;
 #ifndef _DEBUG
 	splashcfg.bAlwaysOnTop = true;
 #endif // _DEBUG
 
 	splashcfg.bDropShadow = true;
-	rl::SplashScreen::Show(splashcfg);
+	rl::SplashScreen::ShowBitmap(splashcfg, IDB_SPLASH);
 
 
 	GUI gui;

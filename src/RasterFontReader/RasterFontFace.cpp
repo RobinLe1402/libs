@@ -116,17 +116,19 @@ lib::RasterFontFace::RasterFontFace(const RasterFontFace& other) :
 lib::RasterFontFace::RasterFontFace(RasterFontFace&& rval) noexcept :
 	m_oChars(std::move(rval.m_oChars)), m_oMeta(rval.m_oMeta) { }
 
-lib::LoadResult_FNT lib::RasterFontFace::loadFromFile_FNT(const wchar_t* szFilepath)
+lib::LoadResult_FNT lib::RasterFontFace::loadFromFile_FNT(const wchar_t* szFilepath,
+	uint16_t iFallbackCodepage)
 {
 	std::vector<uint8_t> oData;
 
 	if (!LoadFileToMemory(szFilepath, oData))
 		return lib::LoadResult_FNT::FileNotOpened;
 
-	return loadFromData_FNT(&oData[0], oData.size());
+	return loadFromData_FNT(&oData[0], oData.size(), iFallbackCodepage);
 }
 
-lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, size_t iSize)
+lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, size_t iSize,
+	uint16_t iFallbackCodepage)
 {
 	clear();
 
@@ -145,7 +147,12 @@ lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, siz
 			return result::VectorFont;
 		// no codepage equivalent to the character set?
 		if (!CharSetToCodePage(hdr.dfCharSet, m_oMeta.iCodepage))
-			return result::UnknownCharSet;
+		{
+			if ((iFallbackCodepage == 0 || !IsValidCodePage(iFallbackCodepage)))
+				return result::UnknownCharSet;
+
+			m_oMeta.iCodepage = iFallbackCodepage;
+		}
 
 		// check the font version, read/skip extended header
 		switch (hdr.dfVersion)
@@ -249,9 +256,10 @@ lib::LoadResult_FNT lib::RasterFontFace::loadFromData_FNT(const void* pData, siz
 			else
 				reader.readVar(dfBitmapOffset);
 
-			const uint8_t* const pBase = reader.begin() + dfBitmapOffset;
+			if (!CodePageToUnicode(m_oMeta.iCodepage, (uint8_t)i, cRaw))
+				continue;
 
-			CodePageToUnicode((uint8_t)i, m_oMeta.iCodepage, cRaw);
+			const uint8_t* const pBase = reader.begin() + dfBitmapOffset;
 
 			m_oChars.emplace(cRaw, RasterChar(dfCharWidth, hdr.dfPixHeight));
 			auto& oChar = m_oChars.at(cRaw);

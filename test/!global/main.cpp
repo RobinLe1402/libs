@@ -1,11 +1,11 @@
 #include "resource.h"
 
-#include <rl/splashscreen.hpp>
-#include <rl/graphics.opengl.window.hpp>
-#include <rl/graphics.opengl.texture.hpp>
-#include <rl/input.keyboard.hpp>
-#include <rl/input.mouse.hpp>
-#include <rl/visualstyles.h>
+#include "rl/splashscreen.hpp"
+#include "rl/graphics.opengl.window.hpp"
+#include "rl/graphics.opengl.texture.hpp"
+#include "rl/input.keyboard.hpp"
+#include "rl/input.mouse.hpp"
+#include "rl/visualstyles.h"
 
 #include <string>
 #include <Windows.h>
@@ -70,7 +70,7 @@ private:
 		kb.processInput();
 		mouse.processInput();
 
-		if (kb.getKey('A').bHeld)
+		if (kb.getKey('A').held())
 			MessageBoxA(NULL, "Test", NULL, MB_ICONINFORMATION | MB_SYSTEMMODAL);
 
 		auto& mousestate = mouse.getState();
@@ -109,7 +109,7 @@ private:
 
 	void OnAbout() override
 	{
-		if (kb.getKey(VK_SHIFT).bHeld)
+		if (kb.getKey(VK_SHIFT).held())
 			MessageBoxA(getHWND(), "Secret message :P", "Secret", NULL);
 		else
 			rl::OpenGLWin::OnAbout();
@@ -126,11 +126,11 @@ int WINAPI WinMain(
 	_In_ LPSTR szCmdLine,
 	_In_ int iCmdShow)
 {
-	rl::SplashScreen_Config splashconfig(IDB_SPLASH);
+	rl::SplashScreen_Config splashconfig;
 	splashconfig.bDropShadow = true;
 	splashconfig.bAlwaysOnTop = true;
 
-	rl::SplashScreen::Show(splashconfig);
+	rl::SplashScreen::ShowBitmap(splashconfig, IDB_SPLASH);
 
 
 	rl::OpenGLWin_Config openglconfig;

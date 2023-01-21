@@ -13,9 +13,9 @@ namespace rl
 	//==============================================================================================
 	// STATIC VARIABLES
 
-	KeyState* Keyboard::m_oKeyStates = nullptr;
-	bool* Keyboard::m_bStatesOld = nullptr;
-	bool* Keyboard::m_bStatesNew = nullptr;
+	KeyState Keyboard::s_oKeyStates[256] = {};
+	bool Keyboard::s_bStatesOld[256] = {};
+	bool Keyboard::s_bStatesNew[256] = {};
 
 
 
@@ -23,29 +23,6 @@ namespace rl
 
 	//==============================================================================================
 	// METHODS
-
-
-	//----------------------------------------------------------------------------------------------
-	// CONSTRUCTORS, DESTRUCTORS
-
-	Keyboard::Keyboard()
-	{
-		m_oKeyStates = new KeyState[256];
-		m_bStatesOld = new bool[256];
-		m_bStatesNew = new bool[256];
-
-		reset();
-	}
-
-	Keyboard::~Keyboard()
-	{
-		delete[] m_oKeyStates;
-		delete[] m_bStatesOld;
-		delete[] m_bStatesNew;
-	}
-
-
-
 
 
 	//----------------------------------------------------------------------------------------------
@@ -69,61 +46,64 @@ namespace rl
 		switch (uMsg)
 		{
 		case WM_KEYDOWN:
-			m_bStatesNew[wParam] = true;
-			return true;
+			s_bStatesNew[wParam] = true;
+			break;
 
 		case WM_KEYUP:
-			m_bStatesNew[wParam] = false;
-			return true;
+			s_bStatesNew[wParam] = false;
+			break;
 
 		case WM_CHAR:
-			m_cLastInput = (char32_t)wParam;
-			return true;
+			s_cLastInput = (char32_t)wParam;
+			break;
 
 			// Window loses focus --> reset keys to prevent messy state
 		case WM_KILLFOCUS:
 			reset();
+			break;
 
 		default: // non-key message
 			return false;
 		}
+
+		return true;
 	}
 
 	void Keyboard::processInput()
 	{
 		for (uint16_t i = 0; i < 256; i++)
 		{
-			if (m_bStatesOld[i]) // held before
+			if (s_bStatesOld[i]) // held before
 			{
-				m_oKeyStates[i].bPressed = false; // not newly pressed anymore
+				s_oKeyStates[i].iState &= ~KeyStateFlags::iPressed; // not newly pressed anymore
 
-				if (!m_bStatesNew[i]) // not held now --> released
+				if (!s_bStatesNew[i]) // not held now --> released
 				{
-					m_oKeyStates[i].bHeld = false;
-					m_oKeyStates[i].bReleased = true;
+					s_oKeyStates[i].iState &= ~KeyStateFlags::iHeld;
+					s_oKeyStates[i].iState |= KeyStateFlags::iReleased;
 				}
 			}
 
 			else // not held before
 			{
-				m_oKeyStates[i].bReleased = false; // not newly released anymore
+				s_oKeyStates[i].iState &= ~KeyStateFlags::iReleased; // not newly released anymore
 
-				if (m_bStatesNew[i]) // held now --> newly pressed
+				if (s_bStatesNew[i]) // held now --> newly pressed
 				{
-					m_oKeyStates[i].bPressed = true;
-					m_oKeyStates[i].bHeld = true;
+					s_oKeyStates[i].iState |= KeyStateFlags::iPressed;
+					s_oKeyStates[i].iState |= KeyStateFlags::iHeld;
 				}
 			}
 
-			m_bStatesOld[i] = m_bStatesNew[i];
+			s_bStatesOld[i] = s_bStatesNew[i];
 		}
 	}
 
 	void Keyboard::reset()
 	{
-		memset(m_oKeyStates, 0, 256 * sizeof(KeyState));
-		memset(m_bStatesOld, 0, 256 * sizeof(bool));
-		memset(m_bStatesNew, 0, 256 * sizeof(bool));
+		memset(s_oKeyStates, 0, 256 * sizeof(KeyState));
+		memset(s_bStatesOld, 0, 256 * sizeof(bool));
+		memset(s_bStatesNew, 0, 256 * sizeof(bool));
 
 		clearLastChar();
 	}

@@ -1,81 +1,148 @@
-#include "rl/commandline.hpp"
+#include <rl/commandline.hpp>
 
-#include <Shlwapi.h>
-#include <string.h>
+// STL
+#include <locale>
+#include <regex>
+
+// Win32
 #include <Windows.h>
-
-
 
 
 
 namespace rl
 {
-	
-	bool CmdGetPathLen(const wchar_t* szCMD, int* pLen)
+
+	void CommandlineArgument::initialize(const wchar_t *szRawArg)
 	{
-		if (szCMD[0] == L'\0' || szCMD[0] == L' ')
-			return false;
+		m_sRaw = szRawArg;
+		m_sName.clear();
+		m_sNameUpper.clear();
+		m_sValue.clear();
 
-		*pLen = 0;
-		const size_t len = wcslen(szCMD);
 
-		if (szCMD[0] != L'"')
+
+		// named value
+		std::wregex regex{LR"REGEX(^\/(\w+):(.*)$)REGEX"};
+		std::wsmatch matches;
+		if (std::regex_search(m_sRaw, matches, regex))
 		{
-			while (*pLen < len && szCMD[*pLen] != L' ')
-				(*pLen)++;
-			return true;
+			m_eType = CommandlineArgumentType::NamedVal;
+			m_sName = matches[1].str();
+
+			m_sValue = matches[2].str();
 		}
+
+		// flag/text
 		else
 		{
-			if (szCMD[1] == L'\0' || szCMD[1] == L'"')
-				return false;
-
-			*pLen = 1;
-			while (*pLen < len && szCMD[*pLen] != L'"')
-				(*pLen)++;
-
-			if (szCMD[*pLen] != L'"')
+			// flag
+			regex = LR"REGEX(^\/(\w+)$)REGEX";
+			if (std::regex_search(m_sRaw, matches, regex))
 			{
-				*pLen = 0;
-				return false;
+				m_eType = CommandlineArgumentType::Flag;
+				m_sName = matches[1].str();
 			}
 
-			(*pLen)++; // include closing quotes in path length
-			return true;
+			// text
+			else
+				m_eType = CommandlineArgumentType::Text;
+		}
+
+
+		// generate uppercase name
+		m_sNameUpper = m_sName;
+		if (!m_sNameUpper.empty())
+		{
+			std::locale loc;
+			for (size_t i = 0; i < m_sNameUpper.length(); ++i)
+			{
+				m_sNameUpper[i] = std::toupper(m_sNameUpper[i], loc);
+			}
 		}
 	}
 
-	bool CmdGetInOutPaths(const wchar_t* szCMD, wchar_t(&szPathIn)[MAX_PATH + 1],
-		wchar_t(&szPathOut)[MAX_PATH + 1])
+
+
+	Commandline Commandline::s_oInstance;
+
+	Commandline::Commandline()
 	{
-		const size_t len = wcslen(szCMD);
-		int iParamOffset = 0;
-		rl::CmdGetPathLen(szCMD, &iParamOffset);
-		iParamOffset++; // skip space
+		auto szCommandline = GetCommandLineW();
+		int argc = 0;
+		auto argv = CommandLineToArgvW(szCommandline, &argc);
 
-		int iInPathLen = 0;
-		if (!rl::CmdGetPathLen(szCMD + iParamOffset, &iInPathLen))
-			return false; // no input path
-		if ((size_t)iParamOffset + iInPathLen == len)
-			return false; // no more space for output path
-
-		int iOutPathLen = 0;
-		if (!rl::CmdGetPathLen(szCMD + iParamOffset + iInPathLen + 1, &iOutPathLen))
-			return false; // no output path
-		if ((size_t)iParamOffset + iInPathLen + 1 + iOutPathLen < len)
-			return false; // additional parameters
-
-		memcpy_s(szPathIn, sizeof(wchar_t) * (MAX_PATH + 1), szCMD + iParamOffset,
-			sizeof(wchar_t) * iInPathLen);
-		szPathIn[iInPathLen] = L'\0'; // append terminating zero
-		PathUnquoteSpacesW(szPathIn); // remove quotes
-
-		memcpy_s(szPathOut, sizeof(wchar_t) * (MAX_PATH + 1),
-			szCMD + iParamOffset + iInPathLen + 1, sizeof(wchar_t) * iOutPathLen);
-		szPathOut[iOutPathLen] = L'\0'; // append terminating zero
-		PathUnquoteSpacesW(szPathOut); // remove quotes
-
-		return true;
+		for (size_t i = 0; i < argc; ++i)
+		{
+			CommandlineArgument oArg;
+			oArg.initialize(argv[i]);
+			m_oArgs.push_back(std::move(oArg));
+		}
 	}
-	
+
+	Commandline::iterator Commandline::find(const wchar_t *szArgName, bool bCaseSensitive,
+		size_t iStartArg) const
+	{
+		return findArgInternal(szArgName, bCaseSensitive, iStartArg, true, true);
+	}
+
+	Commandline::iterator Commandline::findFlag(const wchar_t *szName, bool bCaseSensitive,
+		size_t iStartArg) const
+	{
+		return findArgInternal(szName, bCaseSensitive, iStartArg, true, false);
+	}
+
+	Commandline::iterator Commandline::findNamedValue(const wchar_t *szName, bool bCaseSensitive,
+		size_t iStartArg) const
+	{
+		return findArgInternal(szName, bCaseSensitive, iStartArg, false, true);
+	}
+
+	Commandline::iterator Commandline::findArgInternal(const wchar_t *szArgName,
+		bool bCaseSensitive, size_t iStartArg, bool bFlag, bool bNamedValue) const noexcept
+	{
+		if (iStartArg >= size())
+			return end();
+
+		std::wstring sArgName = szArgName;
+		if (!bCaseSensitive)
+		{
+			std::locale loc;
+			for (size_t i = 0; i < sArgName.length(); ++i)
+			{
+				sArgName[i] = std::toupper(sArgName[i], loc);
+			}
+		}
+
+		for (auto it = begin() + iStartArg; it != end(); ++it)
+		{
+			switch (it->type())
+			{
+			case CommandlineArgumentType::Text:
+				continue;
+			case CommandlineArgumentType::Flag:
+				if (bFlag)
+					break;
+				continue;
+			case CommandlineArgumentType::NamedVal:
+				if (bNamedValue)
+					break;
+				continue;
+			}
+
+
+			if (bCaseSensitive)
+			{
+				if (it->name() == sArgName)
+					return it;
+			}
+			else
+			{
+				if (it->nameUppercase() == sArgName)
+					return it;
+			}
+		}
+
+		return end();
+	}
+
 }

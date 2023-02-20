@@ -30,6 +30,18 @@
     <ClInclude Include="..\..\..\include\rl\dll\rlPixelWindow\Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PrivateIncludes\Layer.hpp">
+      <Filter>Header Files\Private</Filter>
+    </ClInclude>
+    <ClInclude Include="PrivateCore.hpp">
+      <Filter>Header Files\Private</Filter>
+    </ClInclude>
+    <ClInclude Include="DllResources.h">
+      <Filter>Header Files\Private</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Window.cpp">
@@ -41,5 +53,21 @@
     <ClCompile Include="WindowInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Layer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PrivateCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="rlPixelWindow.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\RobinLe.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

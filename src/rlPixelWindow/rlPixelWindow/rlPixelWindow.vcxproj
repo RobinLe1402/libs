@@ -134,12 +134,24 @@
     <ClInclude Include="..\..\..\include\rl\dll\rlPixelWindow\Core.h" />
     <ClInclude Include="..\..\..\include\rl\dll\rlPixelWindow\Definitions.h" />
     <ClInclude Include="..\..\..\include\rl\dll\rlPixelWindow\Types.h" />
+    <ClInclude Include="PrivateCore.hpp" />
+    <ClInclude Include="PrivateIncludes\Layer.hpp" />
     <ClInclude Include="PrivateIncludes\Window.hpp" />
+    <ClInclude Include="DllResources.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Layer.cpp" />
     <ClCompile Include="Misc.cpp" />
+    <ClCompile Include="PrivateCore.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowInterface.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="rlPixelWindow.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\RobinLe.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

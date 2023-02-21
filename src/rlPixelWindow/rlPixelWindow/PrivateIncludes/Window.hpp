@@ -37,14 +37,14 @@ namespace internal
 			HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 
-	private: // static variables
-
-		static Window s_oInstance;
-
-
 	public: // static methods
 
-		static Window &instance() { return s_oInstance; }
+		static Window &instance()
+		{
+			static Window oInstance;
+
+			return oInstance;
+		}
 
 
 	public: // methods

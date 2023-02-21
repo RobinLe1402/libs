@@ -6,8 +6,6 @@
 
 #include <gl/GL.h>
 
-internal::Window internal::Window::s_oInstance;
-
 namespace
 {
 	constexpr wchar_t szWNDCLASSNAME[] = L"rlPixelWindow";
@@ -17,10 +15,10 @@ namespace
 LRESULT CALLBACK internal::Window::GlobalWindowProc(
 	HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (s_oInstance.m_hWnd == NULL)
-		s_oInstance.m_hWnd = hWnd;
+	if (instance().m_hWnd == NULL)
+		instance().m_hWnd = hWnd;
 
-	return s_oInstance.localWindowProc(uMsg, wParam, lParam);
+	return instance().localWindowProc(uMsg, wParam, lParam);
 }
 
 void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreateParams *pParams)
@@ -296,10 +294,10 @@ internal::Window::Window()
 	wc.lpszClassName = szWNDCLASSNAME;
 	wc.lpfnWndProc   = &internal::Window::GlobalWindowProc;
 	wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-	wc.hIcon         = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_ROBINLE), IMAGE_ICON,
-		iIconSizeBig, iIconSizeBig, LR_SHARED);
-	wc.hIcon         = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_ROBINLE), IMAGE_ICON,
-		iIconSizeSmall, iIconSizeSmall, LR_SHARED);
+	wc.hIcon         = (HICON)LoadImage(internal::GetDLLHandle(), MAKEINTRESOURCE(IDI_ROBINLE),
+		IMAGE_ICON, iIconSizeBig, iIconSizeBig, LR_SHARED);
+	wc.hIconSm       = (HICON)LoadImage(internal::GetDLLHandle(), MAKEINTRESOURCE(IDI_ROBINLE),
+		IMAGE_ICON, iIconSizeSmall, iIconSizeSmall, LR_SHARED);
 	wc.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 
 	if (!RegisterClassExW(&wc))

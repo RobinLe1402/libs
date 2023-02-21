@@ -21,8 +21,6 @@
 #define PXWIN_API EXTERN_C __declspec(dllimport)
 #endif
 
-#define PXWIN_CONV __stdcall
-
 
 
 
@@ -30,6 +28,7 @@
 //==================================================================================================
 // INCLUDES
 
+#include "Definitions.h"
 #include "Types.h"
 
 #include <stdint.h>
@@ -87,6 +86,16 @@ PXWIN_API PixelWindowOSError PXWIN_CONV rlPixelWindow_GetOSError();
 PXWIN_API PixelWindowRes PXWIN_CONV rlPixelWindow_DefMsgHandler(
 	PixelWindow p, PixelWindowMsg msg, PixelWindowArg arg1, PixelWindowArg arg2);
 
+/// <summary>
+/// Create a pixel by an ARGB value.
+/// </summary>
+PXWIN_API PixelWindowPixel PXWIN_CONV rlPixelWindow_ARGB(uint32_t iARGB);
+
+/// <summary>
+/// Create a pixel by an RGB value.
+/// </summary>
+PXWIN_API PixelWindowPixel PXWIN_CONV rlPixelWindow_RGB(uint32_t iRGB);
+
 
 
 PXWIN_API PixelWindow PXWIN_CONV rlPixelWindow_Create(PixelWindowProc pUpdateCallback,
@@ -94,6 +103,26 @@ PXWIN_API PixelWindow PXWIN_CONV rlPixelWindow_Create(PixelWindowProc pUpdateCal
 PXWIN_API void PXWIN_CONV rlPixelWindow_Destroy(PixelWindow p);
 
 PXWIN_API void PXWIN_CONV rlPixelWindow_Run(PixelWindow p);
+
+/// <summary>
+/// Draw a subimage onto a layer.
+/// </summary>
+/// <param name="pData">The buffer containing the pixel data of the subimage.</param>
+/// <param name="iWidth">Width of the subimage.</param>
+/// <param name="iHeight">Height of the subimage.</param>
+/// <param name="iLayer">The ID of the layer to draw the subimage on.</param>
+/// <param name="iX">X coordinate of where to draw the subimage.</param>
+/// <param name="iY">Y coordinate of where to draw the subimage.</param>
+/// <param name="iFlags">Binary flags, one or more of the <c>PXWIN_DRAW_</c> parameters.</param>
+/// <param name="iAlphaMode">One of the <c>PXWIN_DRAWALPHA_</c> values.</param>
+PXWIN_API void PXWIN_CONV rlPixelWindow_Draw(PixelWindow p,
+	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
+	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags, uint8_t iAlphaMode);
+
+/// <summary>
+/// Set the background color of a Pixel window.
+/// </summary>
+PXWIN_API void PXWIN_CONV rlPixelWindow_SetBackgroundColor(PixelWindow p, PixelWindowPixel px);
 
 
 

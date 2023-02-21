@@ -31,7 +31,7 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 
 	// check parameters
 	if (!fnCallback ||
-		pParams->iWidth      == 0 || pParams->iHeight      == 0 ||
+		pParams->iWidth == 0 || pParams->iHeight == 0 ||
 		pParams->iPixelWidth == 0 || pParams->iPixelHeight == 0)
 	{
 		SetError(PXWIN_ERROR_INVALID_PARAM);
@@ -42,12 +42,13 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 
 	// copy parameters
 	m_fnCallback   = fnCallback;
+	m_fnOSCallback = pParams->fnOSCallback;
 	m_iWidth       = pParams->iWidth;
 	m_iHeight      = pParams->iHeight;
 	m_iPixelWidth  = pParams->iPixelWidth;
 	m_iPixelHeight = pParams->iPixelHeight;
 	m_oLayers.reserve((size_t)pParams->iExtraLayers + 1);
-	m_bResizable   = (pParams->iFlags & PXWIN_CREATE_RESIZABLE)   != 0;
+	m_bResizable   = (pParams->iFlags & PXWIN_CREATE_RESIZABLE) != 0;
 	m_bMaximizable = (pParams->iFlags & PXWIN_CREATE_MAXIMIZABLE) != 0;
 	m_pxBackground = pParams->pxBackground;
 	m_pxBackground.alpha = 0xFF;
@@ -65,8 +66,8 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	{
 		.left   = 0,
 		.top    = 0,
-		.right  = m_iWidth,
-		.bottom = m_iHeight
+		.right  = m_iWidth  * m_iPixelWidth,
+		.bottom = m_iHeight * m_iPixelHeight
 	};
 	AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
 	m_hWnd = CreateWindowExW(dwExStyle, szWNDCLASSNAME, L"RobinLe PixelWindow", dwStyle,
@@ -153,7 +154,12 @@ void internal::Window::update(uint8_t iReason)
 	glClear(GL_COLOR_BUFFER_BIT);
 	for (size_t i = 0; i < m_oLayers.size(); ++i)
 	{
-		glBindTexture(GL_TEXTURE_2D, m_oLayerTextures[i]);
+		glBindTexture(GL_TEXTURE_2D, m_oLayers[i].iTexID);
+
+		if (m_oLayers[i].bChanged)
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_iWidth, m_iHeight, GL_RGBA, GL_UNSIGNED_BYTE,
+				m_oLayers[i].upData.get());
+
 		glBegin(GL_QUADS);
 		{
 			glTexCoord2f(0.0, 1.0);	glVertex3f(-1.0f, -1.0f, 0.0f);
@@ -166,6 +172,117 @@ void internal::Window::update(uint8_t iReason)
 
 	SwapBuffers(GetDC(m_hWnd));
 
+}
+
+void internal::Window::draw(
+	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
+	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags, uint8_t iAlphaMode)
+{
+	if (iLayer >= m_oLayers.size() || iX >= m_iWidth || iY >= m_iHeight)
+		return;
+
+	const bool bFlip = (iFlags & PXWIN_DRAW_VERTFLIP) != 0;
+
+	switch (iAlphaMode)
+	{
+		// overwrite all pixels
+	case PXWIN_DRAWALPHA_OVERRIDE:
+		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_iWidth;
+			++iRelX, ++iAbsX)
+		{
+			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
+				++iRelY, ++iAbsY)
+			{
+				const auto px = pData[(bFlip ? iRelY : iHeight - 1 - iRelY) * iWidth + iRelX];
+
+				m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
+			}
+		}
+		break;
+
+
+		// ignore pixels that are not fully opaque
+	case PXWIN_DRAWALPHA_BINARY:
+		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_iWidth;
+			++iRelX, ++iAbsX)
+		{
+			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
+				++iRelY, ++iAbsY)
+			{
+				const auto px = pData[(bFlip ? iRelY : iHeight - 1 - iRelY) * iWidth + iRelX];
+
+				if (px.alpha == 0xFF)
+					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
+			}
+		}
+		break;
+
+
+		// consider alpha values
+	case PXWIN_DRAWALPHA_ADD:
+		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_iWidth; ++iRelX, ++iAbsX)
+		{
+			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
+				++iRelY, ++iAbsY)
+			{
+				const auto px = pData[(bFlip ? iRelY : iHeight - 1 - iRelY) * iWidth + iRelX];
+
+				switch (px.alpha)
+				{
+				case 0: // fully transparent
+					// do nothing
+					break;
+
+				case 0xFF: // fully opaque
+					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
+					break;
+
+				default: // partly transparent
+				{
+					const auto &pxOld = m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX];
+					PixelWindowPixel pxNew;
+
+					if (pxOld.alpha == 0)
+						pxNew = px;
+					else if (px.alpha == 0)
+						pxNew = pxOld;
+					else
+					{
+						// Porter-Duff algorithm
+
+						const float fAlphaOld = pxOld.alpha / 255.0f;
+						const float fAlphaAdd = px.alpha / 255.0f;
+
+						float fAlphaNew = fAlphaAdd + (1.0f - fAlphaAdd) * fAlphaOld;
+						if (fAlphaNew > 1.0f)
+							fAlphaNew = 1.0f;
+						pxNew.alpha = uint8_t(fAlphaNew * 255);
+
+						const float fFactorGlobal = 1 / fAlphaNew;
+						const float fFactorOld = (1 - fAlphaAdd) * fAlphaOld;
+						pxNew.r = uint8_t(fFactorGlobal * (fAlphaAdd * px.r + fFactorOld * pxOld.r));
+						pxNew.g = uint8_t(fFactorGlobal * (fAlphaAdd * px.g + fFactorOld * pxOld.g));
+						pxNew.b = uint8_t(fFactorGlobal * (fAlphaAdd * px.b + fFactorOld * pxOld.b));
+					}
+
+					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = pxNew;
+				}
+				}
+			}
+		}
+		break;
+
+	default:
+		SetError(PXWIN_ERROR_INVALID_PARAM);
+		return;
+	}
+
+	m_oLayers[iLayer].bChanged = true;
+}
+
+void internal::Window::setBackgroundColor(PixelWindowPixel px)
+{
+	glClearColor(px.r / 255.0f, px.g / 255.0f, px.b / 255.0f, 1.0f);
 }
 
 internal::Window::Window()
@@ -192,8 +309,8 @@ internal::Window::Window()
 
 		const size_t len =
 			std::wcslen(szMessagePraefix) +
-			std::wcslen(szWNDCLASSNAME)   +
-			std::wcslen(szMessageSuffix)  + 1;
+			std::wcslen(szWNDCLASSNAME) +
+			std::wcslen(szMessageSuffix) + 1;
 
 		wchar_t *szMessage = new wchar_t[len];
 		szMessage[0] = 0; // terminating zero
@@ -214,6 +331,9 @@ internal::Window::~Window()
 
 LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	if (m_fnOSCallback)
+		m_fnOSCallback(intfPtr(), m_hWnd, uMsg, wParam, lParam);
+
 	switch (uMsg)
 	{
 	case WM_CREATE:
@@ -259,27 +379,26 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		
+
 
 		// create layers
 		const size_t iPixelCount = (size_t)m_iWidth * m_iHeight;
 		const size_t iLayerSize  = iPixelCount * sizeof(PixelWindowPixel);
 		for (size_t i = 0; i < (size_t)m_iExtraLayers + 1; i++)
 		{
-			m_oLayers.push_back(std::make_unique<PixelWindowPixel[]>(iPixelCount));
-			memset(m_oLayers.back().get(), 0, iLayerSize); // 0x00000000 = blank
+			m_oLayers.push_back({});
+			auto &oLayer = m_oLayers.back();
+			oLayer.upData = std::make_unique<PixelWindowPixel[]>((size_t)m_iWidth * m_iHeight);
+			memset(oLayer.upData.get(), 0, iLayerSize); // 0x00000000 = blank
 
-			GLuint iTexture = 0;
-			glGenTextures(1, &iTexture);
-			glBindTexture(GL_TEXTURE_2D, iTexture);
+			glGenTextures(1, &oLayer.iTexID);
+			glBindTexture(GL_TEXTURE_2D, oLayer.iTexID);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_iWidth, m_iHeight, 0, GL_RGBA,
-				GL_UNSIGNED_BYTE, m_oLayers.back().get());
-
-			m_oLayerTextures.push_back(iTexture);
+				GL_UNSIGNED_BYTE, oLayer.upData.get());
 		}
 
 		auto &cs = *reinterpret_cast<LPCREATESTRUCTW>(lParam);
@@ -295,9 +414,9 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	case WM_DESTROY:
 		m_fnCallback(intfPtr(), PXWINMSG_DESTROY, 0, 0);
-		for (auto i : m_oLayerTextures)
-			glDeleteTextures(1, &i);
-		m_oLayerTextures.clear();
+		for (auto &o : m_oLayers)
+			glDeleteTextures(1, &o.iTexID);
+		m_oLayers.clear();
 		wglDeleteContext(m_hGLRC);
 		m_hGLRC = NULL;
 		PostQuitMessage(0);

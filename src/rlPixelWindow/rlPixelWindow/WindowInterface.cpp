@@ -49,3 +49,31 @@ void rlPixelWindow_Run(PixelWindow p)
 
 	IntfToImpl(p)->run();
 }
+
+void rlPixelWindow_Draw(PixelWindow p,
+	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight, 
+	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags, uint8_t iAlphaMode)
+{
+	internal::ResetError();
+
+	if (!p)
+	{
+		internal::SetError(PXWIN_ERROR_INVALID_PARAM);
+		return;
+	}
+
+	IntfToImpl(p)->draw(pData, iWidth, iHeight, iLayer, iX, iY, iFlags, iAlphaMode);
+}
+
+void rlPixelWindow_SetBackgroundColor(PixelWindow p, PixelWindowPixel px)
+{
+	internal::ResetError();
+
+	if (!p)
+	{
+		internal::SetError(PXWIN_ERROR_INVALID_PARAM);
+		return;
+	}
+
+	IntfToImpl(p)->setBackgroundColor(px);
+}

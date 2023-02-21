@@ -106,7 +106,7 @@ PXWIN_API PixelWindowOSError rlPixelWindow_GetOSError()
 	return iLastOSError;
 }
 
-PXWIN_API PixelWindowRes PXWIN_CONV rlPixelWindow_DefMsgHandler(
+PXWIN_API PixelWindowRes rlPixelWindow_DefMsgHandler(
 	PixelWindow p, PixelWindowMsg msg, PixelWindowArg arg1, PixelWindowArg arg2)
 {
 	switch (msg)
@@ -119,6 +119,32 @@ PXWIN_API PixelWindowRes PXWIN_CONV rlPixelWindow_DefMsgHandler(
 	default:
 		return 0;
 	}
+}
+
+PixelWindowPixel rlPixelWindow_ARGB(uint32_t iARGB)
+{
+	PixelWindowPixel result
+	{
+		.r     = uint8_t(iARGB >> 16),
+		.g     = uint8_t(iARGB >> 8),
+		.b     = uint8_t(iARGB),
+		.alpha = uint8_t(iARGB >> 24)
+	};
+
+	return result;
+}
+
+PixelWindowPixel rlPixelWindow_RGB(uint32_t iRGB)
+{
+	PixelWindowPixel result
+	{
+		.r     = uint8_t(iRGB >> 16),
+		.g     = uint8_t(iRGB >> 8),
+		.b     = uint8_t(iRGB),
+		.alpha = 0xFF
+	};
+
+	return result;
 }
 
 

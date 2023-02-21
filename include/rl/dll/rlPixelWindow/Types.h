@@ -6,7 +6,10 @@
 
 
 
+#include "Definitions.h"
+
 #include <stdint.h>
+#include <Windows.h>
 
 
 
@@ -24,8 +27,10 @@ typedef uint32_t PixelWindowMsg; // Callback message.
 typedef uint64_t PixelWindowArg; // Callback argument.
 typedef uint64_t PixelWindowRes; // Callback result/error code.
 
-typedef PixelWindowRes(*PixelWindowProc)(PixelWindow p, PixelWindowMsg msg,
+typedef PixelWindowRes(PXWIN_CONV  *PixelWindowProc)(PixelWindow p, PixelWindowMsg msg,
 	PixelWindowArg arg1, PixelWindowArg arg2);
+typedef void(PXWIN_CONV *PixelWindowOSProc)(PixelWindow p,
+	HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 
 /// <summary>
@@ -47,8 +52,7 @@ typedef struct tagPixelWindowPixel
 #define PXWIN_COLOR_GREEN (PixelWindowPixel{ 0x00, 0xFF, 0x00, 0xFF })
 #define PXWIN_COLOR_BLUE  (PixelWindowPixel{ 0x00, 0x00, 0xFF, 0xFF })
 
-const PixelWindowPixel px = PXWIN_COLOR_BLANK;
-
+typedef uint8_t  PixelWindowBool;
 typedef uint16_t PixelWindowSize;
 typedef uint16_t PixelWindowPixelSize;
 typedef uint32_t PixelWindowPos;
@@ -66,6 +70,8 @@ typedef struct tagPixelWindowCreateParams
 
 	uint32_t             iFlags;       // Combination of PXWIN_CREATE_[...] flags.
 	intptr_t             iUserData;    // Custom user data.
+
+	PixelWindowOSProc    fnOSCallback; // Callback for OS messages.
 } PixelWindowCreateParams;
 
 

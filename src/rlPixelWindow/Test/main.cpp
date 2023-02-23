@@ -49,7 +49,7 @@ protected:
 				}
 			}
 
-			draw(imgText, 8, sizeof(iText), 0, 1, 1, PXWIN_DRAW_VERTFLIP, 0);
+			draw(imgText, 8, sizeof(iText), 0, 1, 1, 0);
 		}
 		break;
 
@@ -66,7 +66,7 @@ protected:
 			PixelWindowPixel px = PXWIN_COLOR_BLACK;
 			if (oSpaceStatus.held())
 				px = PXWIN_COLOR_WHITE;
-			draw(&px, 1, 1, 1, 5, 2, 0, 0);
+			draw(&px, 1, 1, 1, 5, 2, 0);
 
 			if (!bFirstDraw)
 				break;
@@ -75,10 +75,10 @@ protected:
 			PixelWindowPixel imgTest[9]{};
 			imgTest[4] = PXWIN_COLOR_RED;
 			imgTest[4].alpha = 128;
-			draw(imgTest, 3, 3, 0, 0, 0, 0, PXWIN_DRAWALPHA_ADD);
+			draw(imgTest, 3, 3, 0, 0, 0, PXWIN_DRAWALPHA_ADD);
 
 			PixelWindowPixel img = PXWIN_COLOR_RED;
-			draw(&img, 1, 1, 1, 1, 2, 0, PXWIN_DRAWALPHA_OVERRIDE);
+			draw(&img, 1, 1, 1, 1, 2, PXWIN_DRAWALPHA_OVERRIDE);
 		}
 		}
 
@@ -117,7 +117,7 @@ int main()
 
 	WinImpl win;
 	std::printf("Creating window...\n");
-	if (!win.create(300, 150, 5, 5, 1))
+	if (!win.create(300, 150, 5, 5, 1, L"rlPixelWindow Test Application"))
 	{
 		std::printf("Window creation failed.\n");
 		return 1;

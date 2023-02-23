@@ -59,8 +59,7 @@ namespace internal
 		void update(uint8_t iReason);
 
 		void draw(const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
-			uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags,
-			uint8_t iAlphaMode);
+			uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode);
 
 		void setBackgroundColor(PixelWindowPixel px);
 

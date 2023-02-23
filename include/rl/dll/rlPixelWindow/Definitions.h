@@ -71,8 +71,6 @@
 #define PXWIN_UPDATEREASON_RESIZE  1 // Window was resized
 #define PXWIN_UPDATEREASON_START   2 // First time drawing before window is shown
 
-#define PXWIN_DRAW_VERTFLIP          1 // Flip vertically before drawing
-
 #define PXWIN_DRAWALPHA_OVERRIDE 0 // Force fully transparent pixels
 #define PXWIN_DRAWALPHA_BINARY   1 // Only use fully opaque pixels (alpha = 255)
 #define PXWIN_DRAWALPHA_ADD      2 // Add part-transparent pixels to the current pixel values.

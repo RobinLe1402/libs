@@ -56,7 +56,8 @@ namespace rl
 
 			bool create(PixelWindowSize iWidth, PixelWindowSize iHeight,
 				PixelWindowPixelSize iPixelWidth = 1, PixelWindowPixelSize iPixelHeight = 1,
-				uint32_t iExtraLayers = 0, bool bMaximizable = false, bool bResizable = false)
+				uint32_t iExtraLayers = 0, const wchar_t *szTitle = nullptr,
+				bool bMaximizable = false, bool bResizable = false)
 			{
 				PixelWindowCreateParams cp{};
 
@@ -72,6 +73,8 @@ namespace rl
 				cp.iHeight      = iHeight;
 				cp.iPixelWidth  = iPixelWidth;
 				cp.iPixelHeight = iPixelHeight;
+
+				cp.szTitle      = szTitle;
 				
 				cp.fnOSCallback = GlobalOSMessageProc;
 
@@ -90,11 +93,9 @@ namespace rl
 
 			void draw(const PixelWindowPixel *pData,
 				PixelWindowSize iWidth, PixelWindowSize iHeight,
-				uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags,
-				uint8_t iAlphaMode)
+				uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode)
 			{
-				rlPixelWindow_Draw(intfObj(), pData, iWidth, iHeight, iLayer, iX, iY, iFlags,
-					iAlphaMode);
+				rlPixelWindow_Draw(intfObj(), pData, iWidth, iHeight, iLayer, iX, iY, iAlphaMode);
 			}
 
 			void setBackgroundColor(PixelWindowPixel px)

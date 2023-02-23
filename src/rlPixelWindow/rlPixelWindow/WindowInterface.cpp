@@ -52,7 +52,7 @@ void rlPixelWindow_Run(PixelWindow p)
 
 void rlPixelWindow_Draw(PixelWindow p,
 	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight, 
-	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags, uint8_t iAlphaMode)
+	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode)
 {
 	internal::ResetError();
 
@@ -62,7 +62,7 @@ void rlPixelWindow_Draw(PixelWindow p,
 		return;
 	}
 
-	IntfToImpl(p)->draw(pData, iWidth, iHeight, iLayer, iX, iY, iFlags, iAlphaMode);
+	IntfToImpl(p)->draw(pData, iWidth, iHeight, iLayer, iX, iY, iAlphaMode);
 }
 
 void rlPixelWindow_SetBackgroundColor(PixelWindow p, PixelWindowPixel px)

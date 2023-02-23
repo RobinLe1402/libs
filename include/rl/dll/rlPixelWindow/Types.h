@@ -27,7 +27,7 @@ typedef uint32_t PixelWindowMsg; // Callback message.
 typedef uint64_t PixelWindowArg; // Callback argument.
 typedef uint64_t PixelWindowRes; // Callback result/error code.
 
-typedef PixelWindowRes(PXWIN_CONV  *PixelWindowProc)(PixelWindow p, PixelWindowMsg msg,
+typedef PixelWindowRes(PXWIN_CONV *PixelWindowProc)(PixelWindow p, PixelWindowMsg msg,
 	PixelWindowArg arg1, PixelWindowArg arg2);
 typedef void(PXWIN_CONV *PixelWindowOSProc)(PixelWindow p,
 	HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -70,6 +70,8 @@ typedef struct tagPixelWindowCreateParams
 
 	uint32_t             iFlags;       // Combination of PXWIN_CREATE_[...] flags.
 	intptr_t             iUserData;    // Custom user data.
+
+	const wchar_t       *szTitle;      // The initial title of the window.
 
 	PixelWindowOSProc    fnOSCallback; // Callback for OS messages.
 } PixelWindowCreateParams;

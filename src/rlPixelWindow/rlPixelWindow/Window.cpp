@@ -68,7 +68,13 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 		.bottom = m_iHeight * m_iPixelHeight
 	};
 	AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
-	m_hWnd = CreateWindowExW(dwExStyle, szWNDCLASSNAME, L"RobinLe PixelWindow", dwStyle,
+
+	constexpr wchar_t szDefTitle[] = L"RobinLe PixelWindow";
+	const wchar_t *szTitle = pParams->szTitle;
+	if (!szTitle)
+		szTitle = szDefTitle;
+
+	m_hWnd = CreateWindowExW(dwExStyle, szWNDCLASSNAME, szTitle, dwStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
 		NULL, NULL, NULL, (LPVOID)pParams->iUserData);
 
@@ -174,12 +180,10 @@ void internal::Window::update(uint8_t iReason)
 
 void internal::Window::draw(
 	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
-	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags, uint8_t iAlphaMode)
+	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode)
 {
 	if (iLayer >= m_oLayers.size() || iX >= m_iWidth || iY >= m_iHeight)
 		return;
-
-	const bool bFlip = (iFlags & PXWIN_DRAW_VERTFLIP) != 0;
 
 	switch (iAlphaMode)
 	{
@@ -191,7 +195,7 @@ void internal::Window::draw(
 			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
 				++iRelY, ++iAbsY)
 			{
-				const auto px = pData[(bFlip ? iRelY : iHeight - 1 - iRelY) * iWidth + iRelX];
+				const auto px = pData[iRelY * iWidth + iRelX];
 
 				m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
 			}
@@ -207,7 +211,7 @@ void internal::Window::draw(
 			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
 				++iRelY, ++iAbsY)
 			{
-				const auto px = pData[(bFlip ? iRelY : iHeight - 1 - iRelY) * iWidth + iRelX];
+				const auto px = pData[iRelY * iWidth + iRelX];
 
 				if (px.alpha == 0xFF)
 					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
@@ -223,7 +227,7 @@ void internal::Window::draw(
 			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
 				++iRelY, ++iAbsY)
 			{
-				const auto px = pData[(bFlip ? iRelY : iHeight - 1 - iRelY) * iWidth + iRelX];
+				const auto px = pData[iRelY * iWidth + iRelX];
 
 				switch (px.alpha)
 				{

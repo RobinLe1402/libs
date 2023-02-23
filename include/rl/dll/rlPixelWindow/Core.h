@@ -113,11 +113,10 @@ PXWIN_API void PXWIN_CONV rlPixelWindow_Run(PixelWindow p);
 /// <param name="iLayer">The ID of the layer to draw the subimage on.</param>
 /// <param name="iX">X coordinate of where to draw the subimage.</param>
 /// <param name="iY">Y coordinate of where to draw the subimage.</param>
-/// <param name="iFlags">Binary flags, one or more of the <c>PXWIN_DRAW_</c> parameters.</param>
 /// <param name="iAlphaMode">One of the <c>PXWIN_DRAWALPHA_</c> values.</param>
 PXWIN_API void PXWIN_CONV rlPixelWindow_Draw(PixelWindow p,
 	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
-	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iFlags, uint8_t iAlphaMode);
+	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode);
 
 /// <summary>
 /// Set the background color of a Pixel window.

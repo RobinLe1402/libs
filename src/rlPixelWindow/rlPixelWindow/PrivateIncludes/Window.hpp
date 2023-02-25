@@ -36,6 +36,9 @@ namespace internal
 		static LRESULT CALLBACK GlobalWindowProc(
 			HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+		static DWORD GetStyle(bool bResizable, bool bMaximizable,
+			bool bMinimizable = true, bool bMaximized = false);
+
 
 	public: // static methods
 
@@ -45,6 +48,11 @@ namespace internal
 
 			return oInstance;
 		}
+
+		static PixelWindowSizeStruct MinSize(
+			PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+			bool bResizable, bool bMaximizable, bool bMinimizable = true);
+
 
 
 	public: // methods
@@ -76,29 +84,42 @@ namespace internal
 
 		float getElapsedTime(bool bAdvance = false);
 
+		void resize(PixelWindowSize iWidth, PixelWindowSize iHeight);
+
+		void calcFrameSize();
+
 
 	private: // variables
 
+		// fully internal data
+
 		bool m_bInitialized = false;
 		bool m_bRunning     = false;
-		std::function<PixelWindowRes(PixelWindow, PixelWindowMsg, PixelWindowArg, PixelWindowArg)>
-			m_fnCallback;
-		std::function<void(PixelWindow, HWND, UINT, WPARAM, LPARAM)> m_fnOSCallback;
-
-		PixelWindowSize      m_iWidth      = 0, m_iHeight      = 0;
-		PixelWindowPixelSize m_iPixelWidth = 0, m_iPixelHeight = 0;
-		bool     m_bResizable   = false;
-		bool     m_bMaximizable = false;
-
-		PixelWindowPixel m_pxBackground = PXWIN_COLOR_BLACK;
-		uint32_t m_iExtraLayers = 0;
-		std::vector<Layer> m_oLayers;
 
 		HWND  m_hWnd  = NULL;
 		HGLRC m_hGLRC = NULL;
 
 		std::chrono::time_point<std::chrono::system_clock> m_tpLastUpdate;
 		std::chrono::time_point<std::chrono::system_clock> m_tpNow;
+
+		uint32_t m_iWindowFrameWidth = 0;
+		uint32_t m_iWindowFrameHeight = 0;
+
+
+		// user configurated data
+		std::function<PixelWindowRes(PixelWindow, PixelWindowMsg, PixelWindowArg, PixelWindowArg)>
+			m_fnCallback;
+		std::function<void(PixelWindow, HWND, UINT, WPARAM, LPARAM)> m_fnOSCallback;
+
+		PixelWindowSize      m_iWidth      = 0, m_iHeight      = 0;
+		PixelWindowPixelSize m_iPixelWidth = 0, m_iPixelHeight = 0;
+
+		bool m_bResizable   = false;
+		bool m_bMaximizable = false;
+
+		PixelWindowPixel m_pxBackground = PXWIN_COLOR_BLACK;
+		uint32_t m_iExtraLayers = 0;
+		std::vector<Layer> m_oLayers;
 
 	};
 

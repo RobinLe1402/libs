@@ -79,6 +79,13 @@ PXWIN_API const PixelWindowErrorMsg *PXWIN_CONV rlPixelWindow_GetErrorMsg(
 PXWIN_API PixelWindowOSError PXWIN_CONV rlPixelWindow_GetOSError();
 
 /// <summary>
+/// Get the minimum bitmap size allowed.
+/// </summary>
+PXWIN_API PixelWindowSizeStruct PXWIN_CONV rlPixelWindow_GetMinSize(
+	PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+	PixelWindowBool bResizable, PixelWindowBool bMaximizable);
+
+/// <summary>
 /// Default message handler.<br />
 /// Does the bare minimum.
 /// </summary>

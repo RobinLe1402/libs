@@ -115,9 +115,16 @@ int main()
 	PrintError(DLL::GetError());
 	std::printf("\n\n");
 
+	constexpr PixelWindowPixelSize iPixelSize   = 5;
+	constexpr bool                 bResizable   = true;
+	constexpr bool                 bMaximizable = false;
+
+	const auto oMinSize = DLL::GetMinSize(iPixelSize, iPixelSize, bResizable, bMaximizable);
+
 	WinImpl win;
 	std::printf("Creating window...\n");
-	if (!win.create(300, 150, 5, 5, 1, L"rlPixelWindow Test Application"))
+	if (!win.create(oMinSize.iWidth, oMinSize.iHeight, iPixelSize, iPixelSize, 1,
+		L"rlPixelWindow Test Application", false, true))
 	{
 		std::printf("Window creation failed.\n");
 		return 1;

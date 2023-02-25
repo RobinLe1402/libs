@@ -31,6 +31,11 @@ namespace rl
 		{
 			return rlPixelWindow_GetErrorMsg(iErrorCode);
 		}
+		inline auto GetMinSize(PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+			PixelWindowBool bResizable, PixelWindowBool bMaximizable)
+		{
+			return rlPixelWindow_GetMinSize(iPixelWidth, iPixelHeight, bResizable, bMaximizable);
+		}
 		inline auto DefMsgHandler(PixelWindow p, PixelWindowMsg msg,
 			PixelWindowArg arg1, PixelWindowArg arg2)
 		{

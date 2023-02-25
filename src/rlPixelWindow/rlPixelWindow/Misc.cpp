@@ -1,6 +1,7 @@
 #include <rl/dll/rlPixelWindow/Core.h>
 #include <rl/dll/rlPixelWindow/Definitions.h>
 #include "PrivateCore.hpp"
+#include "PrivateIncludes/Window.hpp"
 
 #include <memory>
 #include <stdint.h>
@@ -104,6 +105,13 @@ const PixelWindowErrorMsg *rlPixelWindow_GetErrorMsg(
 PXWIN_API PixelWindowOSError rlPixelWindow_GetOSError()
 {
 	return iLastOSError;
+}
+
+PXWIN_API PixelWindowSizeStruct rlPixelWindow_GetMinSize(
+	PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+	PixelWindowBool bResizable, PixelWindowBool bMaximizable)
+{
+	return internal::Window::MinSize(iPixelWidth, iPixelHeight, bResizable, bMaximizable);
 }
 
 PXWIN_API PixelWindowRes rlPixelWindow_DefMsgHandler(

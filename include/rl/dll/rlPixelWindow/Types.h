@@ -57,6 +57,13 @@ typedef uint16_t PixelWindowSize;
 typedef uint16_t PixelWindowPixelSize;
 typedef uint32_t PixelWindowPos;
 
+typedef struct tagPixelWindowSizeStruct
+{
+	PixelWindowSize iWidth;
+	PixelWindowSize iHeight;
+} PixelWindowSizeStruct;
+
+
 typedef struct tagPixelWindowCreateParams
 {
 	PixelWindowSize      iWidth;       // The width of the canvas, in pixels.

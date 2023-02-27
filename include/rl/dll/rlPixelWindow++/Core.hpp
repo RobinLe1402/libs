@@ -54,10 +54,10 @@ namespace rl
 
 			Window()
 			{
-				const auto iVersion = DLL::GetVersion();
+				const auto iVersion = GetVersion();
 				if (PXWIN_VERSION_GET_MAJOR(iVersion) != 1 ||
 					PXWIN_VERSION_GET_MINOR(iVersion) != 0)
-					throw std::exception("Unsupported DLL version")
+					throw std::exception("Unsupported DLL version");
 			}
 			Window(const Window &) = delete;
 			virtual ~Window() = default;

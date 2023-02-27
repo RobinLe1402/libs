@@ -55,10 +55,17 @@
 /// </returns>
 PXWIN_API PixelWindowVersion PXWIN_CONV rlPixelWindow_GetVersion();
 
-#define PXWIN_VERSION_GET_MAJOR(version) (uint8_t)  (version >> 48)
-#define PXWIN_VERSION_GET_MINOR(version) (uint8_t) ((version >> 32) & 0xFF)
-#define PXWIN_VERSION_GET_PATCH(version) (uint8_t) ((version >> 16) & 0xFF)
-#define PXWIN_VERSION_GET_BUILD(version) (uint8_t) ( version        & 0xFF)
+#define PXWIN_VERSION_GET_MAJOR(version) (uint16_t) ((version >> 48) & 0xFFFF)
+#define PXWIN_VERSION_GET_MINOR(version) (uint16_t) ((version >> 32) & 0xFFFF)
+#define PXWIN_VERSION_GET_PATCH(version) (uint16_t) ((version >> 16) & 0xFFFF)
+#define PXWIN_VERSION_GET_BUILD(version) (uint16_t) ( version        & 0xFFFF)
+
+#define PXWIN_MAKE_VERSION(major, minor, patch, build) \
+	(PixelWindowVersion)        \
+	((uint16_t)(build)        | \
+	((uint32_t)(patch) << 16) | \
+	((uint64_t)(minor) << 32) | \
+	((uint64_t)(major) << 48))
 
 /// <summary>
 /// Get the code of the last error.

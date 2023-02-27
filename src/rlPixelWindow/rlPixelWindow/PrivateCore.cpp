@@ -19,6 +19,14 @@ namespace internal
 		return hInst;
 	}
 
+	bool CheckInstance(PixelWindow p)
+	{
+		ResetError();
+		if (!p)
+			SetError(PXWIN_ERROR_INVALID_PARAM);
+		return p;
+	}
+
 }
 
 extern "C" __declspec(dllexport) BOOL APIENTRY DllMain(

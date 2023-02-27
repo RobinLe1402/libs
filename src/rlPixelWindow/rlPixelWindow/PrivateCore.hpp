@@ -32,6 +32,13 @@ namespace internal
 	/// <returns></returns>
 	HINSTANCE GetDLLHandle();
 
+	/// <summary>
+	/// * Resets the current error.<para />
+	/// * Checks if the instance pointer is "trustable".<para />
+	/// * pointer is not trustable --> set "invalid parameter" error.<para />
+	/// </summary>
+	bool CheckInstance(PixelWindow p);
+
 
 
 }

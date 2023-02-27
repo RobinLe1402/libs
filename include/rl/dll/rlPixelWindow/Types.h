@@ -56,6 +56,7 @@ typedef uint8_t  PixelWindowBool;
 typedef uint16_t PixelWindowSize;
 typedef uint16_t PixelWindowPixelSize;
 typedef uint32_t PixelWindowPos;
+typedef uint16_t PixelWindowLayerID;
 
 typedef struct tagPixelWindowSizeStruct
 {
@@ -66,21 +67,22 @@ typedef struct tagPixelWindowSizeStruct
 
 typedef struct tagPixelWindowCreateParams
 {
-	PixelWindowSize      iWidth;       // The width of the canvas, in pixels.
-	PixelWindowSize      iHeight;      // The height of the canvas, in pixels.
+	PixelWindowSizeStruct oCanvasSize;  // The size of the canvas, in pixels
+	PixelWindowSizeStruct oMinSize;     // The maximum size of the canvas, in pixels
+	PixelWindowSizeStruct oMaxSize;     // The maximum size of the canvas, in pixels
 
-	PixelWindowPixelSize iPixelWidth;  // The width of a single virtual pixel, in actual pixels.
-	PixelWindowPixelSize iPixelHeight; // The height of a single virtual pixel, in actual pixels.
+	PixelWindowPixelSize  iPixelWidth;  // The width of a single virtual pixel, in actual pixels.
+	PixelWindowPixelSize  iPixelHeight; // The height of a single virtual pixel, in actual pixels.
 
-	uint32_t             iExtraLayers; // The count of layers used in addition to the base layer
-	PixelWindowPixel     pxBackground; // The background color.
+	PixelWindowLayerID    iExtraLayers; // The count of layers used in addition to the base layer
+	PixelWindowPixel      pxBackground; // The background color.
 
-	uint32_t             iFlags;       // Combination of PXWIN_CREATE_[...] flags.
-	intptr_t             iUserData;    // Custom user data.
+	uint32_t              iFlags;       // Combination of PXWIN_CREATE_[...] flags.
+	intptr_t              iUserData;    // Custom user data.
 
-	const wchar_t       *szTitle;      // The initial title of the window.
+	const wchar_t        *szTitle;      // The initial title of the window.
 
-	PixelWindowOSProc    fnOSCallback; // Callback for OS messages.
+	PixelWindowOSProc     fnOSCallback; // Callback for OS messages.
 } PixelWindowCreateParams;
 
 

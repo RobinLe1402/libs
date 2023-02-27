@@ -59,7 +59,9 @@ namespace rl
 			Window &operator=(const Window &) = delete;
 			operator bool() const { return m_oIntfObj != nullptr; }
 
-			bool create(PixelWindowSize iWidth, PixelWindowSize iHeight,
+			bool create(const PixelWindowSizeStruct &oSize,
+				const PixelWindowSizeStruct &oMinSize = {},
+				const PixelWindowSizeStruct &oMaxSize = {},
 				PixelWindowPixelSize iPixelWidth = 1, PixelWindowPixelSize iPixelHeight = 1,
 				uint32_t iExtraLayers = 0, const wchar_t *szTitle = nullptr,
 				bool bMaximizable = false, bool bResizable = false)
@@ -74,8 +76,9 @@ namespace rl
 				if (bResizable)
 					cp.iFlags   |= PXWIN_CREATE_RESIZABLE;
 
-				cp.iWidth       = iWidth;
-				cp.iHeight      = iHeight;
+				cp.oCanvasSize  = oSize;
+				cp.oMinSize     = oMinSize;
+				cp.oMaxSize     = oMaxSize;
 				cp.iPixelWidth  = iPixelWidth;
 				cp.iPixelHeight = iPixelHeight;
 
@@ -83,7 +86,7 @@ namespace rl
 				
 				cp.fnOSCallback = GlobalOSMessageProc;
 
-				m_oIntfObj = rlPixelWindow_Create(&GlobalMessageProc, &cp);
+				m_oIntfObj      = rlPixelWindow_Create(&GlobalMessageProc, &cp);
 
 				if (!m_oIntfObj)
 					return false;
@@ -96,6 +99,21 @@ namespace rl
 				rlPixelWindow_Run(m_oIntfObj);
 			}
 
+			auto getSize()
+			{
+				return rlPixelWindow_GetSize(m_oIntfObj);
+			}
+
+			auto getLayerCount()
+			{
+				return rlPixelWindow_GetLayerCount(m_oIntfObj);
+			}
+
+			void clearLayer(uint32_t iLayerID)
+			{
+				rlPixelWindow_ClearLayer(m_oIntfObj, iLayerID);
+			}
+
 			void draw(const PixelWindowPixel *pData,
 				PixelWindowSize iWidth, PixelWindowSize iHeight,
 				uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode)
@@ -103,12 +121,27 @@ namespace rl
 				rlPixelWindow_Draw(intfObj(), pData, iWidth, iHeight, iLayer, iX, iY, iAlphaMode);
 			}
 
+			auto getBackgroundColor() const
+			{
+				return rlPixelWindow_GetBackgroundColor(intfObj());
+			}
+
 			void setBackgroundColor(PixelWindowPixel px)
 			{
 				rlPixelWindow_SetBackgroundColor(intfObj(), px);
 			}
 
-			PixelWindow intfObj() { return m_oIntfObj; }
+			auto getTitle() const
+			{
+				return rlPixelWindow_GetTitle(intfObj());
+			}
+
+			void setTitle(const wchar_t *szTitle)
+			{
+				rlPixelWindow_SetTitle(intfObj(), szTitle);
+			}
+
+			PixelWindow intfObj() const { return m_oIntfObj; }
 
 
 		protected: // interface methods
@@ -161,7 +194,7 @@ namespace rl
 
 		private: // variables
 
-			PixelWindow m_oIntfObj = nullptr;
+			volatile PixelWindow m_oIntfObj = nullptr;
 
 
 		private: // static variables

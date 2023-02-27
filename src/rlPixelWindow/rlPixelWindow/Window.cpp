@@ -80,8 +80,9 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 
 	// check parameters
 	if (!fnCallback ||
-		pParams->iWidth == 0 || pParams->iHeight == 0 ||
-		pParams->iPixelWidth == 0 || pParams->iPixelHeight == 0)
+		pParams->oCanvasSize.iWidth == 0 || pParams->oCanvasSize.iHeight == 0 ||
+		pParams->iPixelWidth        == 0 || pParams->iPixelHeight        == 0 ||
+		pParams->iExtraLayers >= PXWIN_MAX_LAYERS - 1)
 	{
 		SetError(PXWIN_ERROR_INVALID_PARAM);
 		return;
@@ -90,7 +91,18 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	// check size parameters
 	const auto oMinSize = Window::MinSize(pParams->iPixelWidth, pParams->iPixelHeight,
 		pParams->iFlags & PXWIN_CREATE_RESIZABLE, pParams->iFlags & PXWIN_CREATE_MAXIMIZABLE);
-	if (pParams->iWidth < oMinSize.iWidth || pParams->iHeight < oMinSize.iHeight)
+	if (pParams->oCanvasSize.iWidth  < oMinSize.iWidth  ||
+		pParams->oCanvasSize.iHeight < oMinSize.iHeight ||
+		(pParams->oMinSize.iWidth  > 0 && pParams->oMinSize.iWidth  < oMinSize.iWidth)  ||
+		(pParams->oMinSize.iHeight > 0 && pParams->oMinSize.iHeight < oMinSize.iHeight) ||
+		(pParams->oMaxSize.iWidth  > 0 &&
+			(pParams->oMaxSize.iWidth  < oMinSize.iWidth ||
+				(pParams->oMinSize.iWidth  > 0 &&
+					pParams->oMaxSize.iWidth < pParams->oMinSize.iWidth)))  ||
+		(pParams->oMaxSize.iHeight > 0 &&
+			(pParams->oMaxSize.iHeight < oMinSize.iHeight ||
+				(pParams->oMinSize.iHeight  > 0 &&
+					pParams->oMaxSize.iHeight < pParams->oMinSize.iHeight))))
 	{
 		SetError(PXWIN_ERROR_INVALID_PARAM);
 		return;
@@ -99,18 +111,21 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 
 
 	// copy parameters
-	m_fnCallback   = fnCallback;
-	m_fnOSCallback = pParams->fnOSCallback;
-	m_iWidth       = pParams->iWidth;
-	m_iHeight      = pParams->iHeight;
-	m_iPixelWidth  = pParams->iPixelWidth;
-	m_iPixelHeight = pParams->iPixelHeight;
-	m_oLayers.reserve((size_t)pParams->iExtraLayers + 1);
-	m_bResizable   = (pParams->iFlags & PXWIN_CREATE_RESIZABLE) != 0;
-	m_bMaximizable = (pParams->iFlags & PXWIN_CREATE_MAXIMIZABLE) != 0;
-	m_pxBackground = pParams->pxBackground;
+	m_fnCallback         = fnCallback;
+	m_fnOSCallback       = pParams->fnOSCallback;
+	m_oCanvasSize        = pParams->oCanvasSize;
+	m_oCanvasMinSize     = pParams->oMinSize;
+	m_oCanvasMaxSize     = pParams->oMaxSize;
+	m_iPixelWidth        = pParams->iPixelWidth;
+	m_iPixelHeight       = pParams->iPixelHeight;
+	m_bResizable         = (pParams->iFlags & PXWIN_CREATE_RESIZABLE) != 0;
+	m_bMaximizable       = (pParams->iFlags & PXWIN_CREATE_MAXIMIZABLE) != 0;
+	m_pxBackground       = pParams->pxBackground;
 	m_pxBackground.alpha = 0xFF;
-	m_iExtraLayers = pParams->iExtraLayers;
+
+	m_oLayers.reserve((size_t)pParams->iExtraLayers + 1);
+	for (size_t i = 0; i < (size_t)pParams->iExtraLayers + 1; ++i)
+		m_oLayers.push_back({});
 
 
 	// create actual window
@@ -120,17 +135,17 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	{
 		.left   = 0,
 		.top    = 0,
-		.right  = m_iWidth * m_iPixelWidth,
-		.bottom = m_iHeight * m_iPixelHeight
+		.right  = m_oCanvasSize.iWidth  * m_iPixelWidth,
+		.bottom = m_oCanvasSize.iHeight * m_iPixelHeight
 	};
 	AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
 
 	constexpr wchar_t szDefTitle[] = L"RobinLe PixelWindow";
-	const wchar_t *szTitle = pParams->szTitle;
-	if (!szTitle)
-		szTitle = szDefTitle;
+	m_sTitle = pParams->szTitle;
+	if (m_sTitle.empty())
+		m_sTitle = szDefTitle;
 
-	m_hWnd = CreateWindowExW(dwExStyle, szWNDCLASSNAME, szTitle, dwStyle,
+	m_hWnd = CreateWindowExW(dwExStyle, szWNDCLASSNAME, m_sTitle.c_str(), dwStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
 		NULL, NULL, NULL, (LPVOID)pParams->iUserData);
 
@@ -201,6 +216,12 @@ void internal::Window::run()
 
 void internal::Window::update(uint8_t iReason)
 {
+	if (!m_bInitialized)
+	{
+		SetError(PXWIN_ERROR_NOINIT);
+		return;
+	}
+
 	PixelWindowUpdateParams params{};
 	params.fElapsedTime = getElapsedTime(true);
 	params.iUpdateReason = iReason;
@@ -217,8 +238,9 @@ void internal::Window::update(uint8_t iReason)
 		glBindTexture(GL_TEXTURE_2D, m_oLayers[i].iTexID);
 
 		if (m_oLayers[i].bChanged)
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_iWidth, m_iHeight, GL_RGBA, GL_UNSIGNED_BYTE,
-				m_oLayers[i].upData.get());
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+				m_oCanvasSize.iWidth, m_oCanvasSize.iHeight,
+				GL_RGBA, GL_UNSIGNED_BYTE, m_oLayers[i].upData.get());
 
 		glBegin(GL_QUADS);
 		{
@@ -234,26 +256,54 @@ void internal::Window::update(uint8_t iReason)
 
 }
 
+void internal::Window::clearLayer(uint32_t iLayerID)
+{
+	if (!m_bInitialized)
+	{
+		SetError(PXWIN_ERROR_NOINIT);
+		return;
+	}
+
+	if (iLayerID >= m_oLayers.size())
+	{
+		internal::SetError(PXWIN_ERROR_INVALID_PARAM);
+		return;
+	}
+
+	memset(m_oLayers[iLayerID].upData.get(), 0,
+		(size_t)m_oCanvasSize.iWidth * m_oCanvasSize.iHeight * sizeof(PixelWindowPixel));
+}
+
 void internal::Window::draw(
 	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
 	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode)
 {
-	if (iLayer >= m_oLayers.size() || iX >= m_iWidth || iY >= m_iHeight)
+	if (!m_bInitialized)
+	{
+		SetError(PXWIN_ERROR_NOINIT);
 		return;
+	}
+
+	if (iLayer >= m_oLayers.size() || iX >= m_oCanvasSize.iWidth || iY >= m_oCanvasSize.iHeight)
+	{
+		SetError(PXWIN_ERROR_INVALID_PARAM);
+		return;
+	}
 
 	switch (iAlphaMode)
 	{
 		// overwrite all pixels
 	case PXWIN_DRAWALPHA_OVERRIDE:
-		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_iWidth;
+		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_oCanvasSize.iWidth;
 			++iRelX, ++iAbsX)
 		{
-			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
+			for (PixelWindowPos iRelY = 0, iAbsY = iY;
+				iRelY < iHeight && iAbsY < m_oCanvasSize.iHeight;
 				++iRelY, ++iAbsY)
 			{
 				const auto px = pData[iRelY * iWidth + iRelX];
 
-				m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
+				m_oLayers[iLayer].upData[(size_t)iAbsY * m_oCanvasSize.iWidth + iAbsX] = px;
 			}
 		}
 		break;
@@ -261,16 +311,18 @@ void internal::Window::draw(
 
 		// ignore pixels that are not fully opaque
 	case PXWIN_DRAWALPHA_BINARY:
-		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_iWidth;
+		for (PixelWindowPos iRelX = 0, iAbsX = iX;
+			iRelX < iWidth && iAbsX < m_oCanvasSize.iWidth;
 			++iRelX, ++iAbsX)
 		{
-			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
+			for (PixelWindowPos iRelY = 0, iAbsY = iY;
+				iRelY < iHeight && iAbsY < m_oCanvasSize.iHeight;
 				++iRelY, ++iAbsY)
 			{
 				const auto px = pData[iRelY * iWidth + iRelX];
 
 				if (px.alpha == 0xFF)
-					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
+					m_oLayers[iLayer].upData[(size_t)iAbsY * m_oCanvasSize.iWidth + iAbsX] = px;
 			}
 		}
 		break;
@@ -278,9 +330,11 @@ void internal::Window::draw(
 
 		// consider alpha values
 	case PXWIN_DRAWALPHA_ADD:
-		for (PixelWindowPos iRelX = 0, iAbsX = iX; iRelX < iWidth && iAbsX < m_iWidth; ++iRelX, ++iAbsX)
+		for (PixelWindowPos iRelX = 0, iAbsX = iX;
+			iRelX < iWidth && iAbsX < m_oCanvasSize.iWidth; ++iRelX, ++iAbsX)
 		{
-			for (PixelWindowPos iRelY = 0, iAbsY = iY; iRelY < iHeight && iAbsY < m_iHeight;
+			for (PixelWindowPos iRelY = 0, iAbsY = iY;
+				iRelY < iHeight && iAbsY < m_oCanvasSize.iHeight;
 				++iRelY, ++iAbsY)
 			{
 				const auto px = pData[iRelY * iWidth + iRelX];
@@ -292,12 +346,13 @@ void internal::Window::draw(
 					break;
 
 				case 0xFF: // fully opaque
-					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = px;
+					m_oLayers[iLayer].upData[(size_t)iAbsY * m_oCanvasSize.iWidth + iAbsX] = px;
 					break;
 
 				default: // partly transparent
 				{
-					const auto &pxOld = m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX];
+					const auto &pxOld =
+						m_oLayers[iLayer].upData[(size_t)iAbsY * m_oCanvasSize.iWidth + iAbsX];
 					PixelWindowPixel pxNew;
 
 					if (pxOld.alpha == 0)
@@ -323,7 +378,7 @@ void internal::Window::draw(
 						pxNew.b = uint8_t(fFactorGlobal * (fAlphaAdd * px.b + fFactorOld * pxOld.b));
 					}
 
-					m_oLayers[iLayer].upData[(size_t)iAbsY * m_iWidth + iAbsX] = pxNew;
+					m_oLayers[iLayer].upData[(size_t)iAbsY * m_oCanvasSize.iWidth + iAbsX] = pxNew;
 				}
 				}
 			}
@@ -338,9 +393,37 @@ void internal::Window::draw(
 	m_oLayers[iLayer].bChanged = true;
 }
 
+PixelWindowPixel internal::Window::getBackgroundColor() const
+{
+	if (!m_bInitialized)
+	{
+		SetError(PXWIN_ERROR_NOINIT);
+		return PXWIN_COLOR_BLANK;
+	}
+
+	return m_pxBackground;
+}
+
 void internal::Window::setBackgroundColor(PixelWindowPixel px)
 {
+	if (!m_bInitialized)
+	{
+		SetError(PXWIN_ERROR_NOINIT);
+		return;
+	}
 	glClearColor(px.r / 255.0f, px.g / 255.0f, px.b / 255.0f, 1.0f);
+}
+
+void internal::Window::setTitle(const wchar_t *szTitle)
+{
+	if (!m_bInitialized)
+	{
+		SetError(PXWIN_ERROR_NOINIT);
+		return;
+	}
+
+	SetWindowTextW(m_hWnd, szTitle);
+	m_sTitle = szTitle;
 }
 
 internal::Window::Window()
@@ -427,7 +510,8 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 			return 0;
 		}
 
-		glViewport(0, 0, m_iWidth * m_iPixelWidth, m_iHeight * m_iPixelHeight);
+		glViewport(0, 0, m_oCanvasSize.iWidth * m_iPixelWidth,
+			m_oCanvasSize.iHeight * m_iPixelHeight);
 		glClearColor(
 			m_pxBackground.r / 255.0f,
 			m_pxBackground.g / 255.0f,
@@ -440,13 +524,12 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 
 		// create layers
-		const size_t iPixelCount = (size_t)m_iWidth * m_iHeight;
+		const size_t iPixelCount = (size_t)m_oCanvasSize.iWidth * m_oCanvasSize.iHeight;
 		const size_t iLayerSize  = iPixelCount * sizeof(PixelWindowPixel);
-		for (size_t i = 0; i < (size_t)m_iExtraLayers + 1; i++)
+		for (auto &oLayer : m_oLayers)
 		{
-			m_oLayers.push_back({});
-			auto &oLayer = m_oLayers.back();
-			oLayer.upData = std::make_unique<PixelWindowPixel[]>((size_t)m_iWidth * m_iHeight);
+			oLayer.upData = std::make_unique<PixelWindowPixel[]>(
+				(size_t)m_oCanvasSize.iWidth * m_oCanvasSize.iHeight);
 			memset(oLayer.upData.get(), 0, iLayerSize); // 0x00000000 = blank
 
 			glGenTextures(1, &oLayer.iTexID);
@@ -455,8 +538,8 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_iWidth, m_iHeight, 0, GL_RGBA,
-				GL_UNSIGNED_BYTE, oLayer.upData.get());
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_oCanvasSize.iWidth, m_oCanvasSize.iHeight, 0,
+				GL_RGBA, GL_UNSIGNED_BYTE, oLayer.upData.get());
 		}
 
 		auto &cs = *reinterpret_cast<LPCREATESTRUCTW>(lParam);
@@ -552,7 +635,30 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 		calcFrameSize();
 
-		resize(GET_X_LPARAM(lParam) / m_iPixelWidth, GET_Y_LPARAM(lParam) / m_iPixelHeight);
+		handleResize(GET_X_LPARAM(lParam) / m_iPixelWidth, GET_Y_LPARAM(lParam) / m_iPixelHeight);
+		break;
+
+	case WM_GETMINMAXINFO:
+	{
+		RECT rect{};
+		AdjustWindowRect(&rect, GetWindowLong(m_hWnd, GWL_STYLE), FALSE);
+		const auto iFrameWidth  = rect.right - rect.left;
+		const auto iFrameHeight = rect.bottom - rect.top;
+
+		auto &mmi = *reinterpret_cast<LPMINMAXINFO>(lParam);
+
+		// minimum
+		if (m_oCanvasMinSize.iWidth > 0)
+			mmi.ptMinTrackSize.x = m_oCanvasMinSize.iWidth  * m_iPixelWidth  + iFrameWidth;
+		if (m_oCanvasMinSize.iHeight > 0)
+			mmi.ptMinTrackSize.y = m_oCanvasMinSize.iHeight * m_iPixelHeight + iFrameHeight;
+
+		// maximum
+		if (m_oCanvasMaxSize.iWidth > 0)
+			mmi.ptMaxTrackSize.x = m_oCanvasMaxSize.iWidth  * m_iPixelWidth  + iFrameWidth;
+		if (m_oCanvasMaxSize.iHeight > 0)
+			mmi.ptMaxTrackSize.y = m_oCanvasMaxSize.iHeight * m_iPixelHeight + iFrameHeight;
+	}
 		break;
 
 	case WM_SHOWWINDOW:
@@ -574,9 +680,9 @@ float internal::Window::getElapsedTime(bool bAdvance)
 	return duration.count();
 }
 
-void internal::Window::resize(PixelWindowSize iWidth, PixelWindowSize iHeight)
+void internal::Window::handleResize(PixelWindowSize iWidth, PixelWindowSize iHeight)
 {
-	if (iWidth == m_iWidth && iHeight == m_iHeight)
+	if (iWidth == m_oCanvasSize.iWidth && iHeight == m_oCanvasSize.iHeight)
 		return; // do nothing
 
 	for (size_t i = 0; i < m_oLayers.size(); ++i)
@@ -584,16 +690,16 @@ void internal::Window::resize(PixelWindowSize iWidth, PixelWindowSize iHeight)
 		auto upNew = std::make_unique<PixelWindowPixel[]>((size_t)iWidth * iHeight);
 		auto &upOld = m_oLayers[i].upData;
 
-		const PixelWindowSize iCompatibleWidth = std::min(m_iWidth, iWidth);
+		const PixelWindowSize iCompatibleWidth = std::min(m_oCanvasSize.iWidth, iWidth);
 		const size_t iCompatibleBytes = iCompatibleWidth * sizeof(PixelWindowPixel);
 		auto pOld = upOld.get();
 		auto pNew = upNew.get();
 
-		for (PixelWindowSize iY = 0; iY < m_iHeight && iY < iHeight; ++iY)
+		for (PixelWindowSize iY = 0; iY < m_oCanvasSize.iHeight && iY < iHeight; ++iY)
 		{
 			memcpy_s(pNew, iCompatibleBytes, pOld, iCompatibleBytes);
 			pNew += iWidth;
-			pOld += m_iWidth;
+			pOld += m_oCanvasSize.iWidth;
 		}
 
 		upOld = std::move(upNew);
@@ -601,10 +707,10 @@ void internal::Window::resize(PixelWindowSize iWidth, PixelWindowSize iHeight)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, iWidth, iHeight, 0, GL_RGBA,
 			GL_UNSIGNED_BYTE, upOld.get());
 	}
-	m_iWidth  = iWidth;
-	m_iHeight = iHeight;
+	m_oCanvasSize.iWidth  = iWidth;
+	m_oCanvasSize.iHeight = iHeight;
 
-	glViewport(0, 0, m_iWidth * m_iPixelWidth, m_iHeight * m_iPixelHeight);
+	glViewport(0, 0, m_oCanvasSize.iWidth * m_iPixelWidth, m_oCanvasSize.iHeight * m_iPixelHeight);
 	update(PXWIN_UPDATEREASON_RESIZE);
 }
 

@@ -11,7 +11,7 @@ namespace
 	}
 }
 
-PXWIN_API PixelWindow rlPixelWindow_Create(PixelWindowProc pUpdateCallback,
+PixelWindow rlPixelWindow_Create(PixelWindowProc pUpdateCallback,
 	const PixelWindowCreateParams *pParams)
 {
 	auto &oInst = internal::Window::instance();
@@ -26,7 +26,7 @@ PXWIN_API PixelWindow rlPixelWindow_Create(PixelWindowProc pUpdateCallback,
 		return nullptr;
 }
 
-PXWIN_API void rlPixelWindow_Destroy(PixelWindow p)
+void rlPixelWindow_Destroy(PixelWindow p)
 {
 	internal::ResetError();
 
@@ -50,30 +50,68 @@ void rlPixelWindow_Run(PixelWindow p)
 	IntfToImpl(p)->run();
 }
 
+PixelWindowSizeStruct rlPixelWindow_GetSize(PixelWindow p)
+{
+	if (!internal::CheckInstance(p))
+		return {};
+
+	return IntfToImpl(p)->getSize();
+}
+
+PixelWindowLayerID rlPixelWindow_GetLayerCount(PixelWindow p)
+{
+	if (!internal::CheckInstance(p))
+		return 0;
+
+	return IntfToImpl(p)->getLayerCount();
+}
+
+void rlPixelWindow_ClearLayer(PixelWindow p, PixelWindowLayerID iLayerID)
+{
+	if (!internal::CheckInstance(p))
+		return;
+
+	IntfToImpl(p)->clearLayer(iLayerID);
+}
+
 void rlPixelWindow_Draw(PixelWindow p,
 	const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight, 
 	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode)
 {
-	internal::ResetError();
-
-	if (!p)
-	{
-		internal::SetError(PXWIN_ERROR_INVALID_PARAM);
+	if (!internal::CheckInstance(p))
 		return;
-	}
 
 	IntfToImpl(p)->draw(pData, iWidth, iHeight, iLayer, iX, iY, iAlphaMode);
 }
 
+PixelWindowPixel rlPixelWindow_GetBackgroundColor(PixelWindow p)
+{
+	if (!internal::CheckInstance(p))
+		return {};
+
+	return IntfToImpl(p)->getBackgroundColor();
+}
+
 void rlPixelWindow_SetBackgroundColor(PixelWindow p, PixelWindowPixel px)
 {
-	internal::ResetError();
-
-	if (!p)
-	{
-		internal::SetError(PXWIN_ERROR_INVALID_PARAM);
+	if (!internal::CheckInstance(p))
 		return;
-	}
 
 	IntfToImpl(p)->setBackgroundColor(px);
+}
+
+const wchar_t *rlPixelWindow_GetTitle(PixelWindow p)
+{
+	if (!internal::CheckInstance(p))
+		return nullptr;
+
+	return IntfToImpl(p)->getTitle();
+}
+
+void rlPixelWindow_SetTitle(PixelWindow p, const wchar_t *szTitle)
+{
+	if (!internal::CheckInstance(p))
+		return;
+
+	IntfToImpl(p)->setTitle(szTitle);
 }

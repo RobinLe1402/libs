@@ -20,6 +20,13 @@ protected:
 	{
 		rl::Keyboard::getInstance().processInput();
 
+		const auto actionBtnState = rl::Keyboard::getInstance().getKey(VK_SPACE);
+		if (actionBtnState.pressed())
+			setTitle(L"Test Window [SPACE]");
+		else if (actionBtnState.released())
+			setTitle(L"Test Window");
+
+
 		switch (msg)
 		{
 		case PXWINMSG_CREATE:
@@ -57,16 +64,27 @@ protected:
 		{
 			static bool bFirstDraw = true;
 
-			const auto oSpaceStatus = rl::Keyboard::getInstance().getKey(VK_SPACE);
-			if (oSpaceStatus.pressed())
+			if (actionBtnState.pressed())
 				setBackgroundColor(DLL::MakeRGB(0x646464));
-			else if (oSpaceStatus.released())
+			else if (actionBtnState.released())
 				setBackgroundColor(PXWIN_COLOR_BLACK);
 
 			PixelWindowPixel px = PXWIN_COLOR_BLACK;
-			if (oSpaceStatus.held())
+			if (actionBtnState.held())
 				px = PXWIN_COLOR_WHITE;
 			draw(&px, 1, 1, 1, 5, 2, 0);
+
+
+			const auto &params = *reinterpret_cast<PixelWindowUpdateParams *>(arg1);
+
+			if (params.iUpdateReason == PXWIN_UPDATEREASON_RESIZE)
+			{
+				px = PXWIN_COLOR_RED;
+				const auto oSize = getSize();
+
+				clearLayer(1);
+				this->draw(&px, 1, 1, 1, oSize.iWidth - 1, oSize.iHeight - 1, 0);
+			}
 
 			if (!bFirstDraw)
 				break;
@@ -80,6 +98,7 @@ protected:
 			PixelWindowPixel img = PXWIN_COLOR_RED;
 			draw(&img, 1, 1, 1, 1, 2, PXWIN_DRAWALPHA_OVERRIDE);
 		}
+		break;
 		}
 
 		return DLL::DefMsgHandler(intfObj(), msg, arg1, arg2);
@@ -123,10 +142,13 @@ int main()
 
 	WinImpl win;
 	std::printf("Creating window...\n");
-	if (!win.create(oMinSize.iWidth, oMinSize.iHeight, iPixelSize, iPixelSize, 1,
+	if (!win.create(oMinSize, { .iWidth = 30, .iHeight = 10 }, { .iHeight = 10 }, iPixelSize, iPixelSize, 1,
 		L"rlPixelWindow Test Application", false, true))
 	{
 		std::printf("Window creation failed.\n");
+		std::printf("Error: ");
+		PrintError(DLL::GetError());
+		std::printf("\n\n");
 		return 1;
 	}
 	std::printf(

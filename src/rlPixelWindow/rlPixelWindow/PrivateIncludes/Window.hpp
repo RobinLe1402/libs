@@ -62,14 +62,26 @@ namespace internal
 		void create(PixelWindowProc fnCallback, const PixelWindowCreateParams *pParams);
 		void destroy();
 
+		PixelWindowLayerID getLayerCount() const
+		{
+			return (PixelWindowLayerID)m_oLayers.size();
+		}
+		auto getSize() const { return m_oCanvasSize; }
+
 		void run();
 
 		void update(uint8_t iReason);
 
+		void clearLayer(uint32_t iLayerID);
+
 		void draw(const PixelWindowPixel *pData, PixelWindowSize iWidth, PixelWindowSize iHeight,
 			uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode);
 
+		PixelWindowPixel getBackgroundColor() const;
 		void setBackgroundColor(PixelWindowPixel px);
+
+		const wchar_t *getTitle() const { return m_sTitle.c_str(); }
+		void setTitle(const wchar_t *szTitle);
 
 
 		auto intfPtr() { return reinterpret_cast<PixelWindow>(this); }
@@ -84,7 +96,7 @@ namespace internal
 
 		float getElapsedTime(bool bAdvance = false);
 
-		void resize(PixelWindowSize iWidth, PixelWindowSize iHeight);
+		void handleResize(PixelWindowSize iWidth, PixelWindowSize iHeight);
 
 		void calcFrameSize();
 
@@ -102,7 +114,8 @@ namespace internal
 		std::chrono::time_point<std::chrono::system_clock> m_tpLastUpdate;
 		std::chrono::time_point<std::chrono::system_clock> m_tpNow;
 
-		uint32_t m_iWindowFrameWidth = 0;
+		// todo: use (at all?)
+		uint32_t m_iWindowFrameWidth  = 0;
 		uint32_t m_iWindowFrameHeight = 0;
 
 
@@ -111,15 +124,18 @@ namespace internal
 			m_fnCallback;
 		std::function<void(PixelWindow, HWND, UINT, WPARAM, LPARAM)> m_fnOSCallback;
 
-		PixelWindowSize      m_iWidth      = 0, m_iHeight      = 0;
+		PixelWindowSizeStruct m_oCanvasSize = {};
+		PixelWindowSizeStruct m_oCanvasMinSize = {};
+		PixelWindowSizeStruct m_oCanvasMaxSize = {};
 		PixelWindowPixelSize m_iPixelWidth = 0, m_iPixelHeight = 0;
 
 		bool m_bResizable   = false;
 		bool m_bMaximizable = false;
 
 		PixelWindowPixel m_pxBackground = PXWIN_COLOR_BLACK;
-		uint32_t m_iExtraLayers = 0;
 		std::vector<Layer> m_oLayers;
+
+		std::wstring m_sTitle;
 
 	};
 

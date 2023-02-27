@@ -23,6 +23,10 @@
 
 
 
+#define PXWIN_MAX_LAYERS 100
+
+
+
 #define PXWIN_ERROR_SUCCESS       0 // No error.
 #define PXWIN_ERROR_INVALID_PARAM 1 // Invalid function parameter.
 #define PXWIN_ERROR_NOINIT        2 // Window wasn't initialized before the current call.

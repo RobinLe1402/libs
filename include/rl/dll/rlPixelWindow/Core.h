@@ -112,6 +112,21 @@ PXWIN_API void PXWIN_CONV rlPixelWindow_Destroy(PixelWindow p);
 PXWIN_API void PXWIN_CONV rlPixelWindow_Run(PixelWindow p);
 
 /// <summary>
+/// Get the size (in pixels) of a Pixel Window's bitmaps.
+/// </summary>
+PXWIN_API PixelWindowSizeStruct PXWIN_CONV rlPixelWindow_GetSize(PixelWindow p);
+
+/// <summary>
+/// Get the total count of layered bitmaps.
+/// </summary>
+PXWIN_API PixelWindowLayerID PXWIN_CONV rlPixelWindow_GetLayerCount(PixelWindow p);
+
+/// <summary>
+/// Clear a layer (= set all the pixels to fully transparent).
+/// </summary>
+PXWIN_API void PXWIN_CONV rlPixelWindow_ClearLayer(PixelWindow p, PixelWindowLayerID iLayerID);
+
+/// <summary>
 /// Draw a subimage onto a layer.
 /// </summary>
 /// <param name="pData">The buffer containing the pixel data of the subimage.</param>
@@ -126,9 +141,24 @@ PXWIN_API void PXWIN_CONV rlPixelWindow_Draw(PixelWindow p,
 	uint32_t iLayer, PixelWindowPos iX, PixelWindowPos iY, uint8_t iAlphaMode);
 
 /// <summary>
-/// Set the background color of a Pixel window.
+/// Get the background color of a Pixel Window.
+/// </summary>
+/// <param name="p"></param>
+/// <returns></returns>
+PXWIN_API PixelWindowPixel PXWIN_CONV rlPixelWindow_GetBackgroundColor(PixelWindow p);
+
+/// <summary>
+/// Set the background color of a Pixel Window.
 /// </summary>
 PXWIN_API void PXWIN_CONV rlPixelWindow_SetBackgroundColor(PixelWindow p, PixelWindowPixel px);
+
+
+PXWIN_API const wchar_t *PXWIN_CONV rlPixelWindow_GetTitle(PixelWindow p);
+
+/// <summary>
+/// Set the title of a Pixel Window
+/// </summary>
+PXWIN_API void PXWIN_CONV rlPixelWindow_SetTitle(PixelWindow p, const wchar_t *szTitle);
 
 
 

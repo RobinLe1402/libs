@@ -98,7 +98,6 @@ namespace rl
 
 		case WM_MOUSELEAVE:
 			m_bOnClient = false;
-			reset();
 			m_bMouseTracking = false; // must re-call TrackMouseEvent
 			return true;
 
@@ -109,9 +108,11 @@ namespace rl
 			// left
 		case WM_LBUTTONDOWN:
 			m_bStatesNew[RL_MOUSE_L] = true;
+			SetCapture(m_hWnd);
 			return true;
 		case WM_LBUTTONUP:
 			m_bStatesNew[RL_MOUSE_L] = false;
+			ReleaseCapture();
 			return true;
 		case WM_LBUTTONDBLCLK:
 			m_bDoubleClicked[RL_MOUSE_L] = true;
@@ -121,9 +122,11 @@ namespace rl
 			// right
 		case WM_RBUTTONDOWN:
 			m_bStatesNew[RL_MOUSE_R] = true;
+			SetCapture(m_hWnd);
 			return true;
 		case WM_RBUTTONUP:
 			m_bStatesNew[RL_MOUSE_R] = false;
+			ReleaseCapture();
 			return true;
 		case WM_RBUTTONDBLCLK:
 			m_bDoubleClicked[RL_MOUSE_R] = true;
@@ -133,9 +136,11 @@ namespace rl
 			// middle
 		case WM_MBUTTONDOWN:
 			m_bStatesNew[RL_MOUSE_M] = true;
+			SetCapture(m_hWnd);
 			return true;
 		case WM_MBUTTONUP:
 			m_bStatesNew[RL_MOUSE_M] = false;
+			ReleaseCapture();
 			return true;
 		case WM_MBUTTONDBLCLK:
 			m_bDoubleClicked[RL_MOUSE_M] = true;
@@ -145,6 +150,11 @@ namespace rl
 			// wheel
 		case WM_MOUSEWHEEL:
 			m_iWheelRotation += int16_t(HIWORD(wParam)) / WHEEL_DELTA;
+			return true;
+
+
+		case WM_KILLFOCUS:
+			reset();
 			return true;
 
 

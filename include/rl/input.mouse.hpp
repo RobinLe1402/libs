@@ -61,7 +61,7 @@ namespace rl
 		int16_t iWheelRotation;
 
 		bool bOnClient;
-		uint16_t x, y; // valid if bOnClient is true
+		int16_t x, y; // valid if bOnClient is true
 	};
 
 
@@ -122,9 +122,9 @@ namespace rl
 		bool* m_bDoubleClicked = nullptr;
 		int16_t m_iWheelRotation = 0;
 
-		bool m_bOnClient = false;
-		uint16_t m_iX = 0, m_iY = 0;
-		bool m_bMouseTracking = false;
+		bool m_bOnClient       = false;
+		int16_t m_iX = 0, m_iY = 0;
+		bool m_bMouseTracking  = false;
 
 		HWND m_hWnd = NULL; // for mouse exit/enter tracking
 		MouseState* m_oState = nullptr; // heap for thread safety

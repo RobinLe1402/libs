@@ -69,6 +69,8 @@ namespace internal
 
 		auto getPixelSize() const { return m_oPixelSize; }
 
+		PixelWindowBool setPixelSize(PixelWindowPixelSizeStruct oPixelSize);
+
 		void run();
 
 		void update(uint8_t iReason);

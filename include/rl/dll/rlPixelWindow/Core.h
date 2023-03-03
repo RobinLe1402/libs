@@ -124,11 +124,22 @@ PXWIN_API void PXWIN_CONV rlPixelWindow_Run(PixelWindow p);
 PXWIN_API PixelWindowSizeStruct PXWIN_CONV rlPixelWindow_GetSize(PixelWindow p);
 
 /// <summary>
-/// Get the display size of a pixel in actual pixels
+/// Get the display size of a pixel, in actual pixels.
 /// </summary>
-/// <param name="p"></param>
-/// <returns></returns>
 PXWIN_API PixelWindowPixelSizeStruct PXWIN_CONV rlPixelWindow_GetPixelSize(PixelWindow p);
+
+/// <summary>
+/// Set the display size of a pixel, in actual pixels.
+/// </summary>
+/// <param name="oPixelSize">
+/// The new size of a pixel. Values of zero are ignored.
+/// </param>
+/// <returns>
+/// Did the method succeed?
+/// (Further details via <c>rlPixelWindow_GetError</c>.)
+/// </returns>
+PXWIN_API PixelWindowBool PXWIN_CONV rlPixelWindow_SetPixelSize(PixelWindow p,
+	PixelWindowPixelSizeStruct oPixelSize);
 
 /// <summary>
 /// Get the total count of layered bitmaps.

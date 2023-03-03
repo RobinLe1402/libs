@@ -171,6 +171,84 @@ void internal::Window::destroy()
 	m_bInitialized = false;
 }
 
+PixelWindowBool internal::Window::setPixelSize(PixelWindowPixelSizeStruct oPixelSize)
+{
+	ResetError();
+	if (!m_bInitialized)
+		return false;
+
+	if (oPixelSize.iWidth == 0)
+		oPixelSize.iWidth = m_oPixelSize.iWidth;
+	if (oPixelSize.iHeight == 0)
+		oPixelSize.iHeight = m_oPixelSize.iHeight;
+
+	if (memcmp(&oPixelSize, &m_oPixelSize, sizeof(oPixelSize)) == 0)
+		return true; // no change
+
+	const auto dwStyle = GetWindowStyle(m_hWnd);
+
+	RECT rect{};
+	if (!GetClientRect(m_hWnd, &rect))
+	{
+		internal::SetError(PXWIN_ERROR_OSERROR);
+		return false;
+	}
+
+	// maximized --> always apply new pixel size, keep window size
+	if (dwStyle & WS_MAXIMIZE)
+	{
+		m_oPixelSize = oPixelSize;
+		handleResize(
+			PixelWindowPixelSize((rect.right  - rect.left) / m_oPixelSize.iWidth),
+			PixelWindowPixelSize((rect.bottom - rect.top)  / m_oPixelSize.iHeight));
+
+		return true;
+	}
+	
+	// restored --> only apply if still bigger than minimum size, resize window
+	else
+	{
+		const auto oMinSize = MinSize(oPixelSize, m_bResizable, m_bMaximizable);
+		if (m_oCanvasSize.iWidth  < oMinSize.iWidth ||
+			m_oCanvasSize.iHeight < oMinSize.iHeight)
+		{
+			SetError(PXWIN_ERROR_INVALID_PARAM);
+			return false;
+		}
+
+		RECT rectNew = rect;
+		rectNew.right  += (oPixelSize.iWidth -  m_oPixelSize.iWidth)  * m_oCanvasSize.iWidth;
+		rectNew.bottom += (oPixelSize.iHeight - m_oPixelSize.iHeight) * m_oCanvasSize.iHeight;
+
+		if (!AdjustWindowRect(&rectNew, GetWindowStyle(m_hWnd), FALSE))
+		{
+			SetError(PXWIN_ERROR_OSERROR);
+			return false;
+		}
+
+		const auto oOldPixelSize = m_oPixelSize;
+		m_oPixelSize = oPixelSize;
+
+		
+		if (!SetWindowPos(m_hWnd, NULL, 0, 0,
+			rectNew.right  - rectNew.left,
+			rectNew.bottom - rectNew.top,
+			SWP_NOMOVE | SWP_NOZORDER))
+		{
+			m_oPixelSize = oOldPixelSize;
+			SetError(PXWIN_ERROR_OSERROR);
+			return false;
+		}
+
+		// necessary because resize handling does nothing
+		glViewport(0, 0,
+			m_oCanvasSize.iWidth  * m_oPixelSize.iWidth,
+			m_oCanvasSize.iHeight * m_oPixelSize.iHeight);
+
+		return true;
+	}
+}
+
 void internal::Window::run()
 {
 	ResetError();

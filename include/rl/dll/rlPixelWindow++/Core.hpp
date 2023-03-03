@@ -114,6 +114,11 @@ namespace rl
 				return rlPixelWindow_GetPixelSize(intfObj());
 			}
 
+			bool setPixelSize(const PixelWindowPixelSizeStruct &oPixelSize)
+			{
+				return rlPixelWindow_SetPixelSize(intfObj(), oPixelSize);
+			}
+
 			auto getLayerCount() const
 			{
 				return rlPixelWindow_GetLayerCount(intfObj());

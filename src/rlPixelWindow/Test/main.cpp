@@ -8,6 +8,8 @@
 
 #include <string>
 
+// todo: handle maximum window size!!!!
+
 
 namespace DLL = rl::PixelWindowDLL;
 
@@ -134,6 +136,25 @@ protected:
 
 			if (oKeyboard.getKey(VK_SPACE).pressed())
 				clearLayer(2);
+
+			if (oKeyboard.getKey(VK_CONTROL).held())
+			{
+				if (oKeyboard.getKey(VK_OEM_PLUS).pressed())
+				{
+					auto oPixelSize = getPixelSize();
+					oPixelSize.iWidth++;
+					oPixelSize.iHeight++;
+					setPixelSize(oPixelSize);
+				}
+
+				else if (oKeyboard.getKey(VK_OEM_MINUS).pressed())
+				{
+					auto oPixelSize = getPixelSize();
+					oPixelSize.iWidth--;
+					oPixelSize.iHeight--;
+					setPixelSize(oPixelSize);
+				}
+			}
 
 
 			const auto &params = *reinterpret_cast<PixelWindowUpdateParams *>(arg1);

@@ -173,6 +173,22 @@ namespace rl
 		m_oState->x = m_iX;
 		m_oState->y = m_iY;
 
+		if (m_iX < 0 || m_iY < 0)
+			m_oState->bOnClient = false;
+
+		if (m_oState->bOnClient && m_hWnd)
+		{
+			RECT rectClient{};  
+			if (GetClientRect(m_hWnd, &rectClient))
+			{
+				const auto iClientWidth  = rectClient.right  - rectClient.left;
+				const auto iClientHeight = rectClient.bottom - rectClient.top;
+
+				if (m_iX > iClientWidth || m_iY > iClientHeight)
+					m_oState->bOnClient = false;
+			}
+		}
+
 		// mouse wheel
 		m_oState->iWheelRotation = m_iWheelRotation;
 		m_iWheelRotation = 0;

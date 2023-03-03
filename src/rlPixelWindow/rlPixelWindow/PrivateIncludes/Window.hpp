@@ -49,8 +49,7 @@ namespace internal
 			return oInstance;
 		}
 
-		static PixelWindowSizeStruct MinSize(
-			PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+		static PixelWindowSizeStruct MinSize(PixelWindowPixelSizeStruct oPixelSize,
 			bool bResizable, bool bMaximizable, bool bMinimizable = true);
 
 
@@ -67,6 +66,8 @@ namespace internal
 			return (PixelWindowLayerID)m_oLayers.size();
 		}
 		auto getSize() const { return m_oCanvasSize; }
+
+		auto getPixelSize() const { return m_oPixelSize; }
 
 		void run();
 
@@ -127,7 +128,7 @@ namespace internal
 		PixelWindowSizeStruct m_oCanvasSize = {};
 		PixelWindowSizeStruct m_oCanvasMinSize = {};
 		PixelWindowSizeStruct m_oCanvasMaxSize = {};
-		PixelWindowPixelSize m_iPixelWidth = 0, m_iPixelHeight = 0;
+		PixelWindowPixelSizeStruct m_oPixelSize = {};
 
 		bool m_bResizable   = false;
 		bool m_bMaximizable = false;

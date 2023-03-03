@@ -31,10 +31,10 @@ namespace rl
 		{
 			return rlPixelWindow_GetErrorMsg(iErrorCode);
 		}
-		inline auto GetMinSize(PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+		inline auto GetMinSize(PixelWindowPixelSizeStruct oPixelSize,
 			PixelWindowBool bResizable, PixelWindowBool bMaximizable)
 		{
-			return rlPixelWindow_GetMinSize(iPixelWidth, iPixelHeight, bResizable, bMaximizable);
+			return rlPixelWindow_GetMinSize(oPixelSize, bResizable, bMaximizable);
 		}
 		inline auto DefMsgHandler(PixelWindow p, PixelWindowMsg msg,
 			PixelWindowArg arg1, PixelWindowArg arg2)
@@ -68,7 +68,7 @@ namespace rl
 			bool create(const PixelWindowSizeStruct &oSize,
 				const PixelWindowSizeStruct &oMinSize = {},
 				const PixelWindowSizeStruct &oMaxSize = {},
-				PixelWindowPixelSize iPixelWidth = 1, PixelWindowPixelSize iPixelHeight = 1,
+				PixelWindowPixelSizeStruct oPixelSize = { 1, 1 },
 				uint32_t iExtraLayers = 0, const wchar_t *szTitle = nullptr,
 				bool bMaximizable = false, bool bResizable = false)
 			{
@@ -85,8 +85,7 @@ namespace rl
 				cp.oCanvasSize  = oSize;
 				cp.oMinSize     = oMinSize;
 				cp.oMaxSize     = oMaxSize;
-				cp.iPixelWidth  = iPixelWidth;
-				cp.iPixelHeight = iPixelHeight;
+				cp.oPixelSize   = oPixelSize;
 
 				cp.szTitle      = szTitle;
 				
@@ -102,22 +101,27 @@ namespace rl
 
 			void run()
 			{
-				rlPixelWindow_Run(m_oIntfObj);
+				rlPixelWindow_Run(intfObj());
 			}
 
-			auto getSize()
+			auto getSize() const
 			{
-				return rlPixelWindow_GetSize(m_oIntfObj);
+				return rlPixelWindow_GetSize(intfObj());
 			}
 
-			auto getLayerCount()
+			auto getPixelSize() const
 			{
-				return rlPixelWindow_GetLayerCount(m_oIntfObj);
+				return rlPixelWindow_GetPixelSize(intfObj());
+			}
+
+			auto getLayerCount() const
+			{
+				return rlPixelWindow_GetLayerCount(intfObj());
 			}
 
 			void clearLayer(uint32_t iLayerID)
 			{
-				rlPixelWindow_ClearLayer(m_oIntfObj, iLayerID);
+				rlPixelWindow_ClearLayer(intfObj(), iLayerID);
 			}
 
 			void draw(const PixelWindowPixel *pData,
@@ -155,7 +159,7 @@ namespace rl
 			virtual PixelWindowRes MessageProc(PixelWindowMsg msg,
 				PixelWindowArg arg1, PixelWindowArg arg2)
 			{
-				return DefMsgHandler(m_oIntfObj, msg, arg1, arg2);
+				return DefMsgHandler(intfObj(), msg, arg1, arg2);
 			}
 
 			virtual void OSMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

@@ -108,10 +108,9 @@ PXWIN_API PixelWindowOSError rlPixelWindow_GetOSError()
 }
 
 PXWIN_API PixelWindowSizeStruct rlPixelWindow_GetMinSize(
-	PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
-	PixelWindowBool bResizable, PixelWindowBool bMaximizable)
+	PixelWindowPixelSizeStruct oPixelSize, PixelWindowBool bResizable, PixelWindowBool bMaximizable)
 {
-	return internal::Window::MinSize(iPixelWidth, iPixelHeight, bResizable, bMaximizable);
+	return internal::Window::MinSize(oPixelSize, bResizable, bMaximizable);
 }
 
 PXWIN_API PixelWindowRes rlPixelWindow_DefMsgHandler(

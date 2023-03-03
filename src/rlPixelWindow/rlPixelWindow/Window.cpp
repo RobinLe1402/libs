@@ -41,8 +41,7 @@ DWORD internal::Window::GetStyle(bool bResizable, bool bMaximizable, bool bMinim
 	return dwStyle;
 }
 
-PixelWindowSizeStruct internal::Window::MinSize(
-	PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+PixelWindowSizeStruct internal::Window::MinSize(PixelWindowPixelSizeStruct oPixelSize,
 	bool bResizable, bool bMaximizable, bool bMinimizable)
 {
 	const DWORD dwStyle = GetStyle(bResizable, bMaximizable, bMinimizable);
@@ -59,9 +58,11 @@ PixelWindowSizeStruct internal::Window::MinSize(
 
 	PixelWindowSizeStruct result{};
 	result.iWidth  =
-		PixelWindowSize((iMinClientWidth  + iMinClientWidth  % iPixelWidth)  / iPixelWidth);
+		PixelWindowSize((iMinClientWidth  + iMinClientWidth  % oPixelSize.iWidth) /
+			oPixelSize.iWidth);
 	result.iHeight =
-		PixelWindowSize((iMinClientHeight + iMinClientHeight % iPixelHeight) / iPixelHeight);
+		PixelWindowSize((iMinClientHeight + iMinClientHeight % oPixelSize.iHeight) /
+			oPixelSize.iHeight);
 
 
 	if (result.iWidth  <= 0)
@@ -81,7 +82,7 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	// check parameters
 	if (!fnCallback ||
 		pParams->oCanvasSize.iWidth == 0 || pParams->oCanvasSize.iHeight == 0 ||
-		pParams->iPixelWidth        == 0 || pParams->iPixelHeight        == 0 ||
+		pParams->oPixelSize.iWidth  == 0 || pParams->oPixelSize.iHeight  == 0 ||
 		pParams->iExtraLayers >= PXWIN_MAX_LAYERS - 1)
 	{
 		SetError(PXWIN_ERROR_INVALID_PARAM);
@@ -89,7 +90,7 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	}
 
 	// check size parameters
-	const auto oMinSize = Window::MinSize(pParams->iPixelWidth, pParams->iPixelHeight,
+	const auto oMinSize = Window::MinSize(pParams->oPixelSize,
 		pParams->iFlags & PXWIN_CREATE_RESIZABLE, pParams->iFlags & PXWIN_CREATE_MAXIMIZABLE);
 	if (pParams->oCanvasSize.iWidth  < oMinSize.iWidth  ||
 		pParams->oCanvasSize.iHeight < oMinSize.iHeight ||
@@ -116,8 +117,7 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	m_oCanvasSize        = pParams->oCanvasSize;
 	m_oCanvasMinSize     = pParams->oMinSize;
 	m_oCanvasMaxSize     = pParams->oMaxSize;
-	m_iPixelWidth        = pParams->iPixelWidth;
-	m_iPixelHeight       = pParams->iPixelHeight;
+	m_oPixelSize         = pParams->oPixelSize;
 	m_bResizable         = (pParams->iFlags & PXWIN_CREATE_RESIZABLE) != 0;
 	m_bMaximizable       = (pParams->iFlags & PXWIN_CREATE_MAXIMIZABLE) != 0;
 	m_pxBackground       = pParams->pxBackground;
@@ -135,8 +135,8 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	{
 		.left   = 0,
 		.top    = 0,
-		.right  = m_oCanvasSize.iWidth  * m_iPixelWidth,
-		.bottom = m_oCanvasSize.iHeight * m_iPixelHeight
+		.right  = m_oCanvasSize.iWidth  * m_oPixelSize.iWidth,
+		.bottom = m_oCanvasSize.iHeight * m_oPixelSize.iHeight
 	};
 	AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
 
@@ -145,6 +145,7 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	if (m_sTitle.empty())
 		m_sTitle = szDefTitle;
 
+	m_bInitialized = true;
 	m_hWnd = CreateWindowExW(dwExStyle, szWNDCLASSNAME, m_sTitle.c_str(), dwStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
 		NULL, NULL, NULL, (LPVOID)pParams->iUserData);
@@ -152,11 +153,10 @@ void internal::Window::create(PixelWindowProc fnCallback, const PixelWindowCreat
 	if (m_hWnd == NULL)
 	{
 		SetError(PXWIN_ERROR_OSERROR);
+
+		m_bInitialized = false;
 		return; // todo: reset fields?
 	}
-
-
-	m_bInitialized = true;
 }
 
 void internal::Window::destroy()
@@ -472,7 +472,8 @@ internal::Window::~Window()
 
 LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (m_fnOSCallback)
+	// only call custom OS callback after first PixelWindow message was sent
+	if (uMsg != WM_CREATE && m_fnOSCallback)
 		m_fnOSCallback(intfPtr(), m_hWnd, uMsg, wParam, lParam);
 
 	switch (uMsg)
@@ -510,8 +511,9 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 			return 0;
 		}
 
-		glViewport(0, 0, m_oCanvasSize.iWidth * m_iPixelWidth,
-			m_oCanvasSize.iHeight * m_iPixelHeight);
+		glViewport(0, 0,
+			m_oCanvasSize.iWidth  * m_oPixelSize.iWidth,
+			m_oCanvasSize.iHeight * m_oPixelSize.iHeight);
 		glClearColor(
 			m_pxBackground.r / 255.0f,
 			m_pxBackground.g / 255.0f,
@@ -544,6 +546,8 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 		auto &cs = *reinterpret_cast<LPCREATESTRUCTW>(lParam);
 		m_fnCallback(intfPtr(), PXWINMSG_CREATE, (PixelWindowArg)cs.lpCreateParams, 0);
+		if (m_fnOSCallback)
+			m_fnOSCallback(intfPtr(), m_hWnd, uMsg, wParam, lParam);
 		break;
 	}
 
@@ -589,25 +593,25 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 			wParam == WMSZ_BOTTOM   || wParam == WMSZ_BOTTOMLEFT  || wParam == WMSZ_BOTTOMRIGHT;
 
 
-		const auto oMinSize = MinSize(m_iPixelWidth, m_iPixelHeight, m_bResizable, m_bMaximizable);
-		const long iMinPixelWidth  = oMinSize.iWidth  * m_iPixelWidth;
-		const long iMinPixelHeight = oMinSize.iHeight * m_iPixelHeight;
+		const auto oMinSize = MinSize(m_oPixelSize, m_bResizable, m_bMaximizable);
+		const long iMinPixelWidth  = oMinSize.iWidth  * m_oPixelSize.iWidth;
+		const long iMinPixelHeight = oMinSize.iHeight * m_oPixelSize.iHeight;
 
 		int iDiffX, iDiffY;
 
 		if (iClientWidth < iMinPixelWidth)
 			iDiffX = -(iMinPixelWidth - iClientWidth);
-		else if (iClientWidth > iMinPixelWidth && iClientWidth < m_iPixelWidth)
-			iDiffX = -(m_iPixelWidth - iClientWidth);
+		else if (iClientWidth > iMinPixelWidth && iClientWidth < m_oPixelSize.iWidth)
+			iDiffX = -(m_oPixelSize.iWidth - iClientWidth);
 		else
-			iDiffX = iClientWidth % m_iPixelWidth;
+			iDiffX = iClientWidth % m_oPixelSize.iWidth;
 
 		if (iClientHeight < iMinPixelHeight)
 			iDiffY = -(iMinPixelHeight - iClientHeight);
-		else if (iClientHeight > iMinPixelHeight && iClientHeight < m_iPixelHeight)
-			iDiffY = -(m_iPixelHeight - iClientHeight);
+		else if (iClientHeight > iMinPixelHeight && iClientHeight < m_oPixelSize.iHeight)
+			iDiffY = -(m_oPixelSize.iHeight - iClientHeight);
 		else
-			iDiffY = iClientHeight % m_iPixelHeight;
+			iDiffY = iClientHeight % m_oPixelSize.iHeight;
 
 
 		if (iDiffX)
@@ -635,7 +639,9 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 		calcFrameSize();
 
-		handleResize(GET_X_LPARAM(lParam) / m_iPixelWidth, GET_Y_LPARAM(lParam) / m_iPixelHeight);
+		handleResize(
+			GET_X_LPARAM(lParam) / m_oPixelSize.iWidth,
+			GET_Y_LPARAM(lParam) / m_oPixelSize.iHeight);
 		break;
 
 	case WM_GETMINMAXINFO:
@@ -649,15 +655,19 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 		// minimum
 		if (m_oCanvasMinSize.iWidth > 0)
-			mmi.ptMinTrackSize.x = m_oCanvasMinSize.iWidth  * m_iPixelWidth  + iFrameWidth;
+			mmi.ptMinTrackSize.x =
+			m_oCanvasMinSize.iWidth  * m_oPixelSize.iWidth  + iFrameWidth;
 		if (m_oCanvasMinSize.iHeight > 0)
-			mmi.ptMinTrackSize.y = m_oCanvasMinSize.iHeight * m_iPixelHeight + iFrameHeight;
+			mmi.ptMinTrackSize.y =
+			m_oCanvasMinSize.iHeight * m_oPixelSize.iHeight + iFrameHeight;
 
 		// maximum
 		if (m_oCanvasMaxSize.iWidth > 0)
-			mmi.ptMaxTrackSize.x = m_oCanvasMaxSize.iWidth  * m_iPixelWidth  + iFrameWidth;
+			mmi.ptMaxTrackSize.x =
+			m_oCanvasMaxSize.iWidth  * m_oPixelSize.iWidth  + iFrameWidth;
 		if (m_oCanvasMaxSize.iHeight > 0)
-			mmi.ptMaxTrackSize.y = m_oCanvasMaxSize.iHeight * m_iPixelHeight + iFrameHeight;
+			mmi.ptMaxTrackSize.y =
+			m_oCanvasMaxSize.iHeight * m_oPixelSize.iHeight + iFrameHeight;
 	}
 		break;
 
@@ -710,7 +720,9 @@ void internal::Window::handleResize(PixelWindowSize iWidth, PixelWindowSize iHei
 	m_oCanvasSize.iWidth  = iWidth;
 	m_oCanvasSize.iHeight = iHeight;
 
-	glViewport(0, 0, m_oCanvasSize.iWidth * m_iPixelWidth, m_oCanvasSize.iHeight * m_iPixelHeight);
+	glViewport(0, 0,
+		m_oCanvasSize.iWidth  * m_oPixelSize.iWidth,
+		m_oCanvasSize.iHeight * m_oPixelSize.iHeight);
 	update(PXWIN_UPDATEREASON_RESIZE);
 }
 

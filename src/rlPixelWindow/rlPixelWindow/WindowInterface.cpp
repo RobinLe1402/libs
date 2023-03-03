@@ -58,6 +58,14 @@ PixelWindowSizeStruct rlPixelWindow_GetSize(PixelWindow p)
 	return IntfToImpl(p)->getSize();
 }
 
+PixelWindowPixelSizeStruct rlPixelWindow_GetPixelSize(PixelWindow p)
+{
+	if (!internal::CheckInstance(p))
+		return {};
+
+	return IntfToImpl(p)->getPixelSize();
+}
+
 PixelWindowLayerID rlPixelWindow_GetLayerCount(PixelWindow p)
 {
 	if (!internal::CheckInstance(p))

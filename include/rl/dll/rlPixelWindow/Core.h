@@ -89,7 +89,7 @@ PXWIN_API PixelWindowOSError PXWIN_CONV rlPixelWindow_GetOSError();
 /// Get the minimum bitmap size allowed.
 /// </summary>
 PXWIN_API PixelWindowSizeStruct PXWIN_CONV rlPixelWindow_GetMinSize(
-	PixelWindowPixelSize iPixelWidth, PixelWindowPixelSize iPixelHeight,
+	PixelWindowPixelSizeStruct oPixelSize,
 	PixelWindowBool bResizable, PixelWindowBool bMaximizable);
 
 /// <summary>
@@ -122,6 +122,13 @@ PXWIN_API void PXWIN_CONV rlPixelWindow_Run(PixelWindow p);
 /// Get the size (in pixels) of a Pixel Window's bitmaps.
 /// </summary>
 PXWIN_API PixelWindowSizeStruct PXWIN_CONV rlPixelWindow_GetSize(PixelWindow p);
+
+/// <summary>
+/// Get the display size of a pixel in actual pixels
+/// </summary>
+/// <param name="p"></param>
+/// <returns></returns>
+PXWIN_API PixelWindowPixelSizeStruct PXWIN_CONV rlPixelWindow_GetPixelSize(PixelWindow p);
 
 /// <summary>
 /// Get the total count of layered bitmaps.

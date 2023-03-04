@@ -114,6 +114,9 @@ namespace rl
 		Mouse(); // --> singleton
 		~Mouse();
 
+		void beginCapture();
+		void endCapture();
+
 
 	private: // variables
 
@@ -128,6 +131,8 @@ namespace rl
 
 		HWND m_hWnd = NULL; // for mouse exit/enter tracking
 		MouseState* m_oState = nullptr; // heap for thread safety
+
+		uint16_t m_iCaptureCount = 0;
 
 	};
 	

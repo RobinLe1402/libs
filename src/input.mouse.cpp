@@ -108,11 +108,11 @@ namespace rl
 			// left
 		case WM_LBUTTONDOWN:
 			m_bStatesNew[RL_MOUSE_L] = true;
-			SetCapture(m_hWnd);
+			beginCapture();
 			return true;
 		case WM_LBUTTONUP:
 			m_bStatesNew[RL_MOUSE_L] = false;
-			ReleaseCapture();
+			endCapture();
 			return true;
 		case WM_LBUTTONDBLCLK:
 			m_bDoubleClicked[RL_MOUSE_L] = true;
@@ -122,11 +122,11 @@ namespace rl
 			// right
 		case WM_RBUTTONDOWN:
 			m_bStatesNew[RL_MOUSE_R] = true;
-			SetCapture(m_hWnd);
+			beginCapture();
 			return true;
 		case WM_RBUTTONUP:
 			m_bStatesNew[RL_MOUSE_R] = false;
-			ReleaseCapture();
+			endCapture();
 			return true;
 		case WM_RBUTTONDBLCLK:
 			m_bDoubleClicked[RL_MOUSE_R] = true;
@@ -136,11 +136,11 @@ namespace rl
 			// middle
 		case WM_MBUTTONDOWN:
 			m_bStatesNew[RL_MOUSE_M] = true;
-			SetCapture(m_hWnd);
+			beginCapture();
 			return true;
 		case WM_MBUTTONUP:
 			m_bStatesNew[RL_MOUSE_M] = false;
-			ReleaseCapture();
+			endCapture();
 			return true;
 		case WM_MBUTTONDBLCLK:
 			m_bDoubleClicked[RL_MOUSE_M] = true;
@@ -236,6 +236,33 @@ namespace rl
 			m_bDoubleClicked[i] = false;
 		}
 		m_iWheelRotation = 0;
+	}
+
+
+
+
+
+	//----------------------------------------------------------------------------------------------
+	// PRIVATE METHODS
+
+	void Mouse::beginCapture()
+	{
+		if (!m_hWnd)
+			return;
+
+		++m_iCaptureCount;
+		if (m_iCaptureCount == 1)
+			SetCapture(m_hWnd);
+	}
+
+	void Mouse::endCapture()
+	{
+		if (m_iCaptureCount == 0)
+			return;
+
+		--m_iCaptureCount;
+		if (m_iCaptureCount == 0)
+			ReleaseCapture();
 	}
 
 }

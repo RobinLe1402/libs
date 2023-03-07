@@ -6,6 +6,7 @@
 
 #include <rl/dll/rlPixelWindow/Core.h>
 #include <rl/dll/rlPixelWindow/Definitions.h>
+#include <rl/dll/rlPixelWindow/Types.h>
 
 #include <Windows.h>
 
@@ -38,6 +39,24 @@ namespace internal
 	/// * pointer is not trustable --> set "invalid parameter" error.<para />
 	/// </summary>
 	bool CheckInstance(PixelWindow p);
+
+
+
+	inline bool operator==(
+		const PixelWindowSizeStruct &lhs,
+		const PixelWindowSizeStruct &rhs
+		)
+	{
+		return (memcmp(&lhs, &rhs, sizeof(PixelWindowSizeStruct)) == 0);
+	}
+
+	inline bool operator==(
+		const PixelWindowPixelSizeStruct &lhs,
+		const PixelWindowPixelSizeStruct &rhs
+		)
+	{
+		return (memcmp(&lhs, &rhs, sizeof(PixelWindowPixelSizeStruct)) == 0);
+	}
 
 
 

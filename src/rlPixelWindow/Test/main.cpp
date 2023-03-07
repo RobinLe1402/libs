@@ -150,8 +150,10 @@ protected:
 				else if (oKeyboard.getKey(VK_OEM_MINUS).pressed())
 				{
 					auto oPixelSize = getPixelSize();
-					oPixelSize.iWidth--;
-					oPixelSize.iHeight--;
+					if (oPixelSize.iWidth > 1)
+						oPixelSize.iWidth--;
+					if (oPixelSize.iHeight > 1)
+						oPixelSize.iHeight--;
 					setPixelSize(oPixelSize);
 				}
 			}
@@ -222,9 +224,9 @@ int main()
 	WinImpl win;
 	std::printf("Creating window...\n");
 	if (!win.create(
-		{ .iWidth = 100, .iHeight = 50 },
-		{ .iWidth = 30,  .iHeight = 10 },
-		{                              },
+		{ .iWidth = 100, .iHeight = 50 }, // start size
+		{ .iWidth = 30,  .iHeight = 10 }, // minimum
+		{ .iWidth = 100                }, // maximum
 		{ iPixelSize, iPixelSize }, 2, L"rlPixelWindow Test Application", bMaximizable, bResizable))
 	{
 		std::printf("Window creation failed.\n");

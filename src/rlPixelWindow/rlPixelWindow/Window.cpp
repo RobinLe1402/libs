@@ -182,13 +182,22 @@ PixelWindowBool internal::Window::setPixelSize(PixelWindowPixelSizeStruct oPixel
 	if (oPixelSize.iHeight == 0)
 		oPixelSize.iHeight = m_oPixelSize.iHeight;
 
-	if (memcmp(&oPixelSize, &m_oPixelSize, sizeof(oPixelSize)) == 0)
+	if (oPixelSize == m_oPixelSize)
 		return true; // no change
 
 	const auto dwStyle = GetWindowStyle(m_hWnd);
 
-	RECT rect{};
-	if (!GetClientRect(m_hWnd, &rect))
+	// check if absolute minimum size and user maximum size cause a conflict
+	const auto oAbsoluteMinSize = MinSize(oPixelSize, m_bResizable, m_bMaximizable);
+	if ((m_oCanvasMaxSize.iWidth  > 0 && m_oCanvasMaxSize.iWidth  < oAbsoluteMinSize.iWidth) ||
+		(m_oCanvasMaxSize.iHeight > 0 && m_oCanvasMaxSize.iHeight < oAbsoluteMinSize.iHeight))
+	{
+		SetError(PXWIN_ERROR_INVALID_PARAM); // ToDo: be more precise?
+		return false;
+	}
+
+	RECT rectClient{};
+	if (!GetClientRect(m_hWnd, &rectClient))
 	{
 		internal::SetError(PXWIN_ERROR_OSERROR);
 		return false;
@@ -197,10 +206,63 @@ PixelWindowBool internal::Window::setPixelSize(PixelWindowPixelSizeStruct oPixel
 	// maximized --> always apply new pixel size, keep window size
 	if (dwStyle & WS_MAXIMIZE)
 	{
+
+		// adjust the restored size first
+		{
+			WINDOWPLACEMENT wp{};
+			if (!GetWindowPlacement(m_hWnd, &wp))
+			{
+				SetError(PXWIN_ERROR_OSERROR);
+				return false;
+			}
+
+			RECT rcClient{};
+			AdjustWindowRect(&rcClient, dwStyle & ~WS_MAXIMIZE, FALSE);
+			rcClient =
+			{
+				.left   = wp.rcNormalPosition.left   - rcClient.left,
+				.top    = wp.rcNormalPosition.top    - rcClient.top,
+				.right  = wp.rcNormalPosition.right  - rcClient.right,
+				.bottom = wp.rcNormalPosition.bottom - rcClient.bottom
+			};
+
+			const auto iOldClientWidth  = rcClient.right  - rcClient.left;
+			const auto iOldClientHeight = rcClient.bottom - rcClient.top;
+
+			auto iNewCanvasWidth  = iOldClientWidth  / m_oPixelSize.iWidth;
+			auto iNewCanvasHeight = iOldClientHeight / m_oPixelSize.iHeight;
+
+			auto oMinSize = MinSize(oPixelSize, m_bResizable, m_bMaximizable);
+			oMinSize.iWidth  = std::max(m_oCanvasMinSize.iWidth, oMinSize.iWidth);
+			oMinSize.iHeight = std::max(m_oCanvasMinSize.iHeight, oMinSize.iHeight);
+
+			if (iNewCanvasWidth  < oMinSize.iWidth)
+				iNewCanvasWidth  = oMinSize.iWidth;
+			else if (m_oCanvasMaxSize.iWidth  > 0)
+				iNewCanvasWidth  = std::min((long)m_oCanvasMaxSize.iWidth, iNewCanvasWidth);
+			if (iNewCanvasHeight < oMinSize.iHeight)
+				iNewCanvasHeight = oMinSize.iHeight;
+			else if (m_oCanvasMaxSize.iHeight > 0)
+				iNewCanvasHeight = std::min((long)m_oCanvasMaxSize.iHeight, iNewCanvasHeight);
+
+			const auto iDiffX = (iNewCanvasWidth  * oPixelSize.iWidth)  - iOldClientWidth;
+			const auto iDiffY = (iNewCanvasHeight * oPixelSize.iHeight) - iOldClientHeight;
+
+			wp.rcNormalPosition.right  += iDiffX;
+			wp.rcNormalPosition.bottom += iDiffY;
+
+
+			if (!SetWindowPlacement(m_hWnd, &wp))
+			{
+				SetError(PXWIN_ERROR_OSERROR);
+				return false;
+			}
+		}
+
+
+
 		m_oPixelSize = oPixelSize;
-		handleResize(
-			PixelWindowPixelSize((rect.right  - rect.left) / m_oPixelSize.iWidth),
-			PixelWindowPixelSize((rect.bottom - rect.top)  / m_oPixelSize.iHeight));
+		handleResize(rectClient.right  - rectClient.left, rectClient.bottom - rectClient.top);
 
 		return true;
 	}
@@ -216,7 +278,7 @@ PixelWindowBool internal::Window::setPixelSize(PixelWindowPixelSizeStruct oPixel
 			return false;
 		}
 
-		RECT rectNew = rect;
+		RECT rectNew = rectClient;
 		rectNew.right  += (oPixelSize.iWidth -  m_oPixelSize.iWidth)  * m_oCanvasSize.iWidth;
 		rectNew.bottom += (oPixelSize.iHeight - m_oPixelSize.iHeight) * m_oCanvasSize.iHeight;
 
@@ -715,17 +777,17 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 		if (wParam != SIZE_RESTORED && wParam != SIZE_MAXIMIZED)
 			break;
 
-		calcFrameSize();
-
-		handleResize(
-			GET_X_LPARAM(lParam) / m_oPixelSize.iWidth,
-			GET_Y_LPARAM(lParam) / m_oPixelSize.iHeight);
+		handleResize(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		break;
 
 	case WM_GETMINMAXINFO:
 	{
+		const DWORD dwStyle = GetWindowStyle(m_hWnd);
+		if (dwStyle & WS_MAXIMIZE)
+			break; // always maximize "properly"
+
 		RECT rect{};
-		AdjustWindowRect(&rect, GetWindowLong(m_hWnd, GWL_STYLE), FALSE);
+		AdjustWindowRect(&rect, dwStyle, FALSE);
 		const auto iFrameWidth  = rect.right - rect.left;
 		const auto iFrameHeight = rect.bottom - rect.top;
 
@@ -768,10 +830,19 @@ float internal::Window::getElapsedTime(bool bAdvance)
 	return duration.count();
 }
 
-void internal::Window::handleResize(PixelWindowSize iWidth, PixelWindowSize iHeight)
+void internal::Window::handleResize(unsigned iClientWidth, unsigned iClientHeight)
 {
+	PixelWindowPixelSize iWidth  = iClientWidth  / m_oPixelSize.iWidth;
+	PixelWindowPixelSize iHeight = iClientHeight / m_oPixelSize.iHeight;
+
+
 	if (iWidth == m_oCanvasSize.iWidth && iHeight == m_oCanvasSize.iHeight)
 		return; // do nothing
+
+	if (m_oCanvasMaxSize.iWidth  > 0 && iWidth  > m_oCanvasMaxSize.iWidth)
+		iWidth  = m_oCanvasMaxSize.iWidth;
+	if (m_oCanvasMaxSize.iHeight > 0 && iHeight > m_oCanvasMaxSize.iHeight)
+		iHeight = m_oCanvasMaxSize.iHeight;
 
 	for (size_t i = 0; i < m_oLayers.size(); ++i)
 	{
@@ -798,17 +869,8 @@ void internal::Window::handleResize(PixelWindowSize iWidth, PixelWindowSize iHei
 	m_oCanvasSize.iWidth  = iWidth;
 	m_oCanvasSize.iHeight = iHeight;
 
-	glViewport(0, 0,
+	glViewport(0, iClientHeight - m_oCanvasSize.iHeight * m_oPixelSize.iHeight,
 		m_oCanvasSize.iWidth  * m_oPixelSize.iWidth,
 		m_oCanvasSize.iHeight * m_oPixelSize.iHeight);
 	update(PXWIN_UPDATEREASON_RESIZE);
-}
-
-void internal::Window::calcFrameSize()
-{
-	RECT rect{};
-
-	AdjustWindowRect(&rect, GetWindowLong(m_hWnd, GWL_STYLE), FALSE);
-	m_iWindowFrameWidth  = rect.right  - rect.left;
-	m_iWindowFrameHeight = rect.bottom - rect.top;
 }

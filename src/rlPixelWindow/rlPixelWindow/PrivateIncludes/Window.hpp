@@ -99,9 +99,7 @@ namespace internal
 
 		float getElapsedTime(bool bAdvance = false);
 
-		void handleResize(PixelWindowSize iWidth, PixelWindowSize iHeight);
-
-		void calcFrameSize();
+		void handleResize(unsigned iClientWidth, unsigned iClientHeight);
 
 
 	private: // variables
@@ -116,10 +114,6 @@ namespace internal
 
 		std::chrono::time_point<std::chrono::system_clock> m_tpLastUpdate;
 		std::chrono::time_point<std::chrono::system_clock> m_tpNow;
-
-		// todo: use (at all?)
-		uint32_t m_iWindowFrameWidth  = 0;
-		uint32_t m_iWindowFrameHeight = 0;
 
 
 		// user configurated data

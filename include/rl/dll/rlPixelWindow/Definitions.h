@@ -40,25 +40,25 @@
 
 #define PXWINMSG_CREATE       1  // Right after the window was created (but still hidden).
 
-#define PXWINMSG_SHOW         2  // Right before window is shown.
+#define PXWINMSG_TRYDESTROY   2  // Test if window can be closed.
+#define PXWINMSG_DESTROY      3  // Right after window is closed.
 
-#define PXWINMSG_TRYDESTROY   3  // Test if window can be closed.
-#define PXWINMSG_DESTROY      4  // Right after window is closed.
+#define PXWINMSG_TRYRESIZE    4  // Test if window can be resized.
+#define PXWINMSG_RESIZE       5  // Right after the window size changed.
 
-#define PXWINMSG_TRYRESIZE    5  // Test if window can be resized.
-#define PXWINMSG_RESIZE       6  // Right after the window size changed.
+#define PXWINMSG_GAINEDFOCUS  6  // The window just received keyboard focus.
+#define PXWINMSG_LOSTFOCUS    7  // The window just lost keyboard focus.
 
-#define PXWINMSG_GAINEDFOCUS  7  // The window just received keyboard focus.
-#define PXWINMSG_LOSTFOCUS    8  // The window just lost keyboard focus.
-
+#define PXWINMSG_MOUSEENTER   8  // The mouse cursor just entered the client area.
 #define PXWINMSG_MOUSELEAVE   9  // The mouse cursor just left the client area.
+#define PXWINMSG_MOUSEMOVE    10 // The mouse cursor just moved
 
-#define PXWINMSG_MINIMIZED    10 // The window was minimized.
-#define PXWINMSG_MAXIMIZED    11 // The window was maximized.
-#define PXWINMSG_RESTORED     12 // The window was restored.
+#define PXWINMSG_MINIMIZED    11 // The window was minimized.
+#define PXWINMSG_MAXIMIZED    12 // The window was maximized.
+#define PXWINMSG_RESTORED     13 // The window was restored.
 
-#define PXWINMSG_FILEDRAGOVER 13 // A file/multiple files are dragged over the window.
-#define PXWINMSG_FILEDROP     14 // A file/multiple files have been dropped onto the window.
+#define PXWINMSG_FILEDRAGOVER 14 // A file/multiple files are dragged over the window.
+#define PXWINMSG_FILEDROP     15 // A file/multiple files have been dropped onto the window.
 
 // Ideas:
 // * HIDE // The window was hidden.

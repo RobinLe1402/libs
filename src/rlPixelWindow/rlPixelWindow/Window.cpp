@@ -366,7 +366,7 @@ void internal::Window::update(uint8_t iReason)
 	params.fElapsedTime = getElapsedTime(true);
 	params.iUpdateReason = iReason;
 
-	if (!m_fnCallback(intfPtr(), PXWINMSG_UPDATE, (PixelWindowArg)&params, 0))
+	if (!m_fnCallback(intfPtr(), PXWINMSG_UPDATE, MakeArg(&params), 0))
 	{
 		destroy();
 		return;
@@ -709,6 +709,16 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 
 
+	case WM_SETFOCUS:
+		m_fnCallback(intfPtr(), PXWINMSG_GAINEDFOCUS, 0, 0);
+		break;
+
+	case WM_KILLFOCUS:
+		m_fnCallback(intfPtr(), PXWINMSG_LOSTFOCUS, 0, 0);
+		break;
+
+
+
 	case WM_SIZING:
 	{
 		// TODO: ask user, recreate bitmaps!!!
@@ -774,10 +784,22 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 		break;
 
 	case WM_SIZE:
-		if (wParam != SIZE_RESTORED && wParam != SIZE_MAXIMIZED)
+		switch (wParam)
+		{
+		case SIZE_MINIMIZED:
+			m_fnCallback(intfPtr(), PXWINMSG_MINIMIZED, 0, 0);
+			break;
+			
+		case SIZE_MAXIMIZED:
+			handleResize(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			m_fnCallback(intfPtr(), PXWINMSG_MAXIMIZED, 0, 0);
 			break;
 
-		handleResize(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		case SIZE_RESTORED:
+			handleResize(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			m_fnCallback(intfPtr(), PXWINMSG_RESTORED, 0, 0);
+			break;
+		}
 		break;
 
 	case WM_GETMINMAXINFO:
@@ -811,8 +833,44 @@ LRESULT internal::Window::localWindowProc(UINT uMsg, WPARAM wParam, LPARAM lPara
 	}
 		break;
 
+
+
 	case WM_SHOWWINDOW:
 		update(PXWIN_UPDATEREASON_START); // todo: find correct place to put 1st update
+		break;
+
+
+
+	case WM_MOUSEMOVE:
+	{
+		auto iX = GET_X_LPARAM(lParam);
+		auto iY = GET_Y_LPARAM(lParam);
+
+		// negative coordinates --> force rounding to "left" and "up" --> consistent coordinates
+		if (iX < 0)
+			iX -= (m_oPixelSize.iWidth - 1);
+		if (iY < 0)
+			iY -= (m_oPixelSize.iHeight - 1);
+
+		iX /= m_oPixelSize.iWidth;
+		iY /= m_oPixelSize.iHeight;
+
+		const bool bOnClient =
+			iX > 0 && iX < m_oCanvasSize.iWidth &&
+			iY > 0 && iY < m_oCanvasSize.iHeight;
+
+
+		const auto iPos = MakeArgFrom2(iX, iY);
+
+		if (!m_bMouseOnClient && bOnClient) // mouse entered client area
+			m_fnCallback(intfPtr(), PXWINMSG_MOUSEENTER, iPos, 0);
+		else if (m_bMouseOnClient && !bOnClient) // mouse left client area
+			m_fnCallback(intfPtr(), PXWINMSG_MOUSELEAVE, iPos, 0);
+		else // mouse is still inside/outside the client area (no change)
+			m_fnCallback(intfPtr(), PXWINMSG_MOUSEMOVE,  iPos, bOnClient);
+
+		m_bMouseOnClient = bOnClient;
+	}
 		break;
 	}
 

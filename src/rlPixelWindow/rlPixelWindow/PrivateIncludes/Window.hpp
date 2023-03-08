@@ -109,6 +109,8 @@ namespace internal
 		bool m_bInitialized = false;
 		bool m_bRunning     = false;
 
+		bool m_bMouseOnClient = false;
+
 		HWND  m_hWnd  = NULL;
 		HGLRC m_hGLRC = NULL;
 

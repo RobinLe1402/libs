@@ -10,37 +10,29 @@
 namespace
 {
 
-	class App
+	/// <summary>A single RobinLe App.</summary>
+	struct App
 	{
-	public: // methods
-
-		auto &name() { return m_sName; }
-		const auto &name() const { return m_sName; }
-
-		auto &version() { return m_oVersion; }
-		const auto &version() const { return m_oVersion; }
-
-		auto &summary() { return m_sSummary; }
-		const auto &summary() const { return m_sSummary; }
-
-		auto &description() { return m_sDescription; }
-		const auto &description() const { return m_sDescription; }
-
-
-	private: // variables
-
-		std::string m_sName;
-		std::array<unsigned, 4> m_oVersion{};
-		std::string m_sSummary;
-		std::string m_sDescription;
+		std::string             sName;
+		std::array<unsigned, 4> oVersion{};
+		std::string             sSummary;
+		std::string             sDescription;
 	};
 	
+	/// <summary>
+	/// A list of RobinLe Apps loaded from the internet.
+	/// </summary>
 	class AppList
 	{
 	public: // methods
 
 		bool loadFromInternet()
 		{
+			m_bTriedLoading = true;
+			m_bLoaded = false;
+
+			m_oApps.clear();
+
 			auto oOnlineList = OnlineInterface::DownloadFileToMemory(
 				L"https://download.robinle.de/_hidden/software/index.xml");
 
@@ -82,39 +74,45 @@ namespace
 
 				App oApp;
 				
-				oApp.name() = oProgNode.attributes().at(szNODE_PROGRAM_ATTRIB_NAME);
+				oApp.sName = oProgNode.attributes().at(szNODE_PROGRAM_ATTRIB_NAME);
 
 				const auto &sVersion = oProgNode.attributes().at(szNODE_PROGRAM_ATTRIB_VERSION);
 				std::regex oRegEx(R"REGEX(^(\d+)\.(\d+)\.(\d+)\.(\d+)$)REGEX");
 				std::smatch oMatch;
 				if (!std::regex_match(sVersion, oMatch, oRegEx))
 					return false;
-				oApp.version()[0] = std::stoi(oMatch[1]);
-				oApp.version()[1] = std::stoi(oMatch[2]);
-				oApp.version()[2] = std::stoi(oMatch[3]);
-				oApp.version()[3] = std::stoi(oMatch[4]);
+				oApp.oVersion[0] = std::stoi(oMatch[1]);
+				oApp.oVersion[1] = std::stoi(oMatch[2]);
+				oApp.oVersion[2] = std::stoi(oMatch[3]);
+				oApp.oVersion[3] = std::stoi(oMatch[4]);
 
 				for (auto &oSubNode : oProgNode.children())
 				{
 					if (oSubNode.name() == szNODE_SUMMARY)
-						oApp.summary() = oSubNode.textValue();
+						oApp.sSummary = oSubNode.textValue();
 					else if (oSubNode.name() == szNODE_DESCRIPTION)
-						oApp.description() = oSubNode.textValue();
+						oApp.sDescription = oSubNode.textValue();
 				}
 
 				m_oApps.push_back(oApp);
 
 			}
 
+			m_bLoaded = true;
 			return true;
 		}
 
 		const auto &apps() const { return m_oApps; }
 
+		auto loadingAttempted() const { return m_bTriedLoading; }
+		auto loadingSucceeded() const { return m_bLoaded; }
+
 
 	private: // variables
 
 		std::vector<App> m_oApps;
+		bool m_bTriedLoading = false;
+		bool m_bLoaded = false;
 
 	};
 
@@ -137,10 +135,10 @@ void ShowAppList()
 
 	for (const auto &oApp : oAppList.apps())
 	{
-		std::printf("Title:   %s\n", oApp.name().c_str());
-		std::printf("Summary: %s\n", oApp.summary().c_str());
+		std::printf("Title:   %s\n", oApp.sName.c_str());
+		std::printf("Summary: %s\n", oApp.sSummary.c_str());
 		std::printf("Description:\n");
-		std::printf("%s\n\n", oApp.description().c_str());
+		std::printf("%s\n\n", oApp.sDescription.c_str());
 	}
 	
 	system("PAUSE");

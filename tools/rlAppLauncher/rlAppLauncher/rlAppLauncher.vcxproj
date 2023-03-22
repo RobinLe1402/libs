@@ -135,7 +135,7 @@
     <ClCompile Include="AppList.cpp" />
     <ClCompile Include="ExecuteApp.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="OnlineInterface.cpp" />
+    <ClCompile Include="OnlineFile.cpp" />
     <ClCompile Include="UpdateApp.cpp" />
     <ClCompile Include="UpdateLauncher.cpp" />
     <ClCompile Include="UpdateLibraries.cpp" />
@@ -145,7 +145,7 @@
     <ClInclude Include="Constants.hpp" />
     <ClInclude Include="Constants.IndexXML.hpp" />
     <ClInclude Include="MainActions.hpp" />
-    <ClInclude Include="OnlineInterface.hpp" />
+    <ClInclude Include="OnlineFile.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="XMLParser.hpp" />

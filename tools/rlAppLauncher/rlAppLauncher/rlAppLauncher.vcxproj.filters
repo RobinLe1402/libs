@@ -39,10 +39,10 @@
     <ClCompile Include="UpdateApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OnlineInterface.cpp">
+    <ClCompile Include="XMLParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="XMLParser.cpp">
+    <ClCompile Include="OnlineFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,9 +51,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Constants.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OnlineInterface.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="XMLParser.hpp">
@@ -66,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OnlineFile.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

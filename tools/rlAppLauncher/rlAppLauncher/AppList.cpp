@@ -1,5 +1,5 @@
 #include "MainActions.hpp"
-#include "OnlineInterface.hpp"
+#include "OnlineFile.hpp"
 #include "XMLParser.hpp"
 #include "Constants.IndexXML.hpp"
 
@@ -33,7 +33,7 @@ namespace
 
 			m_oApps.clear();
 
-			auto oOnlineList = OnlineInterface::DownloadFileToMemory(
+			auto oOnlineList = OnlineFile::DownloadFileToMemory(
 				L"https://download.robinle.de/_hidden/software/index.xml");
 
 			if (!oOnlineList)

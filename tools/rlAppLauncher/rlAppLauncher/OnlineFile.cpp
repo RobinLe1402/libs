@@ -1,4 +1,4 @@
-#include "OnlineInterface.hpp"
+#include "OnlineFile.hpp"
 
 #include <Windows.h>
 #include <atlbase.h> // CComPtr
@@ -7,29 +7,11 @@
 #pragma comment(lib, "Urlmon.lib")
 #pragma comment(lib, "Wininet.lib")
 
-bool OnlineFile::allocate(size_t iSize, bool bInitToZero)
-{
-	if (iSize == 0)
-		return false;
-	
-	m_upData = std::make_unique<uint8_t[]>(iSize);
-	m_iSize  = iSize;
-
-	if (bInitToZero)
-		memset(m_upData.get(), 0, iSize);
-
-	return true;
-}
-
-void OnlineFile::clear()
-{
-	m_upData = nullptr;
-	m_iSize  = 0;
-}
 
 
 
-size_t OnlineInterface::GetFileSize(const wchar_t *szURL)
+
+size_t OnlineFile::GetFileSize(const wchar_t *szURL)
 {
 	HINTERNET hInternet = InternetOpen(NULL, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL)
@@ -64,14 +46,14 @@ size_t OnlineInterface::GetFileSize(const wchar_t *szURL)
 	return dwSize;
 }
 
-OnlineFile OnlineInterface::DownloadFileToMemory(const wchar_t *szURL)
+OnlineFile OnlineFile::DownloadFileToMemory(const wchar_t *szURL)
 {
 	OnlineFile oResult;
 
 	if (FAILED(CoInitialize(NULL)))
 		return oResult;
 
-	const auto iFileSize = OnlineInterface::GetFileSize(szURL);
+	const auto iFileSize = GetFileSize(szURL);
 	if (iFileSize == 0)
 		return oResult;
 
@@ -102,8 +84,80 @@ OnlineFile OnlineInterface::DownloadFileToMemory(const wchar_t *szURL)
 	return oResult;
 }
 
-bool OnlineInterface::DownloadFile(const wchar_t *szURL, const wchar_t *szLocalPath)
+bool OnlineFile::DownloadFile(const wchar_t *szURL, const wchar_t *szLocalPath)
 {
 	const auto hr = URLDownloadToFileW(NULL, szURL, szLocalPath, NULL, NULL);
 	return SUCCEEDED(hr);
+}
+
+
+
+bool OnlineFile::allocate(size_t iSize, bool bInitToZero)
+{
+	if (iSize == 0)
+		return false;
+
+	m_upData = std::make_unique<uint8_t[]>(iSize);
+	m_iSize  = iSize;
+
+	if (bInitToZero)
+		memset(m_upData.get(), 0, iSize);
+
+	return true;
+}
+
+void OnlineFile::clear()
+{
+	m_upData = nullptr;
+	m_iSize  = 0;
+}
+
+OnlineFile::PosInt OnlineFile::seekPos(OnlineFile::SeekPos ePos, OnlineFile::OffsetInt iOffset)
+	const
+{
+	if (m_iSize == 0)
+		return 0;
+
+	switch (ePos)
+	{
+	case SeekPos::Begin:
+		if (iOffset < 0)
+			m_iOffset = 0;
+		else if ((size_t)iOffset <= m_iSize)
+			m_iOffset = iOffset;
+		else
+			m_iOffset = m_iSize;
+		break;
+
+	case SeekPos::Current:
+		if (iOffset >= 0)
+		{
+			if (m_iOffset + iOffset <= m_iSize)
+				m_iOffset += iOffset;
+			else
+				m_iOffset = m_iSize;
+		}
+		else
+		{
+			if (m_iOffset + iOffset >= 0)
+				m_iOffset += iOffset;
+			else
+				m_iOffset = 0;
+		}
+		break;
+
+	case SeekPos::End:
+		if (iOffset >= 0)
+			m_iOffset = m_iSize;
+		else
+		{
+			if (m_iSize + iOffset >= 0)
+				m_iOffset = m_iSize + iOffset;
+			else
+				m_iOffset = 0;
+		}
+		break;
+	}
+
+	return m_iOffset;
 }

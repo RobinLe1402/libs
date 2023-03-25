@@ -41,6 +41,7 @@ private: // variables
 	std::wstring m_sFilePath;
 	rl::TextFileInfo m_oEncoding{};
 	Type m_eType;
+	bool m_bTrailingLineBreak = false;
 
 	std::vector<std::wstring> m_oPrefix;
 	std::vector<std::wstring> m_oSuffix;

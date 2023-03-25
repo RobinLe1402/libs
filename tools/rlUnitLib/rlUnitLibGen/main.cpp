@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 namespace
 {
 	constexpr wchar_t szEnvVar_Git[] = L"GitHub_rl_Libs";
-	constexpr wchar_t szProjectFileRel[] = LR"(tools\rlUnitLib\rlUnitLib\rlUnitLib.vcxproj")";
+	constexpr wchar_t szProjectFileRel[] = LR"(tools\rlUnitLib\rlUnitLib\rlUnitLib.vcxproj)";
 	
 	std::wstring sGitRootDir;
 	std::wstring sRLUnitLib_VCXPROJ;
@@ -73,7 +73,7 @@ bool GenerateCode()
 		HANDLE hFind = FindFirstFileW((sGitRootDir + LR"(src\*.cpp)").c_str(), &fd);
 		if (hFind != INVALID_HANDLE_VALUE)
 		{
-			std::wstring sFilePrefix = std::wstring(L"$(") + szEnvVar_Git + L")";
+			std::wstring sFilePrefix = std::wstring(L"$(") + szEnvVar_Git + L")src\\";
 
 			do
 			{
@@ -158,13 +158,13 @@ bool Compile()
 			sCommandLine += szP;
 
 			if ((uintptr_t)ShellExecuteW(NULL, NULL, szCompilerPath, sCommandLine.c_str(),
-				NULL, SW_HIDE) <= 32)
+				NULL, SW_SHOW) <= 32)
 			{
 				printf("Failed.\n");
 				return false;
 			}
 			else
-				printf("Succeeded.\n");
+				printf("Succeeded.\n"); // TODO: ShellExecute --> CreateProcess, parse output
 		}
 	}
 

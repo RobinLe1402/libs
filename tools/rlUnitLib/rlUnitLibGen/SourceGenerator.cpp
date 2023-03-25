@@ -37,6 +37,7 @@ bool SourceFile::open(const wchar_t *szPath)
 			return false;
 
 		m_oEncoding = oReader.encoding();
+		m_bTrailingLineBreak = oReader.trailingLinebreak();
 		oReader.readLines(oLines);
 		oReader.close();
 	}
@@ -103,7 +104,7 @@ bool SourceFile::open(const wchar_t *szPath)
 
 	// copy remaining lines
 	m_oSuffix.reserve(oLines.size() - iEndLine);
-	for (size_t i = iEndLine; i < oLines.size(); ++i)
+	for (size_t i = iEndLine + 1; i < oLines.size(); ++i)
 	{
 		m_oSuffix.push_back(std::move(oLines[i]));
 	}
@@ -155,7 +156,7 @@ bool SourceFile::save()
 		}
 	}
 
-	oWriter.writeLines(m_oSuffix);
+	oWriter.writeLines(m_oSuffix, m_bTrailingLineBreak);
 	oWriter.close();
 
 	return true;

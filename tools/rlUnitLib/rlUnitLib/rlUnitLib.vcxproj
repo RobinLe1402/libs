@@ -59,19 +59,19 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle_lib.props" />
+    <Import Project="..\..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle_lib.props" />
+    <Import Project="..\..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle_lib.props" />
+    <Import Project="..\..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle_lib.props" />
+    <Import Project="..\..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -132,6 +132,24 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <!--BEGIN AUTOGEN-->
+    <ClCompile Include="$(GitHub_rl_Libs)src\audio.devices.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\audio.engine.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\commandline.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\console.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\data.online.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\data.resourceloader.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.fonts.bitmap.creator.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.fonts.bitmap.legacy.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.fonts.bitmap.reader.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.opengl.gui.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.opengl.texture.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.opengl.types.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\graphics.opengl.window.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\input.keyboard.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\input.mouse.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\splashscreen.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\text.fileio.cpp" />
+    <ClCompile Include="$(GitHub_rl_Libs)src\unicode.cpp" />
     <!--END AUTOGEN-->
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

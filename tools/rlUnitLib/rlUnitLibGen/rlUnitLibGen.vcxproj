@@ -59,19 +59,19 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle.props" />
+    <Import Project="..\..\..\vs\robinle__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle.props" />
+    <Import Project="..\..\..\vs\robinle__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle.props" />
+    <Import Project="..\..\..\vs\robinle__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs\robinle.props" />
+    <Import Project="..\..\..\vs\robinle__nounitlib.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -134,13 +134,13 @@
     <ClCompile Include="..\..\..\src\commandline.cpp" />
     <ClCompile Include="..\..\..\src\text.fileio.cpp" />
     <ClCompile Include="..\..\..\src\unicode.cpp" />
+    <ClCompile Include="CompileTools.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SourceGenerator.cpp" />
-    <ClCompile Include="VSPath.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CompileTools.hpp" />
     <ClInclude Include="SourceGenerator.hpp" />
-    <ClInclude Include="VSPath.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

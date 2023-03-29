@@ -1,9 +1,11 @@
 #define WIN32_LEAN_AND_MEAN
 
+#include "CompileTools.hpp"
 #include "SourceGenerator.hpp"
-#include "VSPath.hpp"
+
 #include <rl/commandline.hpp>
 #include <rl/text.fileio.hpp>
+
 #include <stdio.h>
 #include <Windows.h>
 #include <shellapi.h>
@@ -121,29 +123,16 @@ bool Compile()
 	if (!GetPaths())
 		return false;
 
-	const wchar_t *szVSFolder = GetVSInstallDir();
-	if (szVSFolder == nullptr)
-	{
-		std::printf("Error: Couldn't locate Visual Studio installation.\n");
-		return false;
-	}
-
-	constexpr wchar_t szCompilerPath_Rel[] = LR"(\MSBuild\Current\Bin\MSBuild.exe)";
-
-	wchar_t szCompilerPath[MAX_PATH + 1]{};
-	wcscat_s(szCompilerPath, szVSFolder);
-	wcscat_s(szCompilerPath, szCompilerPath_Rel);
-
 
 	const wchar_t *szConfig[] =
 	{
-		L"Debug",
-		L"Release"
+		rl::CompilerConfiguration::Debug,
+		rl::CompilerConfiguration::Release
 	};
 	const wchar_t *szPlatform[] =
 	{
-		L"Win32",
-		L"x64"
+		rl::CompilerPlatform::Windows32Bit,
+		rl::CompilerPlatform::Windows64Bit
 	};
 
 	for (auto szC : szConfig)
@@ -152,22 +141,25 @@ bool Compile()
 		{
 			std::printf("Building %ls version for %ls... ", szC, szP);
 
-			std::wstring sCommandLine = L"-t:Rebuild -p:Configuration=";
-			sCommandLine += szC;
-			sCommandLine += L" -p:Platform=";
-			sCommandLine += szP;
+			const auto result = rl::Compiler::Compile(sRLUnitLib_VCXPROJ.c_str(), szP, szC);
 
-			if ((uintptr_t)ShellExecuteW(NULL, NULL, szCompilerPath, sCommandLine.c_str(),
-				NULL, SW_SHOW) <= 32)
+			if (!result)
 			{
-				printf("Failed.\n");
-				return false;
+				std::printf("Error: %s\n", result.errorMessage().c_str());
+				continue;
+			}
+			else if (result.projects().size() > 0)
+			{
+				auto &resultProject = result.projects().begin()->second;
+
+				std::printf("%zu warnings, %zu errors.\n",
+					resultProject.warningCount(), resultProject.errorCount());
 			}
 			else
-				printf("Succeeded.\n"); // TODO: ShellExecute --> CreateProcess, parse output
+				printf("Succeeded.\n");
 		}
 	}
 
-	std::printf("Successfully compiled library.\n\n\n");
+	std::printf("Finished compiling library.\n\n\n");
 	return true;
 }

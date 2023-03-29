@@ -18,15 +18,9 @@
     <ClCompile Include="$(GitHub_rl_libs)test\units\splashscreen\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\splashscreen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(GitHub_rl_libs)test\units\splashscreen\resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\splashscreen.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -140,11 +140,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\splashscreen.cpp" />
     <ClCompile Include="$(GitHub_rl_libs)test\units\splashscreen\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\splashscreen.hpp" />
     <ClInclude Include="$(GitHub_rl_libs)test\units\splashscreen\resource.h" />
   </ItemGroup>
   <ItemGroup>

@@ -140,13 +140,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.types.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.window.hpp" />
     <ClInclude Include="$(GitHub_rl_libs)test\units\graphics.opengl.window\resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.types.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.window.cpp" />
     <ClCompile Include="$(GitHub_rl_libs)test\units\graphics.opengl.window\main.cpp" />
   </ItemGroup>
   <ItemGroup>

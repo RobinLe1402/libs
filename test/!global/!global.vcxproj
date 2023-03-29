@@ -140,13 +140,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.fonts.bitmap.legacy.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.texture.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.types.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.window.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\input.keyboard.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\input.mouse.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\splashscreen.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -157,13 +150,6 @@
     <Image Include="$(GitHub_rl_libs)res\SplashScreen.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.fonts.bitmap.legacy.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.texture.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.types.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.window.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\input.keyboard.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\input.mouse.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\splashscreen.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

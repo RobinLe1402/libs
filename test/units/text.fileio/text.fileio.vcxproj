@@ -143,13 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\text.fileio.cpp" />
-    <ClCompile Include="$(GitHub_rl_libs)src\unicode.cpp" />
     <ClCompile Include="$(GitHub_rl_libs)test\units\text.fileio\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\text.fileio.hpp" />
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\unicode.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

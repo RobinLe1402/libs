@@ -15,28 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.fonts.bitmap.legacy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.texture.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.types.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\graphics.opengl.window.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\input.keyboard.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\input.mouse.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\splashscreen.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -49,28 +28,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.fonts.bitmap.legacy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.types.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\graphics.opengl.window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\input.keyboard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\input.mouse.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GitHub_rl_libs)src\splashscreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

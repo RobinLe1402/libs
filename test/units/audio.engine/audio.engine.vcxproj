@@ -149,11 +149,9 @@
     <Media Include="test.wav" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\audio.engine.cpp" />
     <ClCompile Include="$(GitHub_rl_libs)test\units\audio.engine\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\audio.engine.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

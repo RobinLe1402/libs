@@ -143,11 +143,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\data.online.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\data.online.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

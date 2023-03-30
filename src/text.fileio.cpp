@@ -492,7 +492,7 @@ namespace rl
 		case TextEncoding::UTF16:
 		{
 			uint16_t iBuf = 0;
-			while (!file.eof())
+			while (!file.eof() && file.peek() != EOF)
 			{
 				file.read(reinterpret_cast<uint8_t*>(&iBuf), 2);
 				if (bSwapEndian)

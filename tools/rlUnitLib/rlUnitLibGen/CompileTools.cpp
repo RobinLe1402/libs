@@ -208,13 +208,9 @@ namespace rl
 				WaitForSingleObject(ShExecInfo.hProcess, INFINITE) == WAIT_FAILED;
 			CloseHandle(ShExecInfo.hProcess);
 		}
-
-		rl::TextFileReader oReader(s_LogPath.c_str());
-		if (!oReader)
-			return CompileResult("Couldn't open compiler log file");
-
 		std::vector<std::wstring> oLogFile;
-		oReader.readLines(oLogFile);
+		if (!rl::ReadAllLines(s_LogPath.c_str(), oLogFile))
+			return CompileResult("Couldn't open compiler log file");
 		DeleteFileW(s_LogPath.c_str());
 
 

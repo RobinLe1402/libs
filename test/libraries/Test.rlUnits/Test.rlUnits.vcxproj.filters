@@ -13,30 +13,45 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Project">
+      <UniqueIdentifier>{14616c0b-edc6-4132-8bcb-2606acd0c33e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Project">
+      <UniqueIdentifier>{6d706457-4333-4227-a43a-c7920e578c42}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)test\units\splashscreen\main.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\Project</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\splashscreen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="UnitTests.cpp">
+      <Filter>Source Files\Project</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleIO.cpp">
+      <Filter>Source Files\Project</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)test\units\splashscreen\resource.h">
+    <ClInclude Include="resource.h">
+      <Filter>Header Files\Project</Filter>
+    </ClInclude>
+    <ClInclude Include="UnitTests.hpp">
+      <Filter>Header Files\Project</Filter>
+    </ClInclude>
+    <ClInclude Include="test.splashscreen.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleIO.hpp">
+      <Filter>Header Files\Project</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="$(GitHub_rl_libs)test\units\splashscreen\resource.rc">
+    <ResourceCompile Include="resource.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="$(GitHub_rl_libs)RobinLe.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="$(GitHub_rl_libs)test\units\splashscreen\boot.bmp">
+    <Image Include="..\..\..\res\SplashScreen.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

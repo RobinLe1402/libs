@@ -34,7 +34,7 @@ namespace rl
 {
 
 	/// <summary>
-	/// The most common text encodings
+	/// The most common text encodings.
 	/// </summary>
 	enum class TextEncoding
 	{
@@ -65,7 +65,7 @@ namespace rl
 	};
 
 	/// <summary>
-	/// The most common types of linebreak
+	/// The most common types of linebreak.
 	/// </summary>
 	enum class LineBreak
 	{
@@ -113,13 +113,13 @@ namespace rl
 	};
 
 	constexpr TextFileInfo TextFileInfo_Codepage(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_ASCII(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_UTF8(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_UTF8BOM(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_UTF16BE(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_UTF16LE(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_UTF32BE(LineBreak eLineBreaks = LineBreak::OS) noexcept;
-	constexpr TextFileInfo TextFileInfo_UTF32LE(LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_ASCII   (LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_UTF8    (LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_UTF8BOM (LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_UTF16BE (LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_UTF16LE (LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_UTF32BE (LineBreak eLineBreaks = LineBreak::OS) noexcept;
+	constexpr TextFileInfo TextFileInfo_UTF32LE (LineBreak eLineBreaks = LineBreak::OS) noexcept;
 
 
 	namespace Flags
@@ -160,10 +160,34 @@ namespace rl
 
 
 
+	/// <summary>
+	/// Read an entire text file, use a certain encoding.
+	/// </summary>
+	/// <param name="szFilePath">The text file to read.</param>
+	/// <param name="oLines">The variable the lines should be written to.</param>
+	/// <param name="oEncoding">
+	/// The text encoding to use. Member <c>eLineBreaks</c> is ignored.
+	/// </param>
+	/// <returns>Could the text be read?</returns>
 	bool ReadAllLines(const wchar_t* szFilePath, std::vector<std::wstring>& oLines,
 		const TextFileInfo& oEncoding);
+
+	/// <summary>
+	/// Read an entire text file, automatically determine the encoding.
+	/// </summary>
+	/// <param name="szFilePath">The text file to read.</param>
+	/// <param name="oLines">The variable the lines should be written to.</param>
+	/// <returns>Could the text be read?</returns>
 	bool ReadAllLines(const wchar_t* szFilePath, std::vector<std::wstring>& oLines);
 
+	/// <summary>
+	/// Write a text file from strings, use a certain encoding.
+	/// </summary>
+	/// <param name="szFilePath">The text file to create.</param>
+	/// <param name="oLines">The text to write.</param>
+	/// <param name="oEncoding">The encoding to use.</param>
+	/// <param name="bTrailingLineBreak">Should the text file end on an empty line?</param>
+	/// <returns>Could the text file be created?</returns>
 	bool WriteTextFile(const wchar_t* szFilePath, const std::vector<std::wstring>& oLines,
 		const TextFileInfo& oEncoding = TextFileInfo_UTF8BOM(), bool bTrailingLineBreak = false);
 
@@ -171,6 +195,9 @@ namespace rl
 
 
 
+	/// <summary>
+	/// A reader for text files.
+	/// </summary>
 	class TextFileReader
 	{
 	public: // operators
@@ -186,32 +213,32 @@ namespace rl
 		virtual ~TextFileReader();
 
 		/// <summary>
-		/// Open a text file, guess the encoding
+		/// Open a text file, guess the encoding.
 		/// </summary>
 		void open(const wchar_t* szFilePath);
 		/// <summary>
-		/// Open a text file using an explicit encoding
+		/// Open a text file using an explicit encoding.
 		/// </summary>
 		void open(const wchar_t* szFilePath, const TextFileInfo& oEncoding);
 		/// <summary>
-		/// Close an opened text file
+		/// Close an opened text file.
 		/// </summary>
 		inline void close() { m_oFile.close(); }
 
 		/// <summary>
-		/// Read a single character
+		/// Read a single character.
 		/// </summary>
 		void read(char32_t& cDest);
 		/// <summary>
-		/// Read a defined number of characters into a <c>std::wstring</c>
+		/// Read a defined number of characters into a <c>std::wstring</c>.
 		/// </summary>
 		void read(std::wstring& sDest, size_t len);
 		/// <summary>
-		/// Read until the EOF/the next linebreak
+		/// Read until the EOF/the next linebreak.
 		/// </summary>
 		void readLine(std::wstring& sDest);
 		/// <summary>
-		/// Read all lines until the EOF
+		/// Read all lines until the EOF.
 		/// </summary>
 		void readLines(std::vector<std::wstring>& oLines);
 
@@ -240,6 +267,9 @@ namespace rl
 
 
 
+	/// <summary>
+	/// A writer for text files.
+	/// </summary>
 	class TextFileWriter
 	{
 	public: // operators
@@ -256,17 +286,68 @@ namespace rl
 		void open(const wchar_t* szFilePath, const TextFileInfo& oEncoding);
 		inline void close() { m_oFile.close(); }
 
+
+		/// <summary>
+		/// Write a single character.
+		/// </summary>
+		/// <param name="c">The character to be written, as UTF-32 (= raw unicode value).</param>
 		void write(char32_t c);
+
+		/// <summary>
+		/// Write a string.
+		/// </summary>
+		/// <param name="szText">The string to be written.</param>
+		/// <param name="len">
+		/// The length, in characters, of the string pointed to by the <c>szText</c> parameter.
+		/// <para/>
+		/// Can be zero, in which case the string is assumed to be null-terminated.
+		/// </param>
 		void write(const wchar_t* szText, size_t len = 0);
+
+		/// <summary>
+		/// Write a string.
+		/// </summary>
 		inline void write(const std::wstring& sText) { write(sText.c_str(), sText.length()); }
+
+		/// <summary>
+		/// Write a string, followed by a linebreak.
+		/// </summary>
+		/// <param name="szText">The string to be written.</param>
+		/// <param name="len">
+		/// The length, in characters, of the string pointed to by the <c>szText</c> parameter.
+		/// <para/>
+		/// Can be zero, in which case the string is assumed to be null-terminated.
+		/// </param>
 		void writeLine(const wchar_t* szText, size_t len = 0);
+
+		/// <summary>
+		/// Write a string, followed by a linebreak.
+		/// </summary>
 		inline void writeLine(const std::wstring& sText)
 		{
 			writeLine(sText.c_str(), sText.length());
 		}
+
+		/// <summary>
+		/// Write multiple strings as lines.
+		/// </summary>
+		/// <param name="oLines">
+		/// The text to be written.<para/> Each string is treated as a line.
+		/// </param>
+		/// <param name="bTrailingLinebreak">
+		/// Should a linebreak be written after the last line?
+		/// </param>
 		void writeLines(const std::vector<std::wstring>& oLines, bool bTrailingLinebreak = true);
 
+
+		/// <summary>
+		/// Is a file currently opened for writing?
+		/// </summary>
 		inline bool isOpen() { return m_oFile.is_open(); }
+
+		/// <summary>
+		/// The encoding used for writing to the file.
+		/// </summary>
 		inline auto encoding() { return m_oEncoding; }
 
 

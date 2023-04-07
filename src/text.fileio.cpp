@@ -29,6 +29,8 @@ namespace rl
 	bool GetTextFileInfo(const wchar_t* szFilePath, TextFileInfo& oDest, TextFileInfo_Get& oDestEx,
 		uint8_t iFlags)
 	{
+#define FILE_EOF() (file.eof() || file.peek() == EOF)
+
 		namespace flags = Flags::TextFileInfo;
 		namespace flagsEx = Flags::TextFileInfo_Get;
 
@@ -39,7 +41,7 @@ namespace rl
 		if (!file)
 			return false; // couldn't open file
 
-		if (file.eof()) // file empty --> assume ASCII with OS linebreaks
+		if (FILE_EOF()) // file empty --> assume ASCII with OS linebreaks
 		{
 			oDest.eEncoding = TextEncoding::ASCII;
 			return true;
@@ -57,7 +59,7 @@ namespace rl
 		// read the first byte
 		file.read(&iByte, 1);
 
-		if (file.eof())
+		if (FILE_EOF())
 		{
 			// only ASCII (part of UTF-8) and codepages support single-byte characters.
 
@@ -95,7 +97,7 @@ namespace rl
 			file.read(&iByte, 1);
 			if (iByte == 0xBB)
 			{
-				if (file.eof())
+				if (FILE_EOF())
 				{
 					oDest.eEncoding = TextEncoding::Codepage;
 					break;
@@ -114,7 +116,7 @@ namespace rl
 			break;
 		case 0xFF:
 			file.read(&iByte, 1);
-			if (file.eof() || iByte != 0xFE)
+			if (FILE_EOF() || iByte != 0xFE)
 			{
 				oDest.eEncoding = TextEncoding::Codepage;
 				break;
@@ -122,14 +124,14 @@ namespace rl
 
 			// might be UTF-16 LE or UTF-32 LE
 
-			if (file.eof())
+			if (FILE_EOF())
 			{
 				oDest.eEncoding = TextEncoding::UTF16;
 				oDest.iFlags = flags::HasBOM; // | LittleEndian
 				return true; // whole file was already checked anyways
 			}
 			file.read(&iByte, 1);
-			if (file.eof())
+			if (FILE_EOF())
 			{
 				// The file was 3 bytes long.
 				// Neither UTF-16 nore UTF-32 support single-byte characters
@@ -156,13 +158,13 @@ namespace rl
 		case 0x00:
 			// only valid BOM would be UTF-32 BE
 			file.read(&iByte, 1);
-			if (file.eof() || iByte != 0x00)
+			if (FILE_EOF() || iByte != 0x00)
 			{
 				oDest.eEncoding = TextEncoding::Codepage;
 				break;
 			}
 			file.read(&iByte, 1);
-			if (file.eof() || iByte != 0xFE)
+			if (FILE_EOF() || iByte != 0xFE)
 			{
 				oDest.eEncoding = TextEncoding::Codepage;
 				break;
@@ -242,7 +244,7 @@ namespace rl
 		}
 		file.clear();
 		file.seekg(lenBOM);
-		if (file.eof())
+		if (FILE_EOF())
 			return true; // nothing more to check
 
 
@@ -259,13 +261,13 @@ namespace rl
 		switch (oDest.eEncoding)
 		{
 		case TextEncoding::ASCII:
-			while (!file.eof())
+			while (!FILE_EOF())
 			{
 				const auto pos = file.tellg();
 				file.read(&iByte, 1);
 				if (iByte & 0x80)
 				{
-					if (file.eof())
+					if (FILE_EOF())
 					{
 						oDest.eEncoding = TextEncoding::Codepage;
 						break; // while
@@ -282,7 +284,7 @@ namespace rl
 		case TextEncoding::UTF8:
 		{
 			uint8_t iRemainingBytes = 0;
-			while (!file.eof())
+			while (!FILE_EOF())
 			{
 				file.read(&iByte, 1);
 				if (iRemainingBytes == 0)
@@ -343,7 +345,7 @@ namespace rl
 				bool bError = false;
 				uint32_t iBuf = 0;
 
-				while (!file.eof())
+				while (!FILE_EOF())
 				{
 					file.read(reinterpret_cast<uint8_t*>(&iBuf), 4);
 					if constexpr (BigEndian) // only little endian is checked
@@ -366,7 +368,7 @@ namespace rl
 		case TextEncoding::UTF16:
 		{
 			uint16_t iBuf = 0;
-			while (!file.eof())
+			while (!FILE_EOF())
 			{
 				file.read(reinterpret_cast<uint8_t*>(&iBuf), 2);
 				if (bSwapEndian)
@@ -382,7 +384,7 @@ namespace rl
 				if (iSurrogateHeader == 0b1101'1000'0000'0000)
 				{
 					bool bLowSurrogate = false;
-					if (!file.eof())
+					if (!FILE_EOF())
 					{
 						file.read(reinterpret_cast<uint8_t*>(&iBuf), 2);
 						if (bSwapEndian)
@@ -432,7 +434,7 @@ namespace rl
 			uint8_t iBuf = 0;
 			uint32_t cRaw = 0;
 
-			while (!file.eof())
+			while (!FILE_EOF())
 			{
 				file.read(&iBuf, 1);
 				if (iBuf & 0x80) // multi-byte value
@@ -492,7 +494,7 @@ namespace rl
 		case TextEncoding::UTF16:
 		{
 			uint16_t iBuf = 0;
-			while (!file.eof() && file.peek() != EOF)
+			while (!FILE_EOF() && file.peek() != EOF)
 			{
 				file.read(reinterpret_cast<uint8_t*>(&iBuf), 2);
 				if (bSwapEndian)
@@ -520,7 +522,7 @@ namespace rl
 						break; // switch
 
 					case '\r': // Macintosh/Windows linebreak
-						if (!file.eof())
+						if (!FILE_EOF())
 						{
 							const auto pos = file.tellg();
 							file.read(reinterpret_cast<uint8_t*>(&iBuf), 2);
@@ -565,7 +567,7 @@ namespace rl
 		case TextEncoding::UTF32:
 		{
 			char32_t cRaw = 0;
-			while (!file.eof())
+			while (!FILE_EOF())
 			{
 				file.read(reinterpret_cast<uint8_t*>(&cRaw), 4);
 				if (bSwapEndian)
@@ -578,7 +580,7 @@ namespace rl
 					break;
 
 				case '\r': // Macintosh/Windows linebreak
-					if (!file.eof())
+					if (!FILE_EOF())
 					{
 						char32_t cRaw2 = 0;
 						const auto pos = file.tellg();
@@ -641,7 +643,7 @@ namespace rl
 			uint8_t iBuf = 0;
 			bLinebreakRead = false;
 			bConsequentLinebreaks = true;
-			while (!file.eof())
+			while (!FILE_EOF())
 			{
 				file.read(&iBuf, 1);
 

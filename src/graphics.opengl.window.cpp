@@ -185,6 +185,8 @@ namespace rl
 				m_pInstance->restore(); // restore graphically
 				return 0;
 			}
+			DestroyWindow(hWnd);
+			break;
 
 		case WM_DESTROY:
 			PostQuitMessage(0);
@@ -372,25 +374,26 @@ namespace rl
 				{
 					TranslateMessage(&msg);
 					DispatchMessageW(&msg);
+
+					if (msg.message == WM_QUIT)
+					{
+						m_bAtomRunning = false;
+						break;
+					}
 				}
 
-				if (m_bMinimized) // minimized --> wait for next message --> reduces CPU load
+				if (msg.message != WM_QUIT && m_bMinimized) // minimized --> wait for next message --> reduces CPU load
 				{
 					GetMessageW(&msg, NULL, 0, 0);
 					TranslateMessage(&msg);
 					DispatchMessage(&msg);
 				}
 
-				if (msg.message == WM_QUIT)
-				{
-					m_bAtomRunning = false;
-				}
-
 
 				// window should be closed --> wait for confirmation from thread (except on WM_QUIT)
 				if (!m_bAtomRunning && msg.message != WM_QUIT)
 				{
-					getQuitPermission();
+					m_bAtomRunning = getQuitPermission();
 				}
 			}
 

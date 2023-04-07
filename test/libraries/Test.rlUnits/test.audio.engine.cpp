@@ -1,11 +1,18 @@
-#include "rl/audio.engine.hpp"
+#include "tests.hpp"
+
+// project
 #include "resource.h"
+
+// rl
+#include <rl/audio.engine.hpp>
+
+
 
 class ExampleStream : public rl::IAudioStream
 {
 public: // methods
 
-	inline void start(const rl::WaveFormat& format, float volume = 1.0f, size_t BufferBlockCount = 8,
+	inline void start(const rl::WaveFormat &format, float volume = 1.0f, size_t BufferBlockCount = 8,
 		size_t SamplesPerBufferBlock = 512)
 	{
 		rl::IAudioStream::internalStart(format, volume, BufferBlockCount, SamplesPerBufferBlock);
@@ -13,7 +20,7 @@ public: // methods
 
 
 protected: // methods
-	bool nextSample(float fElapsedTime, rl::MultiChannelAudioSample& dest) noexcept override
+	bool nextSample(float fElapsedTime, rl::MultiChannelAudioSample &dest) noexcept override
 	{
 		if (dest.iBitsPerSample == 16)
 		{
@@ -27,9 +34,11 @@ protected: // methods
 	}
 };
 
-int main(int argc, char* argv[])
+
+
+bool UnitTest_audio_engine()
 {
-	auto& engine = rl::AudioEngine::GetInstance();
+	auto &engine = rl::AudioEngine::GetInstance();
 
 	if (!engine.create())
 	{
@@ -57,13 +66,13 @@ int main(int argc, char* argv[])
 	const float fVolumeWAV = 0.25f;
 
 	printf("Test 2: WAV data\n");
-	rl::Sound* pSound = rl::Sound::FromResource(NULL, MAKEINTRESOURCE(IDW_TEST));
+	rl::Sound *pSound = rl::Sound::FromResource(NULL, MAKEINTRESOURCE(IDW_TEST));
 	if (pSound)
 		printf("Successfully loaded WAV file (%zu samples)\n", pSound->getSampleCount());
 	else
 	{
 		printf("Couldn't load WAV file\n");
-		return 1;
+		return false;
 	}
 
 	// 2a: Primitive loop
@@ -100,5 +109,5 @@ int main(int argc, char* argv[])
 	printf("All tests done.\n");
 
 
-	return 0;
+	return true;
 }

@@ -1,8 +1,17 @@
-#include "rl/text.fileio.hpp"
+#include "tests.hpp"
 
+// rl
+#include <rl/text.fileio.hpp>
+
+// Win32
 #include <Windows.h>
 
-int wmain(int argc, wchar_t* argv[])
+// STL
+#include <iostream>
+
+
+
+bool UnitTest_text_fileio()
 {
 	// write test
 	if constexpr (false)
@@ -19,15 +28,29 @@ int wmain(int argc, wchar_t* argv[])
 	// encoding guess test
 	if constexpr (true)
 	{
-		if (argc == 1)
+		std::wstring sFile;
+
+		bool bValid;
+		do
 		{
-			printf("Please add a text file path as a parameter.\n");
-			return 1;
-		}
+			bValid = true;
+
+			std::wcout << L"Please enter the path of a text file: ";
+			std::wcin >> sFile;
+			if (std::wcin.fail())
+			{
+				const DWORD dwAttr = GetFileAttributesW(sFile.c_str());
+				if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					std::wcout << L"Invalid file path.\n\n";
+					bValid = false;
+				}
+			}
+		} while (!bValid);
 
 		rl::TextFileInfo tfi{};
 		rl::TextFileInfo_Get tfiEx{};
-		if (!rl::GetTextFileInfo(argv[1], tfi, tfiEx))
+		if (!rl::GetTextFileInfo(sFile.c_str(), tfi, tfiEx))
 		{
 			printf("Couldn't guess the encoding\n");
 			return 1;
@@ -64,7 +87,7 @@ int wmain(int argc, wchar_t* argv[])
 
 			const char szBigEndian[] = "big endian";
 			const char szLittleEndian[] = "little endian";
-			const char* szEndian = (tfi.iFlags & rl::Flags::TextFileInfo::BigEndian) ?
+			const char *szEndian = (tfi.iFlags & rl::Flags::TextFileInfo::BigEndian) ?
 				szBigEndian : szLittleEndian;
 
 			printf(" (%s)\n", szEndian);
@@ -87,7 +110,7 @@ int wmain(int argc, wchar_t* argv[])
 
 	}
 
-	
+
 	// read + write test
 	if constexpr (false)
 	{
@@ -104,5 +127,5 @@ int wmain(int argc, wchar_t* argv[])
 	}
 
 
-	return 0;
+	return true;
 }

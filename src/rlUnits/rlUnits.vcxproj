@@ -138,6 +138,7 @@
     <ClInclude Include="..\..\include\rl\data.endian.hpp" />
     <ClInclude Include="..\..\include\rl\data.online.hpp" />
     <ClInclude Include="..\..\include\rl\data.resourceloader.hpp" />
+    <ClInclude Include="..\..\include\rl\dev.msbuild.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.creator.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.legacy.hpp" />
     <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.reader.hpp" />
@@ -162,6 +163,7 @@
     <ClCompile Include="..\console.cpp" />
     <ClCompile Include="..\data.online.cpp" />
     <ClCompile Include="..\data.resourceloader.cpp" />
+    <ClCompile Include="..\dev.msbuild.cpp" />
     <ClCompile Include="..\graphics.fonts.bitmap.creator.cpp" />
     <ClCompile Include="..\graphics.fonts.bitmap.legacy.cpp" />
     <ClCompile Include="..\graphics.fonts.bitmap.reader.cpp" />

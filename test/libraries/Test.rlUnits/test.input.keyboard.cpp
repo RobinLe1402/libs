@@ -1,13 +1,22 @@
-#include "rl/input.keyboard.hpp"
-#include "rl/visualstyles.h"
+#include "tests.hpp"
+
+// project
 #include "resource.h"
 
-#include <atomic>
-#include <thread>
+// rl
+#include "rl/input.keyboard.hpp"
+#include "rl/visualstyles.h"
+
+// Win32
 #include <Windows.h>
 #include <CommCtrl.h>
-
 #pragma comment(lib, "Comctl32.lib")
+
+// STL
+#include <atomic>
+#include <thread>
+
+
 
 void ThreadFunc();
 LRESULT WINAPI MessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -21,15 +30,15 @@ const DWORD dwSTYLE = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE;
 std::atomic_bool bAtomActive = false;
 HWND hWnd = NULL;
 
-int WINAPI WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPSTR szCmdLine,
-	_In_ int iCmdShow)
+
+
+bool UnitTest_input_keyboard()
 {
+	const HINSTANCE hInstance = GetModuleHandle(NULL);
+
 	const TCHAR szClassName[] = TEXT("TestWindowClass");
 
-	WNDCLASS wc = { sizeof(WNDCLASS) };
+	WNDCLASS wc ={ sizeof(WNDCLASS) };
 
 	wc.lpszClassName = szClassName;
 	wc.lpfnWndProc = MessageProc;
@@ -42,10 +51,10 @@ int WINAPI WinMain(
 	if (!RegisterClass(&wc))
 	{
 		MessageBox(NULL, TEXT("Couldn't register WNDCLASS"), NULL, MB_ICONERROR);
-		return 1;
+		return false;
 	}
 
-	RECT rect = { 0, 0, iWIDTH_CLIENT, iHEIGHT_CLIENT };
+	RECT rect ={ 0, 0, iWIDTH_CLIENT, iHEIGHT_CLIENT };
 	AdjustWindowRect(&rect, dwSTYLE, FALSE);
 
 	const int iWIDTH_WINDOW = rect.right - rect.left;
@@ -58,13 +67,13 @@ int WINAPI WinMain(
 	if (hWnd == NULL)
 	{
 		MessageBox(NULL, TEXT("Couldn't create window"), NULL, MB_ICONERROR);
-		return 1;
+		return false;
 	}
 
 
 	std::thread trd(ThreadFunc);
 
-	MSG msg = {};
+	MSG msg ={};
 	while (true)
 	{
 		GetMessage(&msg, NULL, NULL, NULL);
@@ -79,14 +88,16 @@ int WINAPI WinMain(
 	if (trd.joinable())
 		trd.join();
 
-	return 0;
+	return true;
 }
+
+
 
 void ThreadFunc()
 {
 	bAtomActive = true;
 
-	auto& kb = rl::Keyboard::getInstance();
+	auto &kb = rl::Keyboard::getInstance();
 
 
 

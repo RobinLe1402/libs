@@ -1,10 +1,22 @@
+/***************************************************************************************************
+ FILE:	dev.msbuild.hpp
+ CPP:	dev.msbuild.cpp
+		text.fileio.cpp
+		unicode.cpp
+ DESCR:	Tools for compiling via MSBuild
+***************************************************************************************************/
+
+
 #pragma once
-#ifndef ROBINLE_UNITLIB_COMPILETOOLS
-#define ROBINLE_UNITLIB_COMPILETOOLS
+#ifndef ROBINLE_DEV_MSBUILD
+#define ROBINLE_DEV_MSBUILD
 
 
 
 
+
+//==================================================================================================
+// INCLUDES
 
 #include <cstdint>
 #include <map>
@@ -13,6 +25,8 @@
 
 
 
+//==================================================================================================
+// DECLARATION
 namespace rl
 {
 
@@ -126,4 +140,4 @@ namespace rl
 
 
 
-#endif // ROBINLE_UNITLIB_COMPILETOOLS
+#endif // ROBINLE_DEV_MSBUILD

@@ -1,12 +1,17 @@
-#include "rl/graphics.opengl.window.hpp"
+#include "tests.hpp"
 
+// rl
+#include <rl/graphics.opengl.window.hpp>
+
+// project
 #include "resource.h"
 
+// Win32
 #include <Windows.h>
 #include <gl/GL.h>
-
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
+
 
 
 struct pixel
@@ -31,7 +36,7 @@ private:
 	Gdiplus::GdiplusStartupInput m_gpSi = 0;
 	ULONG_PTR m_gpTk = NULL;
 
-	uint32_t* m_pData = nullptr;
+	uint32_t *m_pData = nullptr;
 	uint32_t m_iWidth = 0, m_iHeight = 0;
 
 
@@ -40,7 +45,7 @@ private:
 		// iCol = ARGB
 		// result = RGBA
 
-		pixel px;
+		pixel px{};
 
 		px.a = iCol >> 24;
 		px.r = iCol >> 16;
@@ -53,11 +58,11 @@ private:
 
 public:
 
-	OpenGLImage(HINSTANCE hInstance, const WCHAR* szResourceName)
+	OpenGLImage(HINSTANCE hInstance, const WCHAR *szResourceName)
 	{
 		Gdiplus::GdiplusStartup(&m_gpTk, &m_gpSi, NULL);
 
-		Gdiplus::Bitmap* bmp = Gdiplus::Bitmap::FromResource(hInstance, szResourceName);
+		Gdiplus::Bitmap *bmp = Gdiplus::Bitmap::FromResource(hInstance, szResourceName);
 
 		m_iWidth = bmp->GetWidth();
 		m_iHeight = bmp->GetHeight();
@@ -77,11 +82,11 @@ public:
 		delete bmp;
 	}
 
-	OpenGLImage(const wchar_t* szPath)
+	OpenGLImage(const wchar_t *szPath)
 	{
 		Gdiplus::GdiplusStartup(&m_gpTk, &m_gpSi, NULL);
 
-		Gdiplus::Bitmap* bmp = Gdiplus::Bitmap::FromFile(szPath);
+		Gdiplus::Bitmap *bmp = Gdiplus::Bitmap::FromFile(szPath);
 		m_iWidth = bmp->GetWidth();
 		m_iHeight = bmp->GetHeight();
 
@@ -110,7 +115,7 @@ public:
 	inline uint32_t getWidth() { return m_iWidth; }
 	inline uint32_t getHeight() { return m_iHeight; }
 
-	inline uint32_t* getData() { return m_pData; }
+	inline uint32_t *getData() { return m_pData; }
 
 };
 
@@ -165,9 +170,9 @@ private:
 
 	bool OnCreate() override
 	{
-		OpenGLImage img(m_hInstance, MAKEINTRESOURCEW(IDB_TEXTURE));
+		OpenGLImage img(m_hInstance, MAKEINTRESOURCEW(IDB_OPENGLWIN));
 
-		uint32_t iColor[] = { 0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFF000000 };
+		uint32_t iColor[] ={ 0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFF000000 };
 
 		glEnable(GL_TEXTURE_2D);
 		glGenTextures(1, &m_iTex);
@@ -187,7 +192,7 @@ private:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 
-		pixel px;
+		pixel px{};
 		px.a = 0xFF;
 		px.r = 0xFF;
 		px.g = 0;
@@ -304,12 +309,10 @@ private:
 };
 
 
-int WINAPI WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPSTR szCmdLine,
-	_In_ int iCmdShow)
+bool UnitTest_graphics_opengl_window()
 {
+	const HINSTANCE hInstance = GetModuleHandle(NULL);
+
 
 	TestWin win(hInstance);
 	rl::OpenGLWin_Config config;
@@ -324,5 +327,5 @@ int WINAPI WinMain(
 
 	win.run(config);
 
-	return 0;
+	return true;
 }

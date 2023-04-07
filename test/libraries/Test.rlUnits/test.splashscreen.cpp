@@ -1,11 +1,10 @@
-#pragma once
-#ifndef ROBINLE_UNITTEST_SPLASHSCREEN
-#define ROBINLE_UNITTEST_SPLASHSCREEN
+#include "tests.hpp"
 
-
-
-#include "rl/splashscreen.hpp"
+// project
 #include "resource.h"
+
+// rl
+#include <rl/splashscreen.hpp>
 
 
 
@@ -24,7 +23,3 @@ bool UnitTest_splashscreen()
 
 	return true;
 }
-
-
-
-#endif // ROBINLE_UNITTEST_SPLASHSCREEN

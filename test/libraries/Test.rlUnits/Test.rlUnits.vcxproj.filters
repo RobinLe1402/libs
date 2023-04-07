@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Project">
-      <UniqueIdentifier>{14616c0b-edc6-4132-8bcb-2606acd0c33e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Project">
       <UniqueIdentifier>{6d706457-4333-4227-a43a-c7920e578c42}</UniqueIdentifier>
     </Filter>
@@ -30,19 +27,40 @@
     <ClCompile Include="ConsoleIO.cpp">
       <Filter>Source Files\Project</Filter>
     </ClCompile>
+    <ClCompile Include="test.splashscreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.audio.engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.data.online.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.text.fileio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.graphics.opengl.window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.input.keyboard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test._global.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files\Project</Filter>
-    </ClInclude>
-    <ClInclude Include="UnitTests.hpp">
-      <Filter>Header Files\Project</Filter>
-    </ClInclude>
-    <ClInclude Include="test.splashscreen.hpp">
+    <ClInclude Include="ConsoleIO.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ConsoleIO.hpp">
-      <Filter>Header Files\Project</Filter>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tests.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UnitTests.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -54,5 +72,25 @@
     <Image Include="..\..\..\res\SplashScreen.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="res\glwin.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\boot.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\RobinLe.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\UnitTest.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\logo.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="res\test.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
   </ItemGroup>
 </Project>

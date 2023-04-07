@@ -132,13 +132,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleIO.cpp" />
+    <ClCompile Include="test.data.online.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="test.audio.engine.cpp" />
+    <ClCompile Include="test.graphics.opengl.window.cpp" />
+    <ClCompile Include="test.input.keyboard.cpp" />
+    <ClCompile Include="test.splashscreen.cpp" />
+    <ClCompile Include="test.text.fileio.cpp" />
+    <ClCompile Include="test._global.cpp" />
     <ClCompile Include="UnitTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConsoleIO.hpp" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="test.splashscreen.hpp" />
+    <ClInclude Include="tests.hpp" />
     <ClInclude Include="UnitTests.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +153,19 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\res\SplashScreen.bmp" />
+    <Image Include="..\..\..\RobinLe.ico" />
+    <Image Include="..\..\UnitTest.ico" />
+    <Image Include="res\boot.bmp" />
+    <Image Include="res\glwin.bmp" />
+    <Image Include="res\logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="res\test.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\rlUnits\rlUnits.vcxproj">
+      <Project>{19e7199c-9722-45a7-b936-e6edd7959369}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

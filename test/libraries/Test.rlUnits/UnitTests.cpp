@@ -1,10 +1,16 @@
 #include "UnitTests.hpp"
 
-#include "test.splashscreen.hpp"
+#include "tests.hpp"
 
 
 
 std::vector<UnitTest> UnitTestCollection::s_oUnitTests(
 	{
-		{"splashscreen", UnitTest_splashscreen}
+		{ "[global]",               UnitTest_global                 },
+		{ "audio.engine",           UnitTest_audio_engine           },
+		{ "data.online",            UnitTest_data_online            },
+		{ "graphics.opengl.window", UnitTest_graphics_opengl_window },
+		{ "input.keyboard",         UnitTest_input_keyboard         },
+		{ "splashscreen",           UnitTest_splashscreen           },
+		{ "text.fileio",            UnitTest_text_fileio            }
 	});

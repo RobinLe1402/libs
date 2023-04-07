@@ -196,7 +196,8 @@ namespace rl
 
 		GDIPlus gp;
 
-		Gdiplus::Bitmap* bmp = Gdiplus::Bitmap::FromResource(NULL, MAKEINTRESOURCE(ResourceID));
+		Gdiplus::Bitmap* bmp = Gdiplus::Bitmap::FromResource(GetModuleHandle(NULL),
+			MAKEINTRESOURCE(ResourceID));
 		bool bResult = (bmp->GetLastStatus() == Gdiplus::Ok);
 
 		if (bResult)

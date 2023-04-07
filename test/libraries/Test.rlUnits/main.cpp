@@ -1,8 +1,9 @@
-#include <Windows.h>
-
+// project
 #include "UnitTests.hpp"
-
 #include "ConsoleIO.hpp"
+
+// Win32
+#include <Windows.h>
 
 
 
@@ -21,7 +22,7 @@ int main(int argc, char *argv[])
 			auto &oUnitTest = UnitTestCollection::UnitTests()[i];
 			con.write("[%zu] %s\n", i + 1, oUnitTest.name.c_str());
 		}
-		con.write("[0] Exit\n");
+		con.write("\n[0] Exit\n");
 
 		con.write("\nPlease select a test to run: ");
 		uint64_t iTest;

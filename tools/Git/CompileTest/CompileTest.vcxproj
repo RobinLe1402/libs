@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="$(GitHub_rl_libs)src\console.cpp" />
+    <ClCompile Include="..\..\..\src\dev.msbuild.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

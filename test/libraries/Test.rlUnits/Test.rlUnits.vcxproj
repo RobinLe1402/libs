@@ -137,6 +137,7 @@
     <ClCompile Include="test.audio.engine.cpp" />
     <ClCompile Include="test.graphics.opengl.window.cpp" />
     <ClCompile Include="test.input.keyboard.cpp" />
+    <ClCompile Include="test.runasadmin.cpp" />
     <ClCompile Include="test.splashscreen.cpp" />
     <ClCompile Include="test.text.fileio.cpp" />
     <ClCompile Include="test._global.cpp" />

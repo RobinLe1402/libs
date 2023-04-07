@@ -48,6 +48,9 @@
     <ClCompile Include="test._global.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test.runasadmin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConsoleIO.hpp">

@@ -12,6 +12,7 @@ bool UnitTest_audio_engine();
 bool UnitTest_data_online();
 bool UnitTest_graphics_opengl_window();
 bool UnitTest_input_keyboard();
+bool UnitTest_runasadmin();
 bool UnitTest_splashscreen();
 bool UnitTest_text_fileio();
 

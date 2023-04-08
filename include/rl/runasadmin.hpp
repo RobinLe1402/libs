@@ -56,13 +56,6 @@ namespace rl
 		/// If this parameter is <c>nullptr</c> or an empty string, the current directory of the
 		/// current process will be used.
 		/// </param>
-		/// <returns>
-		/// If a new process with administrator privileges got successfully created, the function
-		/// returns <c>true</c>. Otherwise, <c>false</c> is returned.<para />
-		/// Note: If the application is already running with administrator privileges, the function
-		/// will also return <c>false</c> as no new process got created. Please check the
-		/// <c>isAdmin()</c> method to be sure.
-		/// </returns>
 		ElevationResult elevateSelf(const wchar_t *szArgs = nullptr,
 			const wchar_t *szCurrentDir = nullptr);
 
@@ -81,7 +74,6 @@ namespace rl
 		/// If this parameter is <c>nullptr</c> or an empty string, the current directory of the
 		/// current process will be used.
 		/// </param>
-		/// <returns></returns>
 		ElevationResult execute(const wchar_t *szExe, const wchar_t *szArgs = L"",
 			const wchar_t *szCurrentDir =  nullptr);
 

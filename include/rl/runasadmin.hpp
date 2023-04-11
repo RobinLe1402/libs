@@ -1,6 +1,6 @@
 /***************************************************************************************************
- FILE:	elevate.hpp
- CPP:	elevate.cpp
+ FILE:	runasadmin.hpp
+ CPP:	runasadmin.cpp
  DESCR:	Elevate an application.
 ***************************************************************************************************/
 
@@ -35,10 +35,17 @@ namespace rl
 	/// </summary>
 	class RunAsAdmin final
 	{
-	public: // methods
+	public: // static methods
 
-		RunAsAdmin();
-		~RunAsAdmin() = default;
+		static RunAsAdmin &Instance() { return s_oInstance; }
+
+
+	private: // static variables
+
+		static RunAsAdmin s_oInstance;
+
+
+	public: // methods
 
 		bool isAdmin() const { return m_bAdmin; }
 
@@ -78,6 +85,12 @@ namespace rl
 			const wchar_t *szCurrentDir =  nullptr);
 
 
+	private: // methods
+		
+		RunAsAdmin();
+		~RunAsAdmin() = default;
+
+
 	private: // variables
 
 		bool m_bAdmin = false;
@@ -89,6 +102,12 @@ namespace rl
 	/// </summary>
 	/// <param name="bExitIfFailed">Should the current instance exit if the function fails?</param>
 	ElevationResult ElevateSelf(bool bExitIfFailed, bool bErrorDialog = true);
+
+	/// <summary>
+	/// Check if this application is already elevated.
+	/// </summary>
+	/// <returns></returns>
+	bool IsElevated();
 
 }
 

@@ -14,6 +14,8 @@ namespace rl
 
 
 
+	RunAsAdmin RunAsAdmin::s_oInstance;
+
 	RunAsAdmin::RunAsAdmin()
 	{
 		HANDLE hToken = NULL;
@@ -95,7 +97,7 @@ namespace rl
 
 	ElevationResult ElevateSelf(bool bExitIfFailed, bool bErrorDialog)
 	{
-		RunAsAdmin o;
+		auto &o = rl::RunAsAdmin::Instance();
 
 		if (o.isAdmin())
 			return ElevationResult::AlreadyElevated; // already admin
@@ -128,6 +130,8 @@ namespace rl
 
 		return ElevationResult::Failed;
 	}
+
+	bool IsElevated() { return RunAsAdmin::Instance().isAdmin(); }
 
 
 

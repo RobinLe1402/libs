@@ -1,8 +1,7 @@
 /***************************************************************************************************
  FILE:	data.registry.hpp
  CPP:	data.registry.cpp
-		runasadmin.cpp
- DESCR:	Interface to the RobinLe registry infrastructure.
+ DESCR:	Helper functionality for interacting with the registry.
 ***************************************************************************************************/
 
 
@@ -14,13 +13,15 @@
 
 
 
+// Win32
+#include <Windows.h>
+using QWORD = uint64_t; // definition missing in Windows.h for some reason?
+
+// STL
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
-#include <Windows.h>
-
-using QWORD = uint64_t; // definition missing in Windows.h for some reason?
 
 
 

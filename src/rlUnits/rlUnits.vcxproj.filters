@@ -90,6 +90,9 @@
     <ClInclude Include="..\..\include\rl\runasadmin.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\rl\data.registry.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\graphics.fonts.bitmap.legacy.cpp">
@@ -150,6 +153,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\runasadmin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\data.registry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

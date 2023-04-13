@@ -33,13 +33,12 @@ namespace
 		return s_sAppName;
 	}
 
-	const HKEY hBaseKey_Apps = HKEY_CURRENT_USER;
-	constexpr wchar_t szBasePath_Apps[] =
-		LR"(Software\RobinLe\Apps)";
 
+	const HKEY hBaseKey_User   = HKEY_CURRENT_USER;
 	const HKEY hBaseKey_Global = HKEY_LOCAL_MACHINE;
-	constexpr wchar_t szBasePath_Global[] =
-		LR"(SOFTWARE\RobinLe)";
+
+	constexpr wchar_t szBasePath[]      = LR"(Software\RobinLe)";
+	constexpr wchar_t szBasePath_Apps[] = LR"(Software\RobinLe\Apps)";
 
 
 	class HKeyHelper final
@@ -226,7 +225,7 @@ namespace rl
 		std::wstring sSubKey = szBasePath_Apps;
 		sSubKey += L'\\' + m_sAppName;
 
-		return LoadSettings(hBaseKey_Apps, sSubKey.c_str(), m_oRootKey);
+		return LoadSettings(hBaseKey_User, sSubKey.c_str(), m_oRootKey);
 	}
 
 	bool AppSettings::save(bool bClearBeforeWriting)
@@ -234,7 +233,7 @@ namespace rl
 		std::wstring sSubKey = szBasePath_Apps;
 		sSubKey += L'\\' + m_sAppName;
 
-		return SaveSettings(hBaseKey_Apps, sSubKey.c_str(), m_oRootKey, bClearBeforeWriting);
+		return SaveSettings(hBaseKey_User, sSubKey.c_str(), m_oRootKey, bClearBeforeWriting);
 	}
 
 
@@ -242,12 +241,64 @@ namespace rl
 	bool GlobalSettings::load()
 	{
 		m_oRootKey.clear();
-		return LoadSettings(hBaseKey_Global, szBasePath_Global, m_oRootKey);
+		return LoadSettings(hBaseKey_Global, szBasePath, m_oRootKey);
 	}
 
 	bool GlobalSettings::save(bool bClearBeforeWriting)
 	{
-		return SaveSettings(hBaseKey_Global, szBasePath_Global, m_oRootKey, bClearBeforeWriting);
+		return SaveSettings(hBaseKey_Global, szBasePath, m_oRootKey, bClearBeforeWriting);
+	}
+
+
+
+
+
+	namespace Registry
+	{
+
+		bool OpenRLKey(RLKey eKey, bool bReadOnly, HKEY &hKey)
+		{
+			HKEY hBaseKey;
+			std::wstring sSubKey;
+
+			switch (eKey)
+			{
+			case RLKey::Global:
+				hBaseKey = hBaseKey_Global;
+				sSubKey  = szBasePath;
+				break;
+
+			case RLKey::User:
+				hBaseKey = hBaseKey_User;
+				sSubKey  = szBasePath;
+				break;
+
+			case RLKey::User_App:
+				hBaseKey = hBaseKey_User;
+				sSubKey  = szBasePath_Apps;
+				break;
+
+			default:
+				return false;
+			}
+
+			const REGSAM samDesired = bReadOnly ? KEY_READ : KEY_ALL_ACCESS;
+
+			auto result = RegOpenKeyExW(hBaseKey, sSubKey.c_str(), 0, samDesired, &hKey);
+			switch (result)
+			{
+			case ERROR_SUCCESS:
+				return true;
+
+			case ERROR_FILE_NOT_FOUND:
+				return RegCreateKeyExW(hBaseKey, sSubKey.c_str(), 0, NULL,
+					REG_OPTION_NON_VOLATILE, samDesired, NULL, &hKey, NULL) == ERROR_SUCCESS;
+
+			default:
+				return false;
+			}
+		}
+
 	}
 
 }

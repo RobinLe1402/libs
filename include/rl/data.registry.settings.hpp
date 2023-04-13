@@ -139,6 +139,30 @@ namespace rl
 		SettingsNode m_oRootKey;
 
 	};
+
+
+
+	namespace Registry
+	{
+
+		/// <summary>
+		/// Predefined RobinLe registry keys
+		/// </summary>
+		enum class RLKey
+		{
+			Global,  // global base key
+			User,    // user-specific base key
+			User_App // user-specific "Apps" subkey
+		};
+
+		/// <summary>
+		/// Open a predefined RobinLe registry key.<para />
+		/// If the key doesn't exist yet, this function will attempt to create it.
+		/// </summary>
+		/// <returns>Could the key be opened?</returns>
+		bool OpenRLKey(RLKey eKey, bool bReadOnly, HKEY &hKey);
+
+	};
 	
 }
 

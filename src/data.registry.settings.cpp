@@ -4,6 +4,7 @@
 namespace
 {
 
+	constexpr wchar_t szPlaceholderName[] = L"[UnnamedApp]";
 	const std::wstring &GetAppName()
 	{
 		static std::wstring s_sAppName;
@@ -13,7 +14,10 @@ namespace
 		wchar_t szPath[MAX_PATH + 1];
 
 		if (GetModuleFileNameW(NULL, szPath, MAX_PATH + 1) == 0)
+		{
+			s_sAppName = szPlaceholderName;
 			return s_sAppName;
+		}
 
 		std::wstring_view sv = szPath;
 		auto iLastDelim = sv.find_last_of('\\');
@@ -24,6 +28,8 @@ namespace
 			sv = sv.substr(0, iLastDelim);
 
 		s_sAppName = sv;
+		if (s_sAppName.empty())
+			s_sAppName = szPlaceholderName;
 		return s_sAppName;
 	}
 
@@ -51,7 +57,7 @@ namespace
 	};
 
 
-	bool LoadSettings(HKEY hBaseKey, const wchar_t *szSubPath, rl::SettingsRegistryKey &oDest)
+	bool LoadSettings(HKEY hBaseKey, const wchar_t *szSubPath, rl::SettingsNode &oDest)
 	{
 		HKEY hKey;
 		if (RegOpenKeyExW(hBaseKey, szSubPath, 0, KEY_ENUMERATE_SUB_KEYS | KEY_READ,
@@ -78,10 +84,10 @@ namespace
 			while (RegEnumKeyExW(hKey, dwIndex, upKeyName.get(), &dwBufLen, NULL, NULL, NULL,
 				NULL) != ERROR_NO_MORE_ITEMS)
 			{
-				rl::SettingsRegistryKey oKey;
+				rl::SettingsNode oKey;
 				if (LoadSettings(hKey, upKeyName.get(), oKey))
 				{
-					oDest.subKeys().emplace(upKeyName.get(), std::move(oKey));
+					oDest.subNodes().emplace(upKeyName.get(), std::move(oKey));
 				}
 
 				++dwIndex;
@@ -115,7 +121,7 @@ namespace
 
 	}
 
-	bool SaveSettings(HKEY hBaseKey, const wchar_t *szSubPath, const rl::SettingsRegistryKey &oSrc,
+	bool SaveSettings(HKEY hBaseKey, const wchar_t *szSubPath, const rl::SettingsNode &oSrc,
 		bool bClearBeforeWriting)
 	{
 		constexpr REGSAM samDesired = KEY_ALL_ACCESS;
@@ -160,7 +166,7 @@ namespace
 				return false;
 		}
 
-		for (const auto &it : oSrc.subKeys())
+		for (const auto &it : oSrc.subNodes())
 		{
 			HKEY hSubKey;
 			if (RegCreateKeyExW(hKey, it.first.c_str(), NULL, NULL, REG_OPTION_NON_VOLATILE,
@@ -181,7 +187,7 @@ namespace
 namespace rl
 {
 
-	void SettingsRegistryKey::clear()
+	void SettingsNode::clear()
 	{
 		m_oValues.clear();
 		m_oSubKeys.clear();
@@ -195,6 +201,22 @@ namespace rl
 			szAppName = GetAppName().c_str();
 
 		m_sAppName = szAppName;
+	}
+
+	bool AppSettings::setAppName(const wchar_t *szAppName) noexcept
+	{
+		if (szAppName == nullptr)
+			return false;
+
+		std::wstring_view sv = szAppName;
+		if (sv.contains(L'\\') || sv.contains(L'/'))
+			return false;
+
+		m_sAppName = sv;
+		if (m_sAppName.empty())
+			m_sAppName = GetAppName();
+
+		return true;
 	}
 
 	bool AppSettings::load()

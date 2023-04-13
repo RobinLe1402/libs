@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{d2aa5170-e709-4433-8af4-7d2428e37165}</ProjectGuid>
-    <RootNamespace>CompileTest</RootNamespace>
+    <ProjectGuid>{19e7199c-9722-45a7-b936-e6edd7959369}</ProjectGuid>
+    <RootNamespace>rlUnits</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -59,33 +59,21 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(GitHub_rl_libs)vs\robinle.props" />
+    <Import Project="..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(GitHub_rl_libs)vs\robinle.props" />
+    <Import Project="..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(GitHub_rl_libs)vs\robinle.props" />
+    <Import Project="..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(GitHub_rl_libs)vs\robinle.props" />
+    <Import Project="..\..\vs\robinle_lib__nounitlib.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -143,19 +131,57 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="$(GitHub_rl_libs)src\console.cpp" />
-    <ClCompile Include="..\..\..\src\dev.msbuild.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClInclude Include="..\..\include\rl\audio.devices.hpp" />
+    <ClInclude Include="..\..\include\rl\audio.engine.hpp" />
+    <ClInclude Include="..\..\include\rl\commandline.hpp" />
+    <ClInclude Include="..\..\include\rl\console.hpp" />
+    <ClInclude Include="..\..\include\rl\data.endian.hpp" />
+    <ClInclude Include="..\..\include\rl\data.online.hpp" />
+    <ClInclude Include="..\..\include\rl\data.registry.settings.hpp" />
+    <ClInclude Include="..\..\include\rl\data.registry.hpp" />
+    <ClInclude Include="..\..\include\rl\data.resourceloader.hpp" />
+    <ClInclude Include="..\..\include\rl\dev.msbuild.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.creator.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.legacy.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.fonts.bitmap.reader.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.opengl.gui.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.opengl.texture.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.opengl.types.hpp" />
+    <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
+    <ClInclude Include="..\..\include\rl\input.keyboard.hpp" />
+    <ClInclude Include="..\..\include\rl\input.mouse.hpp" />
+    <ClInclude Include="..\..\include\rl\runasadmin.hpp" />
+    <ClInclude Include="..\..\include\rl\splashscreen.hpp" />
+    <ClInclude Include="..\..\include\rl\text.fileio.hpp" />
+    <ClInclude Include="..\..\include\rl\tools.gdiplus.hpp" />
+    <ClInclude Include="..\..\include\rl\tools.hresult.hpp" />
+    <ClInclude Include="..\..\include\rl\tools.textencoding.hpp" />
+    <ClInclude Include="..\..\include\rl\unicode.hpp" />
+    <ClInclude Include="..\..\include\rl\visualstyles.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(GitHub_rl_libs)include\rl\console.hpp" />
-    <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="$(GitHub_rl_libs)RobinLe.ico" />
+    <ClCompile Include="..\audio.devices.cpp" />
+    <ClCompile Include="..\audio.engine.cpp" />
+    <ClCompile Include="..\commandline.cpp" />
+    <ClCompile Include="..\console.cpp" />
+    <ClCompile Include="..\data.online.cpp" />
+    <ClCompile Include="..\data.registry.settings.cpp" />
+    <ClCompile Include="..\data.registry.cpp" />
+    <ClCompile Include="..\data.resourceloader.cpp" />
+    <ClCompile Include="..\dev.msbuild.cpp" />
+    <ClCompile Include="..\graphics.fonts.bitmap.creator.cpp" />
+    <ClCompile Include="..\graphics.fonts.bitmap.legacy.cpp" />
+    <ClCompile Include="..\graphics.fonts.bitmap.reader.cpp" />
+    <ClCompile Include="..\graphics.opengl.gui.cpp" />
+    <ClCompile Include="..\graphics.opengl.texture.cpp" />
+    <ClCompile Include="..\graphics.opengl.types.cpp" />
+    <ClCompile Include="..\graphics.opengl.window.cpp" />
+    <ClCompile Include="..\input.keyboard.cpp" />
+    <ClCompile Include="..\input.mouse.cpp" />
+    <ClCompile Include="..\runasadmin.cpp" />
+    <ClCompile Include="..\splashscreen.cpp" />
+    <ClCompile Include="..\text.fileio.cpp" />
+    <ClCompile Include="..\unicode.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -21,6 +21,9 @@
     <ClCompile Include="$(GitHub_rl_libs)src\console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\dev.msbuild.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(GitHub_rl_libs)include\rl\console.hpp">

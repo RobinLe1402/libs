@@ -15,13 +15,14 @@
 
 // Win32
 #include <Windows.h>
-using QWORD = uint64_t; // definition missing in Windows.h for some reason?
 
 // STL
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
+
+using QWORD = uint64_t; // definition missing in Windows.h for some reason?
 
 
 

@@ -123,29 +123,6 @@ namespace
 		return false;
 	}
 
-	const std::wstring &GetAppName()
-	{
-		static std::wstring s_sAppName;
-		if (!s_sAppName.empty())
-			return s_sAppName;
-
-		wchar_t szPath[MAX_PATH + 1];
-
-		if (GetModuleFileNameW(NULL, szPath, MAX_PATH + 1) == 0)
-			return s_sAppName;
-
-		std::wstring_view sv = szPath;
-		auto iLastDelim = sv.find_last_of('\\');
-		if (iLastDelim != sv.npos)
-			sv = sv.substr(iLastDelim + 1);
-		iLastDelim = sv.find_last_of('.');
-		if (iLastDelim != sv.npos)
-			sv = sv.substr(0, iLastDelim);
-
-		s_sAppName = sv;
-		return s_sAppName;
-	}
-
 }
 
 
@@ -569,6 +546,7 @@ namespace rl
 
 			const DWORD dwType = Type_RLToWin32(oVal.type());
 
+			const auto result = RegSetValueExW(hKey, szValueName, 0, dwType, oVal.data(), (DWORD)oVal.size());
 			return RegSetValueExW(hKey, szValueName, 0, dwType, oVal.data(), (DWORD)oVal.size())
 				== ERROR_SUCCESS;
 		}

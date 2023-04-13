@@ -135,6 +135,7 @@
     <ClCompile Include="test.data.online.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="test.audio.engine.cpp" />
+    <ClCompile Include="test.data.registry.settings.cpp" />
     <ClCompile Include="test.graphics.opengl.window.cpp" />
     <ClCompile Include="test.input.keyboard.cpp" />
     <ClCompile Include="test.runasadmin.cpp" />

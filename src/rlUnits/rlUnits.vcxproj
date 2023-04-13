@@ -137,6 +137,7 @@
     <ClInclude Include="..\..\include\rl\console.hpp" />
     <ClInclude Include="..\..\include\rl\data.endian.hpp" />
     <ClInclude Include="..\..\include\rl\data.online.hpp" />
+    <ClInclude Include="..\..\include\rl\data.registry.settings.hpp" />
     <ClInclude Include="..\..\include\rl\data.registry.hpp" />
     <ClInclude Include="..\..\include\rl\data.resourceloader.hpp" />
     <ClInclude Include="..\..\include\rl\dev.msbuild.hpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="..\commandline.cpp" />
     <ClCompile Include="..\console.cpp" />
     <ClCompile Include="..\data.online.cpp" />
+    <ClCompile Include="..\data.registry.settings.cpp" />
     <ClCompile Include="..\data.registry.cpp" />
     <ClCompile Include="..\data.resourceloader.cpp" />
     <ClCompile Include="..\dev.msbuild.cpp" />

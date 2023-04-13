@@ -1,0 +1,111 @@
+<!doctype HTML>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href="style/main.css">
+		<link rel="stylesheet" href="style/responsive.css">
+		<title>File Format Specification</title>
+	</head>
+	
+	<body>
+		<header>
+			<h1 id="formatname">File Format Name</h1>
+			<p id="formatdescription">Format summary</p>
+		</header>
+		
+		<nav>
+			<h2>Contents</h2>
+			<a href="#introduction">Introduction</a>
+			<a href="#filestructure">File Structure</a>
+			<a href="#Remarks">Remarks</a>
+		</nav>
+		
+		<section id="introduction">
+			<h2>Introduction</h2>
+			<h3>General Idea</h3>
+			<p>This is a test file format.</p>
+		</section>
+		
+		<section id="filestructure">
+			<h2>File Structure</h2>
+			<table>
+				<tr>
+					<th>Section</th>
+					<th>Description</th>
+					<th>Size</th>
+				</tr>
+				<tr>
+					<td><a href="#section1" class="sectionlink">Section 1</a></td>
+					<td>A dummy section.</td>
+					<td>100 bytes</td>
+				</tr>
+			</table>
+		</section>
+		
+		<section id="section1">
+			<h2>Section 1</h2>
+			<p>A test section with some data.</p>
+			
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>6 bytes</td>
+					<td class="datatype"><c>char[]</c></td>
+					<td class="dataname"><c>szMagicNo</c></td>
+					<td>
+						The magic number, <c>"rlFILE"</c>.<br>
+						Does not end with a terminating zero.
+					</td>
+				</tr>
+				<tr>
+					<td>1 byte</td>
+					<td class="datatype"><c>uint8_t</c></td>
+					<td class="dataname"><c>iFlags</c></td>
+					<td class="datadescr">
+						Some binary flags:<br>
+						<table>
+							<tr>
+								<th>Value</th>
+								<th>Meaning</th>
+							</tr>
+							<tr>
+								<td class="flag_id">
+									<c class="flagname">TEST_FLAG_1</c>
+									<c class="flagvalue">0x01</c>
+								</td>
+								<td>
+									Example flag 1.<br>
+									Can only be set if <c>TEST_FLAG_2</c> is not set.
+								</td>
+							</tr>
+							<tr>
+								<td class="flag_id">
+									<c class="flagname">TEST_FLAG_2</c>
+									<c class="flagvalue">0x02</c>
+								</td>
+								<td>
+									Example flag 2.<br>
+									Can only be set if <c>TEST_FLAG_1</c> is not set.
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</section>
+		
+		<section id="remarks">
+			<h2>Remarks</h2>
+			<p>The file format described in this document is just a placeholder definition and doesn't serve any purpose whatsoever.</p>
+		</section>
+		
+		<footer>© <a href="https://www.robinle.de/" target="_blank">Robin Lemanska</a> 20XX</footer>
+	</body>
+	
+</html>

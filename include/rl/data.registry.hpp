@@ -31,6 +31,9 @@ using QWORD = uint64_t; // definition missing in Windows.h for some reason?
 namespace rl
 {
 
+	/// <summary>
+	/// Registry data types.
+	/// </summary>
 	enum class RegistryType
 	{
 		Binary,       // binary data
@@ -43,6 +46,11 @@ namespace rl
 		Unsupported   // type is not supported by the RobinLe registry framework.
 	};
 
+
+
+	/// <summary>
+	/// A registry-compatible value.
+	/// </summary>
 	class RegistryValue final
 	{
 	public: // static methods
@@ -72,22 +80,24 @@ namespace rl
 		RegistryValue &operator=(const RegistryValue &) = default;
 		RegistryValue &operator=(RegistryValue &&) = default;
 
-		explicit operator QWORD() const;
-		explicit operator DWORD() const;
-		explicit operator std::wstring() const;
 		operator bool() const noexcept { return m_eType != RegistryType::Unsupported; }
 
 
 		const uint8_t *data() const noexcept { return m_spData.get(); }
-		uint8_t *data() noexcept { return m_spData.get(); }
+		uint8_t       *data() noexcept       { return m_spData.get(); }
 
 		size_t size() const noexcept { return m_iSize; }
-		auto type() const noexcept { return m_eType; }
+		auto type()   const noexcept { return m_eType; }
 
-		bool asQWORD(QWORD &qwDest) const noexcept;
-		bool asDWORD(DWORD &dwDest) const noexcept;
-		bool asString(std::wstring &sDest, bool bExpand = false) const noexcept;
-		bool asMultiString(std::vector<std::wstring> &oDest) const noexcept;
+		bool tryGetQWORD(QWORD &qwDest) const noexcept;
+		bool tryGetDWORD(DWORD &dwDest) const noexcept;
+		bool tryGetString(std::wstring &sDest, bool bExpand = false) const noexcept;
+		bool tryGetMultiString(std::vector<std::wstring> &oDest) const noexcept;
+
+		QWORD                     asQWORD() const;
+		DWORD                     asDWORD() const;
+		std::wstring              asString(bool bExpand = false) const;
+		std::vector<std::wstring> asMultiString() const;
 
 		bool isIntegral() const noexcept { return m_bIntegral; }
 
@@ -120,6 +130,71 @@ namespace rl
 		std::shared_ptr<uint8_t[]> m_spData;
 		size_t m_iSize = 0;
 		bool m_bIntegral = false;
+	};
+
+
+
+	/// <summary>
+	/// A wrapper for a <c>HKEY</c>.<para />
+	/// Behaves the same as a <c>std::unique_ptr</c>.
+	/// </summary>
+	class UniqueRegistryKey final
+	{
+	public: // methods
+
+		UniqueRegistryKey() = default;
+		UniqueRegistryKey(HKEY hKey) noexcept;
+		UniqueRegistryKey(UniqueRegistryKey &&rval) noexcept;
+		UniqueRegistryKey(const UniqueRegistryKey &) = delete;
+		~UniqueRegistryKey();
+
+		UniqueRegistryKey &operator=(HKEY hKey) noexcept;
+		UniqueRegistryKey &operator=(UniqueRegistryKey &&rval) noexcept;
+		UniqueRegistryKey &operator=(const UniqueRegistryKey &) = delete;
+
+		operator bool()  const { return m_hKey != NULL; }
+		bool operator!() const { return m_hKey == NULL; }
+
+		void reset();
+
+		HKEY get() const { return m_hKey; }
+
+
+	private: // variables
+
+		HKEY m_hKey = NULL;
+
+	};
+
+	/// <summary>
+	/// A wrapper for a <c>HKEY</c>.<para />
+	/// Behaves the same as a <c>std::shared_key</c>.
+	/// </summary>
+	class SharedRegistryKey final
+	{
+	public: // methods
+
+		SharedRegistryKey() = default;
+		SharedRegistryKey(HKEY hKey) noexcept;
+		SharedRegistryKey(const SharedRegistryKey &other) noexcept;
+		SharedRegistryKey(SharedRegistryKey &&rval) noexcept;
+		~SharedRegistryKey();
+
+		SharedRegistryKey &operator=(HKEY hKey) noexcept;
+		SharedRegistryKey &operator=(const SharedRegistryKey &other) noexcept;
+		SharedRegistryKey &operator=(SharedRegistryKey &&rval) noexcept;
+
+		operator bool()  const { return m_hKey != NULL; }
+		bool operator!() const { return m_hKey == NULL; }
+
+		void reset() noexcept;
+
+
+	private: // variables
+
+		HKEY m_hKey = NULL;
+		std::shared_ptr<size_t> m_spRefCount;
+
 	};
 
 	

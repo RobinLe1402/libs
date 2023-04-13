@@ -10,6 +10,7 @@
 
 namespace
 {
+
 	template <typename TUInt>
 	bool WStringToUInt(TUInt &iDest, const wchar_t *sz)
 	{
@@ -80,9 +81,9 @@ namespace
 					if (c <= L'9')
 						iVal = c - L'0';
 					else if (c <= 'F')
-						iVal = 0xA + (c - 'A');
+						iVal = (TUInt)0xA + (c - 'A');
 					else
-						iVal = 0xA + (c - 'a');
+						iVal = (TUInt)0xA + (c - 'a');
 
 					iDest |= iVal;
 				}
@@ -121,6 +122,11 @@ namespace
 		}
 
 		return false;
+	}
+
+	void ThrowInvalidCastException()
+	{
+		throw std::exception("rl::RegistryValue: Invalid cast");
 	}
 
 }
@@ -232,31 +238,7 @@ namespace rl
 		return *this;
 	}
 
-	RegistryValue::operator QWORD() const
-	{
-		QWORD result;
-		if (!asQWORD(result))
-			throw std::exception("Invalid cast");
-		return result;
-	}
-
-	RegistryValue::operator DWORD() const
-	{
-		DWORD result;
-		if (!asDWORD(result))
-			throw std::exception("Invalid cast");
-		return result;
-	}
-
-	RegistryValue::operator std::wstring() const
-	{
-		std::wstring result;
-		if (!asString(result))
-			throw std::exception("Invalid cast");
-		return result;
-	}
-
-	bool RegistryValue::asQWORD(QWORD &qwDest) const noexcept
+	bool RegistryValue::tryGetQWORD(QWORD &qwDest) const noexcept
 	{
 		if (m_iSize == 0)
 			return false;
@@ -275,7 +257,7 @@ namespace rl
 		case RegistryType::ExpandString:
 		{
 			std::wstring s;
-			if (!asString(s, true))
+			if (!tryGetString(s, true))
 				return false;
 
 			return WStringToUInt(qwDest, s.c_str());
@@ -287,10 +269,10 @@ namespace rl
 		return true;
 	}
 
-	bool RegistryValue::asDWORD(DWORD &dwDest) const noexcept
+	bool RegistryValue::tryGetDWORD(DWORD &dwDest) const noexcept
 	{
 		QWORD qwTMP;
-		if (!asQWORD(qwTMP))
+		if (!tryGetQWORD(qwTMP))
 			return false;
 
 		if (qwTMP & 0xFFFFFFFF00000000)
@@ -300,7 +282,7 @@ namespace rl
 		return true;
 	}
 
-	bool RegistryValue::asString(std::wstring &sDest, bool bExpand) const noexcept
+	bool RegistryValue::tryGetString(std::wstring &sDest, bool bExpand) const noexcept
 	{
 		sDest.clear();
 
@@ -349,7 +331,7 @@ namespace rl
 		return true;
 	}
 
-	bool RegistryValue::asMultiString(std::vector<std::wstring> &oDest) const noexcept
+	bool RegistryValue::tryGetMultiString(std::vector<std::wstring> &oDest) const noexcept
 	{
 		oDest.clear();
 
@@ -366,7 +348,7 @@ namespace rl
 		case RegistryType::ExpandString:
 		{
 			std::wstring s;
-			if (!asString(s))
+			if (!tryGetString(s))
 				return false;
 
 			oDest.push_back(std::move(s));
@@ -395,6 +377,38 @@ namespace rl
 			return false;
 		}
 		return true;
+	}
+
+	QWORD RegistryValue::asQWORD() const
+	{
+		QWORD qw;
+		if (!tryGetQWORD(qw))
+			ThrowInvalidCastException();
+		return qw;
+	}
+
+	DWORD RegistryValue::asDWORD() const
+	{
+		DWORD dw;
+		if (!tryGetDWORD(dw))
+			ThrowInvalidCastException();
+		return dw;
+	}
+
+	std::wstring RegistryValue::asString(bool bExpand) const
+	{
+		std::wstring s;
+		if (!tryGetString(s, bExpand))
+			ThrowInvalidCastException();
+		return s;
+	}
+
+	std::vector<std::wstring> RegistryValue::asMultiString() const
+	{
+		std::vector<std::wstring> o;
+		if (!tryGetMultiString(o))
+			ThrowInvalidCastException();
+		return o;
 	}
 
 	void RegistryValue::clear() noexcept
@@ -436,13 +450,140 @@ namespace rl
 		case RegistryType::ExpandString:
 		{
 			QWORD qwDummy;
-			m_bIntegral = asQWORD(qwDummy);
+			m_bIntegral = tryGetQWORD(qwDummy);
 		}
 		break;
 
 		default:
 			m_bIntegral = false;
 		}
+	}
+
+
+
+	UniqueRegistryKey::UniqueRegistryKey(HKEY hKey) noexcept : m_hKey(hKey) {}
+	
+	UniqueRegistryKey::UniqueRegistryKey(UniqueRegistryKey &&rval) noexcept :
+		m_hKey(rval.m_hKey)
+	{
+		rval.m_hKey = NULL;
+	}
+
+	UniqueRegistryKey::~UniqueRegistryKey()
+	{
+		if (m_hKey != NULL)
+			RegCloseKey(m_hKey);
+	}
+
+	UniqueRegistryKey &UniqueRegistryKey::operator=(HKEY hKey) noexcept
+	{
+		if (m_hKey != NULL)
+			RegCloseKey(m_hKey);
+		
+		m_hKey = hKey;
+		return *this;
+	}
+
+	UniqueRegistryKey &UniqueRegistryKey::operator=(UniqueRegistryKey &&rval) noexcept
+	{
+		if (m_hKey != NULL)
+			RegCloseKey(m_hKey);
+
+		m_hKey      = rval.m_hKey;
+		rval.m_hKey = NULL;
+		return *this;
+	}
+
+	void UniqueRegistryKey::reset()
+	{
+		if (m_hKey == NULL)
+			return;
+
+		RegCloseKey(m_hKey);
+		m_hKey = NULL;
+	}
+
+	
+
+	SharedRegistryKey::SharedRegistryKey(HKEY hKey) noexcept :
+		m_hKey(hKey)
+	{
+		if (hKey != NULL)
+			m_spRefCount = std::make_shared<size_t>(1);
+	}
+
+	SharedRegistryKey::SharedRegistryKey(const SharedRegistryKey &other) noexcept :
+		m_hKey(other.m_hKey), m_spRefCount(other.m_spRefCount)
+	{
+		if (m_hKey)
+			++(*m_spRefCount.get());
+	}
+
+	SharedRegistryKey::SharedRegistryKey(SharedRegistryKey &&rval) noexcept :
+		m_hKey(rval.m_hKey), m_spRefCount(std::move(rval.m_spRefCount))
+	{
+		rval.m_hKey = NULL;
+	}
+
+	SharedRegistryKey::~SharedRegistryKey()
+	{
+		if (m_hKey && --(*m_spRefCount.get()) == 0)
+			RegCloseKey(m_hKey);
+	}
+
+	SharedRegistryKey &SharedRegistryKey::operator=(HKEY hKey) noexcept
+	{
+		if (hKey == m_hKey)
+			return *this;
+
+		reset();
+		if (hKey == NULL)
+			return *this;
+
+		m_hKey       = hKey;
+		m_spRefCount = std::make_shared<size_t>(1);
+
+		return *this;
+	}
+
+	SharedRegistryKey &SharedRegistryKey::operator=(const SharedRegistryKey &other) noexcept
+	{
+		if (&other == this)
+			return *this;
+
+		reset();
+		m_hKey       = other.m_hKey;
+		m_spRefCount = other.m_spRefCount;
+		++(*m_spRefCount.get());
+
+		return *this;
+	}
+
+	SharedRegistryKey &SharedRegistryKey::operator=(SharedRegistryKey &&rval) noexcept
+	{
+		if (&rval == this)
+			return *this;
+
+		reset();
+
+		m_spRefCount = std::move(rval.m_spRefCount);
+		m_hKey       = rval.m_hKey;
+
+		rval.m_hKey  = NULL;
+
+		return *this;
+	}
+
+	void SharedRegistryKey::reset() noexcept
+	{
+		if (m_hKey == NULL)
+			return;
+
+		if (--(*m_spRefCount.get()) == 0)
+			RegCloseKey(m_hKey);
+
+		m_hKey       = NULL;
+		m_spRefCount = nullptr;
 	}
 
 
@@ -552,4 +693,5 @@ namespace rl
 		}
 
 	}
+
 }

@@ -22,13 +22,17 @@ bool UnitTest_data_registry_settings()
 
 	std::printf("\n\nTRYING TO SAVE SETTINGS\n");
 
-	oApp.rootKey().values()[L""] = L"Hello app registry! xD";
+	oApp.rootKey().values()[L"!TestValue"] = L"Hello app registry! xD";
+	if (!oApp.rootKey().values().contains(L"RunCount"))
+		oApp.rootKey().values()[L"RunCount"] = (QWORD)1;
+	else
+		oApp.rootKey().values()[L"RunCount"] = oApp.rootKey().values()[L"RunCount"].asQWORD() + 1;
 	if (!oApp.save())
 		std::printf("FAIL:    App settings couldn't be saved.\n");
 	else
 		std::printf("SUCCESS: App settings saved.\n");
 
-	oGlobal.rootKey().values()[L""] = L"Hello global registry! :)";
+	oGlobal.rootKey().values()[L"!TestValue"] = L"Hello global registry! :)";
 	if (!oGlobal.save())
 		std::printf("FAIL:    Global settings couldn't be saved.\n");
 	else

@@ -11,23 +11,52 @@
 namespace
 {
 	constexpr char szMagicNumber[]       = "rlFILECONTAINER";
-	constexpr uint8_t iCurrentVersion[2] = { 1, 0 };
+	constexpr uint8_t iCurrentVersion[2] ={ 1, 0 };
+
+	constexpr uint16_t iFlag_Unicode = 0x01;
+
+#pragma pack(push, 1)
+
+	struct FileHeader
+	{
+		char     szMagicNo[16];
+		uint8_t  iFormatVersion[2];
+		uint16_t iFlags;
+		uint64_t iDirCount;
+		uint64_t iFileCount;
+		uint64_t iOffsetDirTable;
+		uint64_t iOffsetFileTable;
+		uint64_t iOffsetData;
+	};
+
+	constexpr size_t iElemNameLen = 50;
+
+	template <typename TChar>
+	struct DirTableEntry
+	{
+		TChar  szName[iElemNameLen];
+		size_t iParentDirID;
+	};
+	using DirTableEntryA = DirTableEntry<char>;
+	using DirTableEntryW = DirTableEntry<wchar_t>;
+
+	template <typename TChar>
+	struct FileTableEntry
+	{
+		TChar  szName[iElemNameLen];
+		size_t iParentDirID;
+		size_t iDataOffset;
+		size_t iDataSize;
+	};
+	using FileTableEntryA = FileTableEntry<char>;
+	using FileTableEntryW = FileTableEntry<wchar_t>;
+
+#pragma pack(pop)
 }
 
 namespace rl
 {
-	
-	/***********************************************************************************************
-	 class File
-	***********************************************************************************************/
-	
-	//==============================================================================================
-	// METHODS
 
-
-	//----------------------------------------------------------------------------------------------
-	// CONSTRUCTORS, DESTRUCTORS
-	
 	File::File(const File &other)
 	{
 		this->m_iSize  = other.m_iSize;
@@ -37,13 +66,6 @@ namespace rl
 		this->m_upData = std::make_unique<uint8_t[]>(this->m_iSize);
 		memcpy_s(m_upData.get(), this->m_iSize, other.m_upData.get(), other.m_iSize);
 	}
-	
-	
-	
-	
-	
-	//----------------------------------------------------------------------------------------------
-	// OPERATORS
 
 	File &File::operator=(const File &other)
 	{
@@ -51,7 +73,7 @@ namespace rl
 		if (m_iSize == 0)
 		{
 			m_upData = nullptr;
-			return;
+			return *this;
 		}
 
 		this->m_upData = std::make_unique<uint8_t[]>(this->m_iSize);
@@ -59,14 +81,7 @@ namespace rl
 
 		return *this;
 	}
-	
-	
-	
-	
-	
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
-	
+
 	bool File::load(const wchar_t *szPath)
 	{
 		clear();
@@ -82,7 +97,7 @@ namespace rl
 
 		oFile.seekg(0, std::ios::beg);
 		m_upData = std::make_unique<uint8_t[]>(m_iSize);
-		oFile.read(reinterpret_cast<char*>(m_upData.get()), m_iSize);
+		oFile.read(reinterpret_cast<char *>(m_upData.get()), m_iSize);
 
 		oFile.close();
 		return true;
@@ -95,7 +110,7 @@ namespace rl
 			return false;
 
 		if (m_iSize > 0)
-			oFile.write(reinterpret_cast<const char*>(m_upData.get()), m_iSize);
+			oFile.write(reinterpret_cast<const char *>(m_upData.get()), m_iSize);
 
 		oFile.close();
 		return true;
@@ -117,7 +132,7 @@ namespace rl
 
 	void File::clear()
 	{
-		m_iSize = 0;
+		m_iSize  = 0;
 		m_upData = nullptr;
 	}
 
@@ -125,109 +140,225 @@ namespace rl
 
 
 
+	bool FileContainer::Directory::addDirectoryContents(const wchar_t *szDirPath, bool bRecursive)
+	{
+		if (szDirPath == nullptr)
+			return false;
+
+		std::wstring sDir;
+		sDir.reserve(wcslen(szDirPath) + 2);
+		sDir = szDirPath;
+		if (!sDir.ends_with(L'\\') && !sDir.ends_with(L'/'))
+			sDir += L"\\";
+		const auto sMask = sDir + L"*";
 
 
+		bool bResult = true;
 
+		// handle subdirectories
+		if (bRecursive)
+		{
+			WIN32_FIND_DATAW fd{};
+			auto hFind = FindFirstFileW(sMask.c_str(), &fd);
+			if (hFind != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+						continue; // no directory
 
+					std::wstring_view sv = fd.cFileName;
+					if (sv == L"." || sv == L"..")
+						continue; // "."/".."
 
-	/***********************************************************************************************
-	 class FileContainer
-	***********************************************************************************************/
+					if (sv.length() > 50)
+					{
+						bResult = false;
+						continue; // next directory
+					}
 
-	//==============================================================================================
-	// METHODS
+					auto &oDir = m_oSubDirectories[sv.data()];
+					std::wstring sMask2 = sDir + sv.data() + LR"(\*)";
+					oDir.addDirectoryContents(sMask2.c_str(), true);
 
+				} while (FindNextFileW(hFind, &fd) != 0);
 
-	//----------------------------------------------------------------------------------------------
-	// PUBLIC METHODS
+				FindClose(hFind);
+			}
+		}
 
-	void FileContainer::clear()
+		// handle files
+		{
+			WIN32_FIND_DATAW fd{};
+			auto hFind = FindFirstFileW(sMask.c_str(), &fd);
+			if (hFind != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+						continue; // directory
+
+					std::wstring_view sv = fd.cFileName;
+
+					if (sv.length() > 50)
+					{
+						bResult = false;
+						continue; // next file
+					}
+
+					auto &oFile = m_oFiles[sv.data()];
+
+					std::wstring sFile = sDir + sv.data();
+					if (!oFile.load(sFile.c_str()))
+					{
+						bResult = false;
+						m_oFiles.erase(sv.data());
+					}
+
+				} while (FindNextFileW(hFind, &fd) != 0);
+
+				FindClose(hFind);
+			}
+		}
+
+		return bResult;
+	}
+
+	void FileContainer::Directory::clear() noexcept
 	{
 		m_oFiles.clear();
+		m_oSubDirectories.clear();
 	}
+
+
+
+
 
 	bool FileContainer::load(const wchar_t *szPath)
 	{
-		clear();
+		m_oRootDir.clear();
 
-		std::ifstream oFile(szPath, std::ios::binary);
-		if (!oFile)
+		std::ifstream in(szPath, std::ios::binary);
+		if (!in)
 			return false;
-		oFile.exceptions(std::ios::eofbit | std::ios::badbit | std::ios::failbit);
+		in.exceptions(std::ios::eofbit | std::ios::badbit | std::ios::failbit);
 
 		try
 		{
-			// read magic number
-			char szFileMagicNumber[sizeof(szMagicNumber)];
-			oFile.read(szFileMagicNumber, sizeof(szMagicNumber) - 1);
-			if (memcmp(szFileMagicNumber, szMagicNumber, sizeof(szMagicNumber) - 1) != 0)
-				return false; // wrong magic number
+#define READVAR(var) in.read(reinterpret_cast<char *>(&var), sizeof(var))
+#define READBIN(pDest, iSize) in.read(reinterpret_cast<char *>(pDest), iSize)
 
-			// read version
-			uint8_t iFileVersion[2]{};
-			oFile.read(reinterpret_cast<char *>(iFileVersion), sizeof(iFileVersion));
+			// FILE HEADER
+			FileHeader hdr{};
+			READVAR(hdr);
 
-			switch (iFileVersion[0]) // major version
+			if (memcmp(hdr.iFormatVersion, iCurrentVersion, sizeof(iCurrentVersion)) != 0)
+				return false; // unknown file format version
+
+
+			std::unique_ptr<DirTableEntryW[]> up_oDirs;
+			std::unique_ptr<Directory *[]> up_oDirByIndex;
+			if (hdr.iDirCount > 0)
 			{
-			case 1: // 1.X
+				up_oDirs       = std::make_unique<DirTableEntryW[]>(hdr.iDirCount);
+				up_oDirByIndex = std::make_unique<Directory * []>(hdr.iDirCount);
 
-				switch (iFileVersion[1]) // minor version
-				{
-				case 0: // 1.0
-				{
-					uint64_t iFileCount;
-					oFile >> iFileCount;
-
-					for (uint64_t i = 0; i < iFileCount; ++i)
-					{
-						// read file name
-						uint64_t iFileNameLength;
-						oFile >> iFileNameLength;
-						std::wstring sFileName;
-						sFileName.resize(iFileNameLength);
-						oFile.read(reinterpret_cast<char*>(sFileName.data()),
-							iFileNameLength * sizeof(wchar_t));
-
-						uint64_t iFileSize;
-						oFile >> iFileSize;
-						uint64_t iOffset;
-						oFile >> iOffset;
-
-						File oVFile;
-						if (iFileSize > 0)
-						{
-							const auto iOldOffset = oFile.tellg();
-
-							oFile.seekg(iOffset, std::ios::beg); // jump to data
-							oVFile.create(iFileSize, false);
-							oFile.read(reinterpret_cast<char*>(oVFile.data()), iFileSize);
-
-							oFile.seekg(iOldOffset); // jump back to file table
-						}
-
-						if (m_oFiles.contains(sFileName))
-						{
-							clear();
-							return false; // duplicate file name
-						}
-						m_oFiles.emplace(sFileName, oVFile);
-						
-					}
-
-					break;
-				}
-
-				default: // unknown minor version
-					return false;
-				}
-
-			default: // unknown major version
-				return false;
+				memset(up_oDirByIndex.get(), 0, hdr.iDirCount * sizeof(up_oDirByIndex[0]));
 			}
+
+			std::unique_ptr<FileTableEntryW[]> up_oFiles;
+			if (hdr.iFileCount > 0)
+				up_oFiles = std::make_unique<FileTableEntryW[]>(hdr.iFileCount);
+
+			if (hdr.iFlags & iFlag_Unicode)
+			{
+				// DIRECTORIES
+				if (hdr.iDirCount > 0)
+					READBIN(up_oDirs.get(), sizeof(DirTableEntryW) * hdr.iDirCount);
+
+				// FILES
+				if (hdr.iFileCount > 0)
+					READBIN(up_oFiles.get(), sizeof(FileTableEntryW) * hdr.iFileCount);
+			}
+			else // ASCII version
+			{
+				// DIRECTORIES
+				if (hdr.iDirCount > 0)
+				{
+					auto up_oDirsA = std::make_unique<DirTableEntryA[]>(hdr.iDirCount);
+					READBIN(up_oDirsA.get(), sizeof(DirTableEntryA) * hdr.iDirCount);
+
+					for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
+					{
+						auto &oDest = up_oDirs[iDir];
+						auto &oSrc  = up_oDirsA[iDir];
+
+						oDest.iParentDirID = oSrc.iParentDirID;
+						for (size_t iChar = 0; iChar < iElemNameLen; ++iChar)
+						{
+							oDest.szName[iChar] = oSrc.szName[iChar];
+						}
+					}
+				}
+								
+				// FILES
+				if (hdr.iFileCount > 0)
+				{
+					auto up_oFilesA = std::make_unique<FileTableEntryA[]>(hdr.iDirCount);
+					READBIN(up_oFilesA.get(), sizeof(FileTableEntryA) * hdr.iDirCount);
+
+					for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
+					{
+						auto &oDest = up_oFiles[iDir];
+						auto &oSrc  = up_oFilesA[iDir];
+
+						oDest.iParentDirID = oSrc.iParentDirID;
+						oDest.iDataOffset  = oSrc.iDataOffset;
+						oDest.iDataSize    = oSrc.iDataSize;
+						for (size_t iChar = 0; iChar < iElemNameLen; ++iChar)
+						{
+							oDest.szName[iChar] = oSrc.szName[iChar];
+						}
+					}
+				}
+			}
+
+			// create directories
+			for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
+			{
+				auto &oDir = up_oDirs[iDir];
+				if (oDir.iParentDirID >= iDir)
+					return false; // invalid parent directory ID
+
+				if (oDir.iParentDirID == 0)
+					up_oDirByIndex[iDir] = &m_oRootDir.directories()[oDir.szName];
+				else
+					up_oDirByIndex[iDir] =
+					&up_oDirByIndex[oDir.iParentDirID]->directories()[oDir.szName];
+			}
+
+			// read actual data
+			for (size_t iFile = 0; iFile < hdr.iFileCount; ++iFile)
+			{
+				auto &oFile = up_oFiles[iFile];
+
+				File *pFile;
+
+				if (oFile.iParentDirID == 0)
+					pFile = &m_oRootDir.files()[oFile.szName];
+				else
+					pFile = &up_oDirByIndex[oFile.iParentDirID]->files()[oFile.szName];
+
+				pFile->create(oFile.iDataSize, false);
+				READBIN(pFile->data(), pFile->size());
+			}
+
+#undef READVAR
+#undef READBIN
 		}
 		catch (...)
 		{
-			clear();
+			m_oRootDir.clear();
 			return false;
 		}
 
@@ -236,181 +367,8 @@ namespace rl
 
 	bool FileContainer::save(const wchar_t *szPath) const
 	{
-		std::ofstream oFile(szPath, std::ios::binary | std::ios::trunc);
-		if (!oFile)
-			return false;
-
-		// write magic number
-		oFile.write(szMagicNumber, sizeof(szMagicNumber) - 1);
-		// write version
-		oFile << iCurrentVersion[0] << iCurrentVersion[1];
-
-		// write file count
-		oFile << (uint64_t)m_oFiles.size();
-
-		auto up_iOffsetOffsets = std::make_unique<std::streamoff[]>(m_oFiles.size());
-		auto up_iOffsets = std::make_unique<uint64_t[]>(m_oFiles.size());
-		
-		// write file table
-		size_t i = 0;
-		for (auto &it : m_oFiles)
-		{
-			// write file name
-			const auto &sFileName          = it.first;
-			const uint64_t iFileNameLength = sFileName.length();
-			oFile << iFileNameLength;
-			oFile.write(reinterpret_cast<const char*>(sFileName.data()),
-								iFileNameLength * sizeof(wchar_t));
-
-			// write file size
-			const auto &oVFile = it.second;
-			const auto iFileSize = oVFile.size();
-			oFile << (uint64_t)iFileSize;
-			// write file offset
-			up_iOffsetOffsets[i] = oFile.tellp();
-			oFile << (uint64_t)0;
-			++i;
-		}
-
-		// write file data
-		i = 0;
-		for (auto &it : m_oFiles)
-		{
-			const auto &oVFile   = it.second;
-			const auto iFileSize = oVFile.size();
-
-			up_iOffsets[i] = oFile.tellp();
-
-			if (iFileSize > 0)
-				oFile.write(reinterpret_cast<const char*>(oVFile.data()), iFileSize);
-
-			++i;
-		}
-
-		// write file offsets
-		for (i = 0; i < m_oFiles.size(); ++i)
-		{
-			oFile.seekp(up_iOffsetOffsets[i], std::ios::beg);
-			oFile << up_iOffsets[i];
-		}
-
-		oFile.close();
-		return true;
-	}
-
-	bool FileContainer::addFile(const wchar_t *szPath, const wchar_t *szName)
-	{
-		File oFile;
-		if (!oFile.load(szPath))
-			return false;
-
-		m_oFiles[szPath] = std::move(oFile);
-
-		return true;
-	}
-
-	bool FileContainer::removeFile(const wchar_t *szName)
-	{
-		if (!m_oFiles.contains(szName))
-			return false;
-
-		m_oFiles.erase(szName);
-		return true;
-	}
-
-	bool FileContainer::addDirectory(const wchar_t *szDir, const wchar_t *szMask,
-		const wchar_t *szNamePrefix, bool bRecursive)
-	{
-		std::wstring sSearchPath;
-		sSearchPath.reserve(wcslen(szDir) + 1 + wcslen(szMask));
-		sSearchPath  = szDir;
-		sSearchPath += L'\\';
-		sSearchPath += szMask;
-
-		WIN32_FIND_DATAW oFindData;
-		auto hFind = FindFirstFileW(sSearchPath.c_str(), &oFindData);
-		if (hFind != INVALID_HANDLE_VALUE)
-		{
-			do
-			{
-				if (oFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-					continue; // skip directories
-
-				std::wstring sFileName;
-				sFileName.reserve(wcslen(szDir) + 1 + wcslen(oFindData.cFileName));
-				sFileName  = szDir;
-				sFileName += L'\\';
-				sFileName += oFindData.cFileName;
-
-				std::wstring sName;
-				sName.reserve(wcslen(szNamePrefix) + wcslen(oFindData.cFileName));
-				sName  = szNamePrefix;
-				sName += oFindData.cFileName;
-
-				File oFile;
-				oFile.load(sFileName.c_str());
-				m_oFiles[sName] = std::move(oFile);
-			} while (FindNextFileW(hFind, &oFindData));
-
-			FindClose(hFind);
-		}
-
-		if (bRecursive)
-		{
-			sSearchPath  = szDir;
-			sSearchPath += L"\\*";
-			hFind = FindFirstFileW(sSearchPath.c_str(), &oFindData);
-			if (hFind != INVALID_HANDLE_VALUE)
-			{
-				do
-				{
-					if (!(oFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-						continue; // skip files
-					if (wcscmp(oFindData.cFileName, L".") == 0 ||
-						wcscmp(oFindData.cFileName, L"..") == 0)
-						continue; // skip "." and ".."
-
-					std::wstring sDirName;
-					sDirName.reserve(wcslen(szDir) + 1 + wcslen(oFindData.cFileName));
-					sDirName  = szDir;
-					sDirName += L'\\';
-					sDirName += oFindData.cFileName;
-					
-					std::wstring sNamePrefix;
-					sNamePrefix.reserve(wcslen(szNamePrefix) + wcslen(oFindData.cFileName) + 1);
-					sNamePrefix  = szNamePrefix;
-					sNamePrefix += oFindData.cFileName;
-					sNamePrefix += L'\\';
-
-					addDirectory(sDirName.c_str(), szMask, sNamePrefix.c_str(), true);
-				} while (FindNextFileW(hFind, &oFindData));
-				FindClose(hFind);
-			}
-		}
-
-	}
-
-	bool FileContainer::extractAllFiles(const wchar_t *szDir) const
-	{
 		// TODO
+		return false;
 	}
 
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PROTECTED METHODS
-
-	// protected methods
-
-
-
-
-
-	//----------------------------------------------------------------------------------------------
-	// PRIVATE METHODS
-
-	// private methods
-	
 }

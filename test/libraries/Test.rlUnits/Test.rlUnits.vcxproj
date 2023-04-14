@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleIO.cpp" />
+    <ClCompile Include="test.data.filecontainer.cpp" />
     <ClCompile Include="test.data.online.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="test.audio.engine.cpp" />

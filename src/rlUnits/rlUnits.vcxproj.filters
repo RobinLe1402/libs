@@ -96,6 +96,9 @@
     <ClInclude Include="..\..\include\rl\data.registry.settings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\rl\data.filecontainer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\graphics.fonts.bitmap.legacy.cpp">
@@ -162,6 +165,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\data.registry.settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\data.filecontainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

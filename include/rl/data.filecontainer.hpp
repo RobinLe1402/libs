@@ -51,10 +51,10 @@ namespace rl
 		void create(size_t iBytes, bool bInitToZero = true);
 		void clear();
 
-		uint8_t *data() { return m_upData.get(); }
-		const uint8_t *data() const { return m_upData.get(); }
+		uint8_t *data() noexcept { return m_upData.get(); }
+		const uint8_t *data() const noexcept { return m_upData.get(); }
 
-		auto size() const { return m_iSize; }
+		auto size() const noexcept { return m_iSize; }
 
 
 	private: // variables
@@ -69,28 +69,48 @@ namespace rl
 	/// <summary>
 	/// A container for virtual files. Can be saved to and loaded from <c>.rlPAK</c> files.
 	/// </summary>
-	class FileContainer
+	class FileContainer final
 	{
-	public: // methods
+	public: // types
 
-		void clear();
+		/// <summary>
+		/// A virtual directory.
+		/// </summary>
+		class Directory final
+		{
+		public: // methods
+
+			bool addDirectoryContents(const wchar_t *szDirPath, bool bRecursive);
+
+			void clear() noexcept;
+
+			auto &files() { return m_oFiles; }
+			auto &files() const { return m_oFiles; }
+
+			auto &directories() { return m_oSubDirectories; }
+			auto &directories() const { return m_oSubDirectories; }
+
+
+		private: // variables
+
+			std::map<std::wstring, File> m_oFiles;
+			std::map<std::wstring, Directory> m_oSubDirectories;
+
+		};
+
+
+	public: // methods
 
 		bool load(const wchar_t *szPath);
 		bool save(const wchar_t *szPath) const;
 
-		bool addFile(const wchar_t *szPath, const wchar_t *szName); // overwrites previous file
-		bool removeFile(const wchar_t *szName);
-
-		bool addDirectory(const wchar_t *szDir, const wchar_t *szMask = L"*.*",
-			const wchar_t *szNamePrefix = L"", bool bRecursive = true);
-		bool extractAllFiles(const wchar_t *szDir) const;
-
-		auto &files() const { return m_oFiles; }
+		auto &data()       { return m_oRootDir; }
+		auto &data() const { return m_oRootDir; }
 
 
 	private: // variables
 
-		std::map<std::wstring, File> m_oFiles;
+		Directory m_oRootDir;
 
 	};
 	

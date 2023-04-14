@@ -1,7 +1,5 @@
 #include <rl/data.registry.hpp>
 
-#include <rl/runasadmin.hpp>
-
 #include <exception>
 
 
@@ -136,8 +134,6 @@ namespace
 namespace rl
 {
 
-
-
 	RegistryValue RegistryValue::ByBinary(const uint8_t *pData, size_t iSize)
 	{
 		return RegistryValue(pData, iSize);
@@ -176,7 +172,6 @@ namespace rl
 
 		return RegistryValue(sz, iTotalLength * sizeof(wchar_t), RegistryType::MultiString);
 	}
-
 
 	RegistryValue::RegistryValue(const uint8_t *pData, size_t iSize) :
 		RegistryValue(pData, iSize, RegistryType::Binary) {}
@@ -461,6 +456,13 @@ namespace rl
 
 
 
+
+
+
+
+
+
+
 	UniqueRegistryKey::UniqueRegistryKey(HKEY hKey) noexcept : m_hKey(hKey) {}
 	
 	UniqueRegistryKey::UniqueRegistryKey(UniqueRegistryKey &&rval) noexcept :
@@ -505,86 +507,33 @@ namespace rl
 
 	
 
-	SharedRegistryKey::SharedRegistryKey(HKEY hKey) noexcept :
-		m_hKey(hKey)
+
+
+
+
+
+
+
+	SharedRegistryKey::SharedRegistryKey(HKEY hKey) noexcept
 	{
 		if (hKey != NULL)
-			m_spRefCount = std::make_shared<size_t>(1);
-	}
-
-	SharedRegistryKey::SharedRegistryKey(const SharedRegistryKey &other) noexcept :
-		m_hKey(other.m_hKey), m_spRefCount(other.m_spRefCount)
-	{
-		if (m_hKey)
-			++(*m_spRefCount.get());
-	}
-
-	SharedRegistryKey::SharedRegistryKey(SharedRegistryKey &&rval) noexcept :
-		m_hKey(rval.m_hKey), m_spRefCount(std::move(rval.m_spRefCount))
-	{
-		rval.m_hKey = NULL;
-	}
-
-	SharedRegistryKey::~SharedRegistryKey()
-	{
-		if (m_hKey && --(*m_spRefCount.get()) == 0)
-			RegCloseKey(m_hKey);
+			m_spKey = std::make_shared<UniqueRegistryKey>(hKey);
 	}
 
 	SharedRegistryKey &SharedRegistryKey::operator=(HKEY hKey) noexcept
 	{
-		if (hKey == m_hKey)
-			return *this;
-
-		reset();
 		if (hKey == NULL)
-			return *this;
-
-		m_hKey       = hKey;
-		m_spRefCount = std::make_shared<size_t>(1);
-
-		return *this;
-	}
-
-	SharedRegistryKey &SharedRegistryKey::operator=(const SharedRegistryKey &other) noexcept
-	{
-		if (&other == this)
-			return *this;
-
-		reset();
-		m_hKey       = other.m_hKey;
-		m_spRefCount = other.m_spRefCount;
-		++(*m_spRefCount.get());
+			m_spKey = nullptr;
+		else
+			m_spKey = std::make_shared<UniqueRegistryKey>(hKey);
 
 		return *this;
 	}
 
-	SharedRegistryKey &SharedRegistryKey::operator=(SharedRegistryKey &&rval) noexcept
-	{
-		if (&rval == this)
-			return *this;
 
-		reset();
 
-		m_spRefCount = std::move(rval.m_spRefCount);
-		m_hKey       = rval.m_hKey;
 
-		rval.m_hKey  = NULL;
 
-		return *this;
-	}
-
-	void SharedRegistryKey::reset() noexcept
-	{
-		if (m_hKey == NULL)
-			return;
-
-		if (--(*m_spRefCount.get()) == 0)
-			RegCloseKey(m_hKey);
-
-		m_hKey       = NULL;
-		m_spRefCount = nullptr;
-	}
 
 
 

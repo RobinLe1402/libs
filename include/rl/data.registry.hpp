@@ -48,6 +48,8 @@ namespace rl
 
 
 
+
+
 	/// <summary>
 	/// A registry-compatible value.
 	/// </summary>
@@ -134,6 +136,8 @@ namespace rl
 
 
 
+
+
 	/// <summary>
 	/// A wrapper for a <c>HKEY</c>.<para />
 	/// Behaves the same as a <c>std::unique_ptr</c>.
@@ -166,6 +170,10 @@ namespace rl
 
 	};
 
+
+
+
+
 	/// <summary>
 	/// A wrapper for a <c>HKEY</c>.<para />
 	/// Behaves the same as a <c>std::shared_key</c>.
@@ -174,30 +182,42 @@ namespace rl
 	{
 	public: // methods
 
-		SharedRegistryKey() = default;
+		// default methods
+		
+		SharedRegistryKey()                                     = default;
+		SharedRegistryKey(const SharedRegistryKey &)            = default;
+		SharedRegistryKey(SharedRegistryKey &&)                 = default;
+		~SharedRegistryKey()                                    = default;
+
+		SharedRegistryKey &operator=(const SharedRegistryKey &) = default;
+		SharedRegistryKey &operator=(SharedRegistryKey &&)      = default;
+
+
+
+		// custom methods
+
 		SharedRegistryKey(HKEY hKey) noexcept;
-		SharedRegistryKey(const SharedRegistryKey &other) noexcept;
-		SharedRegistryKey(SharedRegistryKey &&rval) noexcept;
-		~SharedRegistryKey();
 
 		SharedRegistryKey &operator=(HKEY hKey) noexcept;
-		SharedRegistryKey &operator=(const SharedRegistryKey &other) noexcept;
-		SharedRegistryKey &operator=(SharedRegistryKey &&rval) noexcept;
 
-		operator bool()  const { return m_hKey != NULL; }
-		bool operator!() const { return m_hKey == NULL; }
+		operator bool()  const { return m_spKey != nullptr; }
+		bool operator!() const { return !m_spKey; }
 
-		void reset() noexcept;
+
+		void reset() noexcept { m_spKey.reset(); };
+
+		HKEY get() const noexcept { return m_spKey != nullptr ? m_spKey->get() : NULL; }
 
 
 	private: // variables
 
-		HKEY m_hKey = NULL;
-		std::shared_ptr<size_t> m_spRefCount;
+		std::shared_ptr<UniqueRegistryKey> m_spKey;
 
 	};
 
 	
+
+
 
 	namespace Registry
 	{

@@ -136,6 +136,7 @@
     <ClInclude Include="..\..\include\rl\commandline.hpp" />
     <ClInclude Include="..\..\include\rl\console.hpp" />
     <ClInclude Include="..\..\include\rl\data.endian.hpp" />
+    <ClInclude Include="..\..\include\rl\data.filecontainer.hpp" />
     <ClInclude Include="..\..\include\rl\data.online.hpp" />
     <ClInclude Include="..\..\include\rl\data.registry.settings.hpp" />
     <ClInclude Include="..\..\include\rl\data.registry.hpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="..\audio.engine.cpp" />
     <ClCompile Include="..\commandline.cpp" />
     <ClCompile Include="..\console.cpp" />
+    <ClCompile Include="..\data.filecontainer.cpp" />
     <ClCompile Include="..\data.online.cpp" />
     <ClCompile Include="..\data.registry.settings.cpp" />
     <ClCompile Include="..\data.registry.cpp" />

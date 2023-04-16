@@ -54,6 +54,9 @@
     <ClCompile Include="test.data.registry.settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test.data.filecontainer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConsoleIO.hpp">

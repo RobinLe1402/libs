@@ -9,6 +9,7 @@
 bool UnitTest_global();
 
 bool UnitTest_audio_engine();
+bool UnitTest_data_filecontainer();
 bool UnitTest_data_online();
 bool UnitTest_data_registry_settings();
 bool UnitTest_graphics_opengl_window();

@@ -78,17 +78,26 @@ namespace rl
 		/// </summary>
 		class Directory final
 		{
+			friend class FileContainer;
 		public: // methods
 
 			bool addDirectoryContents(const wchar_t *szDirPath, bool bRecursive);
 
 			void clear() noexcept;
 
-			auto &files() { return m_oFiles; }
-			auto &files() const { return m_oFiles; }
+			auto &files() noexcept { return m_oFiles; }
+			auto &files() const noexcept { return m_oFiles; }
 
-			auto &directories() { return m_oSubDirectories; }
-			auto &directories() const { return m_oSubDirectories; }
+			auto &directories() noexcept { return m_oSubDirectories; }
+			auto &directories() const noexcept { return m_oSubDirectories; }
+
+
+		private: // methods
+
+			size_t totalFileCount() const noexcept;
+			size_t totalDirectoryCount() const noexcept;
+
+			bool saveable(bool bUnicode) const noexcept;
 
 
 		private: // variables
@@ -102,7 +111,7 @@ namespace rl
 	public: // methods
 
 		bool load(const wchar_t *szPath);
-		bool save(const wchar_t *szPath) const;
+		bool save(const wchar_t *szPath, bool bUnicode) const;
 
 		auto &data()       { return m_oRootDir; }
 		auto &data() const { return m_oRootDir; }

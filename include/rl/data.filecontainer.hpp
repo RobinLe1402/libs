@@ -30,48 +30,46 @@ namespace rl
 {
 
 	/// <summary>
-	/// A virtual file.
-	/// </summary>
-	class File final
-	{
-	public: // methods
-
-		File() = default;
-		File(const File &other);
-		File(File &&) = default;
-		~File() = default;
-
-		File &operator=(const File &other);
-		File &operator=(File &&rval) = default;
-
-
-		bool load(const wchar_t *szPath);
-		bool save(const wchar_t *szPath) const;
-
-		void create(size_t iBytes, bool bInitToZero = true);
-		void clear();
-
-		uint8_t *data() noexcept { return m_upData.get(); }
-		const uint8_t *data() const noexcept { return m_upData.get(); }
-
-		auto size() const noexcept { return m_iSize; }
-
-
-	private: // variables
-
-		size_t m_iSize = 0;
-		std::unique_ptr<uint8_t[]> m_upData;
-
-	};
-	
-
-
-	/// <summary>
 	/// A container for virtual files. Can be saved to and loaded from <c>.rlPAK</c> files.
 	/// </summary>
 	class FileContainer final
 	{
 	public: // types
+
+		/// <summary>
+		/// A virtual file.
+		/// </summary>
+		class File final
+		{
+		public: // methods
+
+			File() = default;
+			File(const File &other);
+			File(File &&) = default;
+			~File() = default;
+
+			File &operator=(const File &other);
+			File &operator=(File &&rval) = default;
+
+
+			bool load(const wchar_t *szPath);
+			bool save(const wchar_t *szPath) const;
+
+			void create(size_t iBytes, bool bInitToZero = true);
+			void clear();
+
+			uint8_t *data() noexcept { return m_upData.get(); }
+			const uint8_t *data() const noexcept { return m_upData.get(); }
+
+			auto size() const noexcept { return m_iSize; }
+
+
+		private: // variables
+
+			size_t m_iSize = 0;
+			std::unique_ptr<uint8_t[]> m_upData;
+
+		};
 
 		/// <summary>
 		/// A virtual directory.

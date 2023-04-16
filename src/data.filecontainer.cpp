@@ -60,7 +60,7 @@ namespace
 	void SaveToList(const rl::FileContainer::Directory &o, uint64_t iParentDirID,
 		std::vector<DirTableEntry<TChar>> &oDirs,
 		std::vector<FileTableEntry<TChar>> &oFiles,
-		std::vector<const rl::File *> &oFileData)
+		std::vector<const rl::FileContainer::File *> &oFileData)
 	{
 		for (auto &oDir : o.directories())
 		{
@@ -111,7 +111,7 @@ namespace
 namespace rl
 {
 
-	File::File(const File &other)
+	FileContainer::File::File(const File &other)
 	{
 		this->m_iSize  = other.m_iSize;
 		if (m_iSize == 0)
@@ -121,7 +121,7 @@ namespace rl
 		memcpy_s(m_upData.get(), this->m_iSize, other.m_upData.get(), other.m_iSize);
 	}
 
-	File &File::operator=(const File &other)
+	FileContainer::File &FileContainer::File::operator=(const File &other)
 	{
 		this->m_iSize  = other.m_iSize;
 		if (m_iSize == 0)
@@ -136,7 +136,7 @@ namespace rl
 		return *this;
 	}
 
-	bool File::load(const wchar_t *szPath)
+	bool FileContainer::File::load(const wchar_t *szPath)
 	{
 		clear();
 
@@ -157,7 +157,7 @@ namespace rl
 		return true;
 	}
 
-	bool File::save(const wchar_t *szPath) const
+	bool FileContainer::File::save(const wchar_t *szPath) const
 	{
 		std::ofstream oFile(szPath, std::ios::binary);
 		if (!oFile)
@@ -170,7 +170,7 @@ namespace rl
 		return true;
 	}
 
-	void File::create(size_t iBytes, bool bInitToZero)
+	void FileContainer::File::create(size_t iBytes, bool bInitToZero)
 	{
 		clear();
 
@@ -184,7 +184,7 @@ namespace rl
 			memset(m_upData.get(), 0, m_iSize);
 	}
 
-	void File::clear()
+	void FileContainer::File::clear()
 	{
 		m_iSize  = 0;
 		m_upData = nullptr;

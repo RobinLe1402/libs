@@ -31,8 +31,6 @@
       <AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">$(GitHub_rl_libs)lib\$(Configuration)\x32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <!-- 64-bit -->
       <AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-	  <!-- global -->
-	  <AdditionalDependencies>rlUnits.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

@@ -1,0 +1,183 @@
+:root
+{
+	--clBackground_Far: lightgray;
+	--clBackground_Near: white;
+	--clBackground_Code: #E6E6E6;
+	--clTableBorder: #D0D0D0;
+	--clFontFooter: grey;
+	
+	--iFontSize_Code: 85%;
+	--iTablePadding_Outer: 5px;
+	--iTablePadding_Between: 5px;
+	
+	--fontCode: "Consolas", "Courier New", monospace;
+}
+
+html
+{
+	font-family: Arial, Helvetica, sans-serif;
+	
+	background-color: var(--clBackground_Far);
+	
+	padding: 0;
+	
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+body
+{
+	box-sizing: border-box;
+	margin:    0;
+	padding:   20px;
+	
+	width:     80%;
+	max-width: 1000px;
+	
+	background-color: var(--clBackground_Near);
+}
+
+header
+{
+	display: flex;
+	flex-direction: column;
+	
+	text-align: center;
+}
+
+#formatname
+{
+	margin: 0;
+}
+
+#formatdescription
+{
+	margin-top: 10px;
+	font-weight: bold;
+}
+
+nav
+{
+	display: inline-flex;
+	flex-direction: column;
+	padding: var(--iTablePadding_Outer);
+}
+
+nav h2
+{
+	margin: 0 0 10px 0;
+}
+
+nav a
+{
+	text-decoration: none;
+	color: inherit;
+	margin-bottom: 5px;
+}
+
+nav a:last-child
+{
+	margin-bottom: 0;
+}
+
+nav a:hover
+{
+	text-decoration: underline;
+}
+
+table, nav
+{
+	border: solid var(--clTableBorder) thin;
+	border-collapse: collapse;
+}
+
+th, td
+{
+	padding: var(--iTablePadding_Outer);
+}
+
+th
+{
+	text-align: left;
+}
+
+td
+{	
+	vertical-align: top;
+	border-top: solid var(--clTableBorder) thin;
+	padding-right: var(--iTablePadding_Between);
+}
+
+td:last-child
+{
+	padding-right: var(--iTablePadding_Outer);
+}
+
+table .dataname
+{
+	font-weight: bold;
+}
+
+table .datadescr, .flag_id
+{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	row-gap: 5px;
+}
+
+.flagname
+{
+	font-weight: bold;
+}
+
+.sectionlink
+{
+	text-decoration: none;
+	color: inherit;
+	font-weight: bold;
+}
+
+.sectionlink:hover
+{
+	text-decoration: underline;
+}
+
+section
+{
+	margin-bottom: 50px;
+}
+
+section:last-child
+{
+	margin-bottom: 0;
+}
+
+c
+{
+	background-color: var(--clBackground_Code);
+	font-family: var(--fontCode);
+	font-size: var(--iFontSize_Code);
+	padding: .1em .2em;
+	border-radius: 3px;
+}
+
+footer
+{
+	width: 100%;
+	text-align: center;
+	font-size: small;
+	color: var(--clFontFooter);
+}
+
+footer a
+{
+	text-decoration: none;
+	color: inherit;
+}
+
+footer a:hover
+{
+	text-decoration: underline;
+}

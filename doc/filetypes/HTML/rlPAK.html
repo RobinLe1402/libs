@@ -1,0 +1,234 @@
+<!doctype HTML>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href="style/main.css">
+		<link rel="stylesheet" href="style/responsive.css">
+		<title>rlPAK Specification</title>
+	</head>
+	
+	<body>
+		<header>
+			<h1 id="formatname">RobinLe File Containers (.rlPAK)</h1>
+			<p id="formatdescription">A file format for storing multiple files in one.</p>
+		</header>
+		
+		<nav>
+			<h2>Contents</h2>
+			<a href="#introduction">Introduction</a>
+			<a href="#filestructure">File Structure</a>
+			<a href="#fileheader">File Header</a>
+			<a href="#dir-table">Directory Table</a>
+			<a href="#file-table">File Table</a>
+			<a href="#data">Data</a>
+			<a href="#remarks">Remarks</a>
+		</nav>
+		
+		<section id="introduction">
+			<h2>Introduction</h2>
+			<h3>General Idea</h3>
+			<p>
+				<c>.rlPAK</c> files are supposed to simplify handling of many files by packing multiple small files into a single larger one.<br>
+				Please note that it's not intended to compress the saved data. It's just a container format.
+			</p>
+		</section>
+		
+		<section id="filestructure">
+			<h2>File Structure</h2>
+			<table>
+				<tr>
+					<th>Section</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td><a href="#fileheader" class="sectionlink">File Header</a></td>
+					<td>General metadata.</td>
+				</tr>
+				<tr>
+					<td><a href="#dir-table" class="sectionlink">Directory Table</a></td>
+					<td>Subdirectories.</td>
+				</tr>
+				<tr>
+					<td><a href="#file-table" class="sectionlink">File Table</a></td>
+					<td>Files.</td>
+				</tr>
+				<tr>
+					<td><a href="#data" class="sectionlink">Data</a></td>
+					<td>The actual data.</td>
+				</tr>
+			</table>
+		</section>
+		
+		<section id="fileheader">
+			<h2>File Header</h2>
+			<p>The file header is located right at the beginning of the file.</p>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>16 bytes</td>
+					<td class="datatype"><c>char[16]</c></td>
+					<td class="dataname"><c>szMagicNo</c></td>
+					<td>
+						The magic number, <c>"rlFILECONTAINER"</c>, including a terminating zero.
+					</td>
+				</tr>
+				<tr>
+					<td>2 bytes</td>
+					<td class="datatype"><c>uint8_t[2]</c></td>
+					<td class="dataname"><c>iFormatVersion</c></td>
+					<td>The version of the file format. Must be <c>{ 0x01, 0x00 }</c>.</td>
+				</tr>
+				<tr>
+					<td>2 bytes</td>
+					<td class="datatype"><c>uint16_t</c></td>
+					<td class="dataname"><c>iFlags</c></td>
+					<td>
+						Some binary flags regarding the file contents:<br>
+						<table>
+							<tr>
+								<th>Value</th>
+								<th>Meaning</th>
+							</tr>
+							<tr>
+								<td class="flag_id">
+									<c class="flagname">PAK_UNICODE</c>
+									<c class="flagvalue">0x01</c>
+								</td>
+								<td>
+									If this flag is set, the strings in this file are made up of arrays of <c>wchar_t</c> instead of <c>char</c>.
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDirCount</c></td>
+					<td>
+						The number of subdirectories defined in this file.<br>
+						All directory IDs must be less than or equal to this value.<br>
+						A value of 0 indicates that all files are located in the root path.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iFileCount</c></td>
+					<td>The number of files included in this file.</td>
+				</tr>
+			</table>
+		</section>
+		
+		<section id="dir-table">
+			<h2>Directory Table</h2>
+			<p>Right after the file header comes the directory table.</p>
+			<p>
+				The directory table holds all the information about subdirectories and their structure.<br>
+				The number of directories is indicated by the <c>iDirCount</c> field of the file header.
+			</p>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>50/100 bytes</td>
+					<td class="datatype"><c>char[50]</c>/<c>wchar_t[50]</c></td>
+					<td class="dataname"><c>szDirName</c></td>
+					<td>
+						The name of the subdirectory. Either 50 characters long or terminated by a zero.<br>
+						Must be unique within the parent directory.<br>
+						This value depends on the <c>PAK_UNICODE</c> flag in the file header - either it's an array of <c>wchar_t</c> or an array of <c>char</c>. In any case, the array consists of 50 elements.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iParentDirID</c></td>
+					<td>
+						The ID of the parent directory.<br>
+						IDs are assigned implicitly by a directory's position in the file table.
+						IDs are 1-based, a value of 0 indicates that the directory has no parent directory.<br>
+						The ID of the parent directory can never be greater than or equal to the current directory's ID.
+					</td>
+				</tr>
+			</table>
+			<p>All entries are saved right after one another.</p>
+		</section>
+		
+		<section id="file-table">
+			<h2>File Table</h2>
+			<p>Right after the directory table comes the file table.</p>
+			<p>
+				The file table holds all the information about files.<br>
+				The number of files is indicated by the <c>iFileCount</c> field of the file header.
+			</p>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>50/100 bytes</td>
+					<td class="datatype"><c>char[50]</c>/<c>wchar_t[50]</c></td>
+					<td class="dataname"><c>szFileName</c></td>
+					<td>
+						The name of the file. Either 50 characters long or terminated by a zero.<br>
+						Must be unique within the parent directory.<br>
+						This value depends on the <c>PAK_UNICODE</c> flag in the file header - either it's an array of <c>wchar_t</c> or an array of <c>char</c>. In any case, the array consists of 50 elements.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iParentDirID</c></td>
+					<td>The ID of the parent directory.</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDataOffset</c></td>
+					<td>The offset from the start of the container file to the actual binary data of this file.</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDataSize</c></td>
+					<td>The size, in bytes, of the file's data.</td>
+				</tr>
+			</table>
+			<p>All entries are saved right after one another.</p>
+		</section>
+		
+		<section id="data">
+			<h2>File Data</h2>
+			<p>After the file table comes the actual data from the contained files.</p>
+		</section>
+		
+		<section id="remarks">
+			<h2>Remarks</h2>
+			<p>
+				All values are saved in Little Endian.
+			</p>
+			<p>
+				If the <c>PAK_UNICODE</c> flag in the file header is set, strings are stored as <c>wchar_t</c> arrays.
+				A <c>wchar_t</c> is a UTF-16 codeunit (16-bit integer).<br>
+				Otherwise, strings are stored as <c>char</c> arrays.
+			</p>
+		</section>
+		
+		<footer>© <a href="https://www.robinle.de/" target="_blank">Robin Lemanska</a> 2023</footer>
+	</body>
+	
+</html>

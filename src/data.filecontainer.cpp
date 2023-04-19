@@ -374,6 +374,7 @@ namespace rl
 				return false; // unknown file format version
 
 			// STRING TABLE
+			std::map<size_t, size_t> oStringIndexByOffset; // offset --> index
 			std::vector<std::wstring> oStrings;
 			{
 				StringTableHeader sth{};
@@ -381,6 +382,8 @@ namespace rl
 
 				if (sth.iStringCount > 0)
 				{
+					oStrings.reserve(sth.iStringCount);
+
 					// Unicode
 					if (sth.iFlags & PAK_STRING_UNICODE)
 					{
@@ -388,7 +391,15 @@ namespace rl
 							std::make_unique<wchar_t[]>(sth.iStringTableSize / sizeof(wchar_t));
 						READBIN(up_szStrings.get(), sth.iStringTableSize);
 
-						// todo: save strings to oStrings
+						const wchar_t *sz = up_szStrings.get();
+						for (size_t i = 0; i < sth.iStringCount; ++i)
+						{
+							std::wstring_view sv = sz;
+							oStrings.push_back(sv.data());
+							oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
+								i;
+							sz += sv.length() + 1;
+						}
 					}
 
 					// ASCII
@@ -398,117 +409,73 @@ namespace rl
 							std::make_unique<char[]>(sth.iStringTableSize);
 						READBIN(up_szStrings.get(), sth.iStringTableSize);
 
-						//  todo: save strings to oStrings
+						const char *sz = up_szStrings.get();
+						for (size_t i = 0; i < sth.iStringCount; ++i)
+						{
+							std::string_view sv = sz;
+							std::wstring s(sv.length(), L'\0');
+							for (size_t i = 0; i < sv.length(); ++i)
+							{
+								s[i] = sv[i];
+							}
+							oStrings.push_back(std::move(s));
+							oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
+								i;
+							sz += sv.length() + 1;
+						}
 					}
 				}
 			}
 
-			// todo:
-			// 1. read dir table
-			// 2. read file table
+			// DATA BLOCK
+			std::unique_ptr<uint8_t[]> oData;
+			{
+				DataBlockHeader dbh{};
+				READVAR(dbh);
 
-			//			std::unique_ptr<DirTableEntryW[]> up_oDirs;
-			//			std::unique_ptr<Directory *[]> up_oDirByIndex;
-			//			if (hdr.iDirCount > 0)
-			//			{
-			//				up_oDirs       = std::make_unique<DirTableEntryW[]>(hdr.iDirCount);
-			//				up_oDirByIndex = std::make_unique<Directory * []>(hdr.iDirCount);
-			//
-			//				memset(up_oDirByIndex.get(), 0, hdr.iDirCount * sizeof(up_oDirByIndex[0]));
-			//			}
-			//
-			//			std::unique_ptr<FileTableEntryW[]> up_oFiles;
-			//			if (hdr.iFileCount > 0)
-			//				up_oFiles = std::make_unique<FileTableEntryW[]>(hdr.iFileCount);
-			//
-			//			if (hdr.iFlags & iFlag_Unicode)
-			//			{
-			//				// DIRECTORIES
-			//				if (hdr.iDirCount > 0)
-			//					READBIN(up_oDirs.get(), sizeof(DirTableEntryW) * hdr.iDirCount);
-			//
-			//				// FILES
-			//				if (hdr.iFileCount > 0)
-			//					READBIN(up_oFiles.get(), sizeof(FileTableEntryW) * hdr.iFileCount);
-			//			}
-			//			else // ASCII version
-			//			{
-			//				// DIRECTORIES
-			//				if (hdr.iDirCount > 0)
-			//				{
-			//					auto up_oDirsA = std::make_unique<DirTableEntryA[]>(hdr.iDirCount);
-			//					READBIN(up_oDirsA.get(), sizeof(DirTableEntryA) * hdr.iDirCount);
-			//
-			//					for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
-			//					{
-			//						auto &oDest = up_oDirs[iDir];
-			//						auto &oSrc  = up_oDirsA[iDir];
-			//
-			//						oDest.iParentDirID = oSrc.iParentDirID;
-			//						for (size_t iChar = 0; iChar < iElemNameLen; ++iChar)
-			//						{
-			//							oDest.szName[iChar] = oSrc.szName[iChar];
-			//						}
-			//					}
-			//				}
-			//								
-			//				// FILES
-			//				if (hdr.iFileCount > 0)
-			//				{
-			//					auto up_oFilesA = std::make_unique<FileTableEntryA[]>(hdr.iDirCount);
-			//					READBIN(up_oFilesA.get(), sizeof(FileTableEntryA) * hdr.iDirCount);
-			//
-			//					for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
-			//					{
-			//						auto &oDest = up_oFiles[iDir];
-			//						auto &oSrc  = up_oFilesA[iDir];
-			//
-			//						oDest.iParentDirID = oSrc.iParentDirID;
-			//						oDest.iDataOffset  = oSrc.iDataOffset;
-			//						oDest.iDataSize    = oSrc.iDataSize;
-			//						for (size_t iChar = 0; iChar < iElemNameLen; ++iChar)
-			//						{
-			//							oDest.szName[iChar] = oSrc.szName[iChar];
-			//						}
-			//					}
-			//				}
-			//			}
-			//
-			//			// create directories
-			//			for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
-			//			{
-			//				auto &oDir = up_oDirs[iDir];
-			//				if (oDir.iParentDirID > 0 && oDir.iParentDirID >= iDir)
-			//					return false; // invalid parent directory ID
-			//
-			//				wchar_t szName[51]{};
-			//				memcpy_s(szName, sizeof(szName), oDir.szName, sizeof(oDir.szName));
-			//
-			//				if (oDir.iParentDirID == 0)
-			//					up_oDirByIndex[iDir] = &m_oRootDir.directories()[szName];
-			//				else
-			//					up_oDirByIndex[iDir] =
-			//					&up_oDirByIndex[oDir.iParentDirID]->directories()[szName];
-			//			}
-			//
-			//			// read actual data
-			//			for (size_t iFile = 0; iFile < hdr.iFileCount; ++iFile)
-			//			{
-			//				auto &oFile = up_oFiles[iFile];
-			//
-			//				wchar_t szName[51]{};
-			//				memcpy_s(szName, sizeof(szName), oFile.szName, sizeof(oFile.szName));
-			//
-			//				File *pFile;
-			//
-			//				if (oFile.iParentDirID == 0)
-			//					pFile = &m_oRootDir.files()[szName];
-			//				else
-			//					pFile = &up_oDirByIndex[oFile.iParentDirID - 1]->files()[szName];
-			//
-			//				pFile->create(oFile.iDataSize, false);
-			//				READBIN(pFile->data(), pFile->size());
-			//			}
+				if (dbh.iTotalDataSize > 0)
+				{
+					oData = std::make_unique<uint8_t[]>(dbh.iTotalDataSize);
+					READBIN(oData.get(), dbh.iTotalDataSize);
+				}
+			}
+
+
+			// prepare for reading directories/files
+			std::vector<Directory *> oDirByIndex;
+			oDirByIndex.reserve(hdr.iDirCount + 1);
+			oDirByIndex.push_back(&m_oRootDir);
+
+			// DIR TABLE
+			// start at 1 because [0] is root directory
+			for (size_t iDir = 1; iDir <= hdr.iDirCount; ++iDir)
+			{
+				DirTableEntry dte{};
+				READVAR(dte);
+
+				if (dte.iParentDirID >= iDir)
+					return false; // invalid parent directory
+
+				oDirByIndex.push_back(
+					&oDirByIndex[dte.iParentDirID]->directories()[
+						oStrings[oStringIndexByOffset.at(dte.iStringOffset)]]);
+			}
+
+			// FILE TABLE
+			for (size_t iFile = 0; iFile < hdr.iFileCount; ++iFile)
+			{
+				FileTableEntry fte{};
+				READVAR(fte);
+
+				if (fte.iParentDirID > hdr.iDirCount)
+					return false; // invalid parent directory ID
+
+				File oFile;
+				oFile.create(fte.iDataSize);
+				memcpy_s(oFile.data(), oFile.size(), oData.get() + fte.iDataOffset, fte.iDataSize);
+				oDirByIndex[fte.iParentDirID]->files()[
+					oStrings[oStringIndexByOffset.at(fte.iStringOffset)]] = std::move(oFile);
+			}
 
 #undef READVAR
 #undef READBIN

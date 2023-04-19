@@ -17,7 +17,7 @@ bool UnitTest_data_filecontainer()
 	ExpandEnvironmentStringsW(szTestFolder, szTestFolder_Expanded, MAX_PATH + 1);
 
 	rl::FileContainer fc;
-	fc.data().addDirectoryContents(szTestFolder_Expanded, true);
+	fc.rootDir().addDirectoryContents(szTestFolder_Expanded, true);
 
 	// ASCII version ===============================================================================
 	if (!fc.save(szTestFile, false))
@@ -27,7 +27,7 @@ bool UnitTest_data_filecontainer()
 	}
 	else
 		std::printf("SUCCESS: Saved ASCII rlPAK file.\n");
-	fc.data().clear();
+	fc.rootDir().clear();
 	if (!fc.load(szTestFile))
 	{
 		std::printf("ERROR: Failed to load ASCII rlPAK file.\n");
@@ -38,8 +38,8 @@ bool UnitTest_data_filecontainer()
 
 
 	// UTF-16 version ==============================================================================
-	fc.data().clear();
-	fc.data().addDirectoryContents(szTestFolder_Expanded, true);
+	fc.clear();
+	fc.rootDir().addDirectoryContents(szTestFolder_Expanded, true);
 
 	if (!fc.save(szTestFile, true))
 	{
@@ -48,7 +48,7 @@ bool UnitTest_data_filecontainer()
 	}
 	else
 		std::printf("SUCCESS: Saved Unicode rlPAK file.\n");
-	fc.data().clear();
+	fc.clear();
 	if (!fc.load(szTestFile))
 	{
 		std::printf("ERROR: Failed to load Unicode rlPAK file.\n");
@@ -56,6 +56,13 @@ bool UnitTest_data_filecontainer()
 	}
 	else
 		std::printf("SUCCESS: Loaded Unicode rlPAK file.\n");
+
+
+
+	if (fc.rootDir().extractToDirectory(LR"(E:\[TempDel]\rlPAK extracted)"))
+		std::printf("SUCCESS: Extracted files.\n");
+	else
+		std::printf("ERROR: Couldn't extract all files.\n");
 
 
 	return true;

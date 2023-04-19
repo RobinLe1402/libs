@@ -7,6 +7,8 @@
 
 // Win32
 #include <Windows.h>
+#include <ShlObj.h>
+#pragma comment(lib, "Shell32.lib")
 
 
 
@@ -281,6 +283,61 @@ namespace rl
 		return bResult;
 	}
 
+	bool FileContainer::Directory::extractToDirectory(const wchar_t *szDirPath) const
+	{
+		std::wstring_view svDirPath = szDirPath;
+
+		// try to create root directory
+		{
+			const auto iCreateDirResult = SHCreateDirectory(NULL, szDirPath);
+			switch (iCreateDirResult)
+			{
+			case ERROR_SUCCESS:
+			case ERROR_ALREADY_EXISTS:
+				break;
+
+			default:
+				return false; // couldn't create root directory
+			}
+		}
+
+		std::wstring sDirTrailingDelim = szDirPath;
+		if (!sDirTrailingDelim.ends_with(L"\\") && !sDirTrailingDelim.ends_with(L"/"))
+			sDirTrailingDelim += L'\\';
+
+		bool bAllExtracted = true;
+		for (auto &itFile : m_oFiles)
+		{
+			if (!itFile.second.save((sDirTrailingDelim + itFile.first).c_str()))
+				bAllExtracted = false;
+		}
+
+		for (auto &itDir : m_oSubDirectories)
+		{
+			std::wstring sDirPath = sDirTrailingDelim + itDir.first;
+
+			// try to create directory
+			{
+				const auto iCreateDirResult = SHCreateDirectory(NULL, sDirPath.c_str());
+				switch (iCreateDirResult)
+				{
+				case ERROR_SUCCESS:
+				case ERROR_ALREADY_EXISTS:
+					break;
+
+				default:
+					bAllExtracted = false;
+					continue; // next directory
+				}
+			}
+
+			if (!itDir.second.extractToDirectory(sDirPath.c_str()))
+				bAllExtracted = false;
+		}
+
+		return bAllExtracted;
+	}
+
 	void FileContainer::Directory::clear() noexcept
 	{
 		m_oFiles.clear();
@@ -353,7 +410,7 @@ namespace rl
 
 	bool FileContainer::load(const wchar_t *szPath)
 	{
-		m_oRootDir.clear();
+		clear();
 
 		std::ifstream in(szPath, std::ios::binary);
 		if (!in)
@@ -447,7 +504,7 @@ namespace rl
 			oDirByIndex.push_back(&m_oRootDir);
 
 			// DIR TABLE
-			// start at 1 because [0] is root directory
+			// for-loop is 1-based because [0] is root directory
 			for (size_t iDir = 1; iDir <= hdr.iDirCount; ++iDir)
 			{
 				DirTableEntry dte{};
@@ -482,7 +539,7 @@ namespace rl
 		}
 		catch (...)
 		{
-			m_oRootDir.clear();
+			clear();
 			return false;
 		}
 

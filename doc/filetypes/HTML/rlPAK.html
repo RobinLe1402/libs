@@ -18,16 +18,18 @@
 			<h2>Contents</h2>
 			<a href="#introduction">Introduction</a>
 			<a href="#filestructure">File Structure</a>
-			<a href="#remarks">Remarks</a>
 		</nav>
 		
 		<section id="introduction">
 			<h2>Introduction</h2>
-			<h3>General Idea</h3>
+			<h3>Idea</h3>
 			<p>
 				<c>.rlPAK</c> files are supposed to simplify handling of many files by packing multiple small files into a single larger one.<br>
-				Please note that it's not intended to compress the saved data. It's just a container format.
+				Please note that it's not intended to compress the saved data. It's a pure container format.
 			</p>
+			
+			<h3>General</h3>
+			<p>All values are saved in Little Endian.</p>
 		</section>
 		
 		<section id="filestructure">
@@ -43,7 +45,7 @@
 				</tr>
 				<tr>
 					<td><a href="#string-table" class="sectionlink">String Table</a></td>
-					<td>Strings.</td>
+					<td>Strings used for both subdirectory names and filenames.</td>
 				</tr>
 				<tr>
 					<td><a href="#data" class="sectionlink">Data Block</a></td>
@@ -51,11 +53,11 @@
 				</tr>
 				<tr>
 					<td><a href="#dir-table" class="sectionlink">Directory Table</a></td>
-					<td>Subdirectories.</td>
+					<td>The subdirectory structure.</td>
 				</tr>
 				<tr>
 					<td><a href="#file-table" class="sectionlink">File Table</a></td>
-					<td>Files.</td>
+					<td>Metadata of the virtual files.</td>
 				</tr>
 			</table>
 		</section>
@@ -98,24 +100,7 @@
 					<td>8 bytes</td>
 					<td class="datatype"><c>uint64_t</c></td>
 					<td class="dataname"><c>iFileCount</c></td>
-					<td>The number of files included in this file.</td>
-				</tr>
-			</table>
-		</section>
-		
-		<section id="string-table">
-			<h3>String Table</h3>
-			<p>The string table consists of a header and all strings used in the file.</p>
-			<p>Strings are zero-terminated.</p>
-			<p>A single string may be used by multiple items.</p>
-			
-			<h4>The header</h4>
-			<table class="binarymap">
-				<tr>
-					<th>Size</th>
-					<th>Type</th>
-					<th>Name</th>
-					<th>Description</th>
+					<td>The number of virtual files included in this file.</td>
 				</tr>
 				<tr>
 					<td>8 bytes</td>
@@ -130,7 +115,7 @@
 					<td class="datatype"><c>uint64_t</c></td>
 					<td class="dataname"><c>iStringTableSize</c></td>
 					<td>
-						The size, in bytes, of the string table. Does not include this header.
+						The size, in bytes, of the string table.
 					</td>
 				</tr>
 				<tr>
@@ -155,49 +140,47 @@
 						</table>
 					</td>
 				</tr>
-			</table>
-			
-			<h4>The strings</h4>
-		  	<p>All strings consist of one or more non-zero characters, followed by a terminating zero.</p>
-		  	<p>The size of a character depends on the <c>PAK_STRING_UNICODE</c> flag.</p>
-			<p>When strings are referenced via an offset, the offset is relative to the start of the string data, right after the string table header.</p>
-			<p>All strings are saved right after one another.</p>
-		</section>
-		
-		<section id="data">
-			<h3>The Data Block</h3>
-			<p>The binary data.</p>
-			<h4>The header</h4>
-			<table class="binarymap">
-				<tr>
-					<th>Size</th>
-					<th>Type</th>
-					<th>Name</th>
-					<th>Description</th>
-				</tr>
 				<tr>
 					<td>8 bytes</td>
 					<td class="datatype"><c>uint64_t</c></td>
 					<td class="dataname"><c>iTotalDataSize</c></td>
 					<td>
-						The size, in bytes, of all the binary data.
+						The size, in bytes, of all the data of all virtual files.
 					</td>
 				</tr>
 			</table>
-			
-			<h4>The data</h4>
-			<p>All the binary data is written as a block of <c>iTotalDataSize</c> bytes.</p>
-			<p>When data is referenced via an offset, the offset is relative to the start of the data block, right after the data header.</p>
-			<p>Offset between data blocks, like for an alignment, is allowed.</p>
+		</section>
+		
+		<section id="string-table">
+			<h3>String Table</h3>
+			<p>The string table consists of all strings used in the file.</p>
+			<p>The size of a character depends on the <c>PAK_STRING_UNICODE</c> flag:</p>
+			<ul>
+				<li>If <c>PAK_STRING_UNICODE</c> is set, strings consist of 16-bit <c>wchar_t</c> values (UTF-16 code units).</li>
+				<li>If <c>PAK_STRING_UNICODE</c> is <strong>not</strong> set, strings consist of 8-bit <c>char</c> values (ASCII characters ➝ only 7 bits are used).</li>
+			</ul>
+			<p>
+				Strings consist of at least one character and are always followed by a terminating zero.<br>
+				All strings are saved right after one another.<br>
+				Strings are referenced via their offset from the start of the string table.<br>
+				A single string may be referenced by multiple items, but all references must point to the very first character of the string.
+			</p>
+		</section>
+		
+		<section id="data">
+			<h3>The Data Block</h3>
+			<p>The binary data.</p>
+			<p>
+				<c>iTotalDataSize</c> bytes of data – all the data of the virtual files.<br>
+				Data is referenced via an offset to the start of the data block as well as the size of the data.<br>
+				Padding between the contents of multiple files, like for a certain alignment, is allowed. This padding must then consist of only zero-bytes.
+			</p>
 		</section>
 		
 		<section id="dir-table">
 			<h3>Directory Table</h3>
-			<p>Right after the string table comes the directory table.</p>
-			<p>
-				The directory table holds all the information about subdirectories and their structure.<br>
-				The number of directories is indicated by the <c>iDirCount</c> field of the file header.
-			</p>
+			<p>The directory table holds all the information about subdirectories and their structure.</p>
+			<p>The number of directories is indicated by the <c>iDirCount</c> field of the file header.</p>
 			<table class="binarymap">
 				<tr>
 					<th>Size</th>
@@ -221,7 +204,7 @@
 					<td>
 						The ID of the parent directory.<br>
 						IDs are assigned implicitly by a directory's position in the file table.
-						IDs are 1-based, a value of 0 indicates that the directory has no parent directory.<br>
+						IDs are 1-based, a value of 0 indicates that the directory has no parent directory and is therefore a direct subdirectory of the root directory.<br>
 						The ID of the parent directory can never be greater than or equal to the current directory's ID.
 					</td>
 				</tr>
@@ -231,11 +214,8 @@
 		
 		<section id="file-table">
 		  <h3>File Table</h3>
-			<p>Right after the directory table comes the file table.</p>
-			<p>
-				The file table holds all the information about files.<br>
-				The number of files is indicated by the <c>iFileCount</c> field of the file header.
-			</p>
+			<p>The file table holds all the information about files.</p>
+			<p>The number of files is indicated by the <c>iFileCount</c> field of the file header.</p>
 			<table class="binarymap">
 				<tr>
 					<th>Size</th>
@@ -272,18 +252,6 @@
 				</tr>
 			</table>
 			<p>All entries are saved right after one another.</p>
-		</section>
-		
-		<section id="remarks">
-			<h2>Remarks</h2>
-			<p>
-				All values are saved in Little Endian.
-			</p>
-			<p>
-				If the <c>PAK_UNICODE</c> flag in the file header is set, strings are stored as <c>wchar_t</c> arrays.
-				A <c>wchar_t</c> is a UTF-16 codeunit (16-bit integer).<br>
-				Otherwise, strings are stored as <c>char</c> arrays.
-			</p>
 		</section>
 		
 		<footer>© <a href="https://www.robinle.de/" target="_blank">Robin Lemanska</a> 2023</footer>

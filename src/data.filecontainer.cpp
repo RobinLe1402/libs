@@ -25,22 +25,15 @@ namespace
 	{
 		char     szMagicNo[16];
 		uint8_t  iFormatVersion[2];
+		uint8_t  iFlags;
+		uint64_t iStringCount;
+		uint64_t iStringTableSize;
+		uint64_t iTotalDataSize;
 		uint64_t iDirCount;
 		uint64_t iFileCount;
 	};
 
 	constexpr uint8_t PAK_STRING_UNICODE = 0x01;
-	struct StringTableHeader
-	{
-		uint64_t iStringCount;
-		uint64_t iStringTableSize;
-		uint8_t  iFlags;
-	};
-
-	struct DataBlockHeader
-	{
-		uint64_t iTotalDataSize;
-	};
 
 	struct DirTableEntry
 	{
@@ -433,68 +426,58 @@ namespace rl
 			// STRING TABLE
 			std::map<size_t, size_t> oStringIndexByOffset; // offset --> index
 			std::vector<std::wstring> oStrings;
+			if (hdr.iStringCount > 0)
 			{
-				StringTableHeader sth{};
-				READVAR(sth);
+				oStrings.reserve(hdr.iStringCount);
 
-				if (sth.iStringCount > 0)
+				// Unicode
+				if (hdr.iFlags & PAK_STRING_UNICODE)
 				{
-					oStrings.reserve(sth.iStringCount);
+					auto up_szStrings =
+						std::make_unique<wchar_t[]>(hdr.iStringTableSize / sizeof(wchar_t));
+					READBIN(up_szStrings.get(), hdr.iStringTableSize);
 
-					// Unicode
-					if (sth.iFlags & PAK_STRING_UNICODE)
+					const wchar_t *sz = up_szStrings.get();
+					for (size_t i = 0; i < hdr.iStringCount; ++i)
 					{
-						auto up_szStrings =
-							std::make_unique<wchar_t[]>(sth.iStringTableSize / sizeof(wchar_t));
-						READBIN(up_szStrings.get(), sth.iStringTableSize);
-
-						const wchar_t *sz = up_szStrings.get();
-						for (size_t i = 0; i < sth.iStringCount; ++i)
-						{
-							std::wstring_view sv = sz;
-							oStrings.push_back(sv.data());
-							oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
-								i;
-							sz += sv.length() + 1;
-						}
+						std::wstring_view sv = sz;
+						oStrings.push_back(sv.data());
+						oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
+							i;
+						sz += sv.length() + 1;
 					}
+				}
 
-					// ASCII
-					else
+				// ASCII
+				else
+				{
+					auto up_szStrings =
+						std::make_unique<char[]>(hdr.iStringTableSize);
+					READBIN(up_szStrings.get(), hdr.iStringTableSize);
+
+					const char *sz = up_szStrings.get();
+					for (size_t i = 0; i < hdr.iStringCount; ++i)
 					{
-						auto up_szStrings =
-							std::make_unique<char[]>(sth.iStringTableSize);
-						READBIN(up_szStrings.get(), sth.iStringTableSize);
-
-						const char *sz = up_szStrings.get();
-						for (size_t i = 0; i < sth.iStringCount; ++i)
+						std::string_view sv = sz;
+						std::wstring s(sv.length(), L'\0');
+						for (size_t i = 0; i < sv.length(); ++i)
 						{
-							std::string_view sv = sz;
-							std::wstring s(sv.length(), L'\0');
-							for (size_t i = 0; i < sv.length(); ++i)
-							{
-								s[i] = sv[i];
-							}
-							oStrings.push_back(std::move(s));
-							oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
-								i;
-							sz += sv.length() + 1;
+							s[i] = sv[i];
 						}
+						oStrings.push_back(std::move(s));
+						oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
+							i;
+						sz += sv.length() + 1;
 					}
 				}
 			}
 
 			// DATA BLOCK
 			std::unique_ptr<uint8_t[]> oData;
+			if (hdr.iTotalDataSize > 0)
 			{
-				DataBlockHeader dbh{};
-				READVAR(dbh);
-
-				if (dbh.iTotalDataSize > 0)
-				{
-					oData = std::make_unique<uint8_t[]>(dbh.iTotalDataSize);
-					READBIN(oData.get(), dbh.iTotalDataSize);
-				}
+				oData = std::make_unique<uint8_t[]>(hdr.iTotalDataSize);
+				READBIN(oData.get(), hdr.iTotalDataSize);
 			}
 
 
@@ -562,16 +545,7 @@ namespace rl
 #define WRITEVAR(var) out.write(reinterpret_cast<const char*>(&var), sizeof(var))
 #define WRITEBIN(pSrc, iSize) out.write(reinterpret_cast<const char*>(pSrc), iSize)
 
-
-			// file header
-			FileHeader hdr{};
-			strcpy_s(hdr.szMagicNo, szMagicNumber);
-			memcpy_s(hdr.iFormatVersion, sizeof(hdr.iFormatVersion),
-				iCurrentVersion, sizeof(iCurrentVersion));
-			hdr.iDirCount  = m_oRootDir.totalDirectoryCount();
-			hdr.iFileCount = m_oRootDir.totalFileCount();
-			WRITEVAR(hdr);
-
+			// get all elements
 
 			std::vector<std::wstring> oStrings;
 			std::vector<TempDir>      oDirs;
@@ -581,26 +555,37 @@ namespace rl
 
 			GetFileContainerElements(0, m_oRootDir, oStrings, oDirs, oFiles);
 
+
+
+			// file header
+			FileHeader hdr{};
+			strcpy_s(hdr.szMagicNo, szMagicNumber);
+			memcpy_s(hdr.iFormatVersion, sizeof(hdr.iFormatVersion),
+				iCurrentVersion, sizeof(iCurrentVersion));
+			hdr.iStringCount = oStrings.size();
+			if (bUnicode)
+				hdr.iFlags |= PAK_STRING_UNICODE;
+			// get total string size
+			for (size_t i = 0; i < oStrings.size(); ++i)
+			{
+				hdr.iStringTableSize += oStrings[i].length() + 1;
+			}
+			if (bUnicode)
+				hdr.iStringTableSize *= sizeof(wchar_t);
+			for (size_t i = 0; i < oFiles.size(); ++i)
+			{
+				hdr.iTotalDataSize += oFiles[i].pFile->size();
+			}
+			hdr.iDirCount  = m_oRootDir.totalDirectoryCount();
+			hdr.iFileCount = m_oRootDir.totalFileCount();
+			WRITEVAR(hdr);
+
 			std::vector<size_t> oStringOffsets;
 			oStringOffsets.reserve(oStrings.size());
 			std::vector<size_t> oFileOffsets;
 			oFileOffsets.reserve(oFiles.size());
 
 			// write string table
-			StringTableHeader sth{};
-			sth.iStringCount = oStrings.size();
-			if (bUnicode)
-				sth.iFlags |= PAK_STRING_UNICODE;
-			// get total string size
-			{
-				for (size_t i = 0; i < oStrings.size(); ++i)
-				{
-					sth.iStringTableSize += oStrings[i].length() + 1;
-				}
-				if (bUnicode)
-					sth.iStringTableSize *= sizeof(wchar_t);
-			}
-			WRITEVAR(sth);
 			const size_t posStrings = out.tellp();
 			for (auto &s : oStrings)
 			{
@@ -619,15 +604,6 @@ namespace rl
 			}
 
 			// write binary data
-			DataBlockHeader dth{};
-			// get total data size
-			{
-				for (size_t i = 0; i < oFiles.size(); ++i)
-				{
-					dth.iTotalDataSize += oFiles[i].pFile->size();
-				}
-			}
-			WRITEVAR(dth);
 			const size_t posData = out.tellp();
 			for (size_t i = 0; i < oFiles.size(); ++i)
 			{

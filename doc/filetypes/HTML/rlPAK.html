@@ -18,10 +18,6 @@
 			<h2>Contents</h2>
 			<a href="#introduction">Introduction</a>
 			<a href="#filestructure">File Structure</a>
-			<a href="#fileheader">File Header</a>
-			<a href="#dir-table">Directory Table</a>
-			<a href="#file-table">File Table</a>
-			<a href="#data">Data</a>
 			<a href="#remarks">Remarks</a>
 		</nav>
 		
@@ -46,6 +42,14 @@
 					<td>General metadata.</td>
 				</tr>
 				<tr>
+					<td><a href="#string-table" class="sectionlink">String Table</a></td>
+					<td>Strings.</td>
+				</tr>
+				<tr>
+					<td><a href="#data" class="sectionlink">Data Block</a></td>
+					<td>The actual data.</td>
+				</tr>
+				<tr>
 					<td><a href="#dir-table" class="sectionlink">Directory Table</a></td>
 					<td>Subdirectories.</td>
 				</tr>
@@ -53,15 +57,11 @@
 					<td><a href="#file-table" class="sectionlink">File Table</a></td>
 					<td>Files.</td>
 				</tr>
-				<tr>
-					<td><a href="#data" class="sectionlink">Data</a></td>
-					<td>The actual data.</td>
-				</tr>
 			</table>
 		</section>
 		
 		<section id="fileheader">
-			<h2>File Header</h2>
+			<h3>File Header</h3>
 			<p>The file header is located right at the beginning of the file.</p>
 			<table class="binarymap">
 				<tr>
@@ -85,29 +85,6 @@
 					<td>The version of the file format. Must be <c>{ 0x01, 0x00 }</c>.</td>
 				</tr>
 				<tr>
-					<td>2 bytes</td>
-					<td class="datatype"><c>uint16_t</c></td>
-					<td class="dataname"><c>iFlags</c></td>
-					<td>
-						Some binary flags regarding the file contents:<br>
-						<table>
-							<tr>
-								<th>Value</th>
-								<th>Meaning</th>
-							</tr>
-							<tr>
-								<td class="flag_id">
-									<c class="flagname">PAK_UNICODE</c>
-									<c class="flagvalue">0x01</c>
-								</td>
-								<td>
-									If this flag is set, the strings in this file are made up of arrays of <c>wchar_t</c> instead of <c>char</c>.
-								</td>
-							</tr>
-						</table>
-					</td>
-				</tr>
-				<tr>
 					<td>8 bytes</td>
 					<td class="datatype"><c>uint64_t</c></td>
 					<td class="dataname"><c>iDirCount</c></td>
@@ -126,9 +103,97 @@
 			</table>
 		</section>
 		
+		<section id="string-table">
+			<h3>String Table</h3>
+			<p>The string table consists of a header and all strings used in the file.</p>
+			<p>Strings are zero-terminated.</p>
+			<p>A single string may be used by multiple items.</p>
+			
+			<h4>The header</h4>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iStringCount</c></td>
+					<td>
+						The count of strings in the string table.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iStringTableSize</c></td>
+					<td>
+						The size, in bytes, of the string table. Does not include this header.
+					</td>
+				</tr>
+				<tr>
+					<td>1 byte</td>
+					<td class="datatype"><c>uint8_t</c></td>
+					<td class="dataname"><c>iFlags</c></td>
+					<td>
+						<table>
+							<tr>
+								<th>Value</th>
+								<th>Meaning</th>
+							</tr>
+							<tr>
+								<td class="flag_id">
+									<c class="flagname">PAK_STRING_UNICODE</c>
+									<c class="flagvalue">0x01</c>
+								</td>
+								<td>
+									The strings are made up of UTF-16 <c>wchar_t</c> values instead of <c>char</c>.
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+			
+			<h4>The strings</h4>
+		  	<p>All strings consist of one or more non-zero characters, followed by a terminating zero.</p>
+		  	<p>The size of a character depends on the <c>PAK_STRING_UNICODE</c> flag.</p>
+			<p>When strings are referenced via an offset, the offset is relative to the start of the string data, right after the string table header.</p>
+			<p>All strings are saved right after one another.</p>
+		</section>
+		
+		<section id="data">
+			<h3>The Data Block</h3>
+			<p>The binary data.</p>
+			<h4>The header</h4>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iTotalDataSize</c></td>
+					<td>
+						The size, in bytes, of all the binary data.
+					</td>
+				</tr>
+			</table>
+			
+			<h4>The data</h4>
+			<p>All the binary data is written as a block of <c>iTotalDataSize</c> bytes.</p>
+			<p>When data is referenced via an offset, the offset is relative to the start of the data block, right after the data header.</p>
+			<p>Offset between data blocks, like for an alignment, is allowed.</p>
+		</section>
+		
 		<section id="dir-table">
-			<h2>Directory Table</h2>
-			<p>Right after the file header comes the directory table.</p>
+			<h3>Directory Table</h3>
+			<p>Right after the string table comes the directory table.</p>
 			<p>
 				The directory table holds all the information about subdirectories and their structure.<br>
 				The number of directories is indicated by the <c>iDirCount</c> field of the file header.
@@ -141,13 +206,12 @@
 					<th>Description</th>
 				</tr>
 				<tr>
-					<td>50/100 bytes</td>
-					<td class="datatype"><c>char[50]</c>/<c>wchar_t[50]</c></td>
-					<td class="dataname"><c>szDirName</c></td>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDirNameOffset</c></td>
 					<td>
-						The name of the subdirectory. Either 50 characters long or terminated by a zero.<br>
-						Must be unique within the parent directory.<br>
-						This value depends on the <c>PAK_UNICODE</c> flag in the file header - either it's an array of <c>wchar_t</c> or an array of <c>char</c>. In any case, the array consists of 50 elements.
+						The string offset of the name of the subdirectory.<br>
+						The name must be unique within the parent directory.
 					</td>
 				</tr>
 				<tr>
@@ -166,7 +230,7 @@
 		</section>
 		
 		<section id="file-table">
-			<h2>File Table</h2>
+		  <h3>File Table</h3>
 			<p>Right after the directory table comes the file table.</p>
 			<p>
 				The file table holds all the information about files.<br>
@@ -180,14 +244,13 @@
 					<th>Description</th>
 				</tr>
 				<tr>
-					<td>50/100 bytes</td>
-					<td class="datatype"><c>char[50]</c>/<c>wchar_t[50]</c></td>
-					<td class="dataname"><c>szFileName</c></td>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iFileNameOffset</c></td>
 					<td>
-						The name of the file. Either 50 characters long or terminated by a zero.<br>
-						Must be unique within the parent directory.<br>
-						This value depends on the <c>PAK_UNICODE</c> flag in the file header - either it's an array of <c>wchar_t</c> or an array of <c>char</c>. In any case, the array consists of 50 elements.
-					</td>
+						The string offset of the name of the file.<br>
+						The name must be unique within the parent directory.
+				  </td>
 				</tr>
 				<tr>
 					<td>8 bytes</td>
@@ -209,11 +272,6 @@
 				</tr>
 			</table>
 			<p>All entries are saved right after one another.</p>
-		</section>
-		
-		<section id="data">
-			<h2>File Data</h2>
-			<p>After the file table comes the actual data from the contained files.</p>
 		</section>
 		
 		<section id="remarks">

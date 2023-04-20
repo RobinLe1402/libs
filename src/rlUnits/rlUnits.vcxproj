@@ -151,7 +151,6 @@
     <ClInclude Include="..\..\include\rl\graphics.opengl.window.hpp" />
     <ClInclude Include="..\..\include\rl\input.keyboard.hpp" />
     <ClInclude Include="..\..\include\rl\input.mouse.hpp" />
-    <ClInclude Include="..\..\include\rl\robinle.global.hpp" />
     <ClInclude Include="..\..\include\rl\runasadmin.hpp" />
     <ClInclude Include="..\..\include\rl\splashscreen.hpp" />
     <ClInclude Include="..\..\include\rl\text.fileio.hpp" />
@@ -181,7 +180,6 @@
     <ClCompile Include="..\graphics.opengl.window.cpp" />
     <ClCompile Include="..\input.keyboard.cpp" />
     <ClCompile Include="..\input.mouse.cpp" />
-    <ClCompile Include="..\robinle.global.cpp" />
     <ClCompile Include="..\runasadmin.cpp" />
     <ClCompile Include="..\splashscreen.cpp" />
     <ClCompile Include="..\text.fileio.cpp" />

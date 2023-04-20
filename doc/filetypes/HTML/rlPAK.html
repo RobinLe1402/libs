@@ -1,0 +1,260 @@
+<!doctype HTML>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href="style/main.css">
+		<link rel="stylesheet" href="style/responsive.css">
+		<title>rlPAK Specification</title>
+	</head>
+	
+	<body>
+		<header>
+			<h1 id="formatname">RobinLe File Containers (.rlPAK)</h1>
+			<p id="formatdescription">A file format for storing multiple files in one.</p>
+		</header>
+		
+		<nav>
+			<h2>Contents</h2>
+			<a href="#introduction">Introduction</a>
+			<a href="#filestructure">File Structure</a>
+		</nav>
+		
+		<section id="introduction">
+			<h2>Introduction</h2>
+			<h3>Idea</h3>
+			<p>
+				<c>.rlPAK</c> files are supposed to simplify handling of many files by packing multiple small files into a single larger one.<br>
+				Please note that it's not intended to compress the saved data. It's a pure container format.
+			</p>
+			
+			<h3>General</h3>
+			<p>All values are saved in Little Endian.</p>
+		</section>
+		
+		<section id="filestructure">
+			<h2>File Structure</h2>
+			<table>
+				<tr>
+					<th>Section</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td><a href="#fileheader" class="sectionlink">File Header</a></td>
+					<td>General metadata.</td>
+				</tr>
+				<tr>
+					<td><a href="#string-table" class="sectionlink">String Table</a></td>
+					<td>Strings used for both subdirectory names and filenames.</td>
+				</tr>
+				<tr>
+					<td><a href="#data" class="sectionlink">Data Block</a></td>
+					<td>The actual data.</td>
+				</tr>
+				<tr>
+					<td><a href="#dir-table" class="sectionlink">Directory Table</a></td>
+					<td>The subdirectory structure.</td>
+				</tr>
+				<tr>
+					<td><a href="#file-table" class="sectionlink">File Table</a></td>
+					<td>Metadata of the virtual files.</td>
+				</tr>
+			</table>
+		</section>
+		
+		<section id="fileheader">
+			<h3>File Header</h3>
+			<p>The file header is located right at the beginning of the file.</p>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>16 bytes</td>
+					<td class="datatype"><c>char[16]</c></td>
+					<td class="dataname"><c>szMagicNo</c></td>
+					<td>
+						The magic number, <c>"rlFILECONTAINER"</c>, including a terminating zero.
+					</td>
+				</tr>
+				<tr>
+					<td>2 bytes</td>
+					<td class="datatype"><c>uint8_t[2]</c></td>
+					<td class="dataname"><c>iFormatVersion</c></td>
+					<td>The version of the file format. Must be <c>{ 0x01, 0x00 }</c>.</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDirCount</c></td>
+					<td>
+						The number of subdirectories defined in this file.<br>
+						All directory IDs must be less than or equal to this value.<br>
+						A value of 0 indicates that all files are located in the root path.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iFileCount</c></td>
+					<td>The number of virtual files included in this file.</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iStringCount</c></td>
+					<td>
+						The count of strings in the string table.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iStringTableSize</c></td>
+					<td>
+						The size, in bytes, of the string table.
+					</td>
+				</tr>
+				<tr>
+					<td>1 byte</td>
+					<td class="datatype"><c>uint8_t</c></td>
+					<td class="dataname"><c>iFlags</c></td>
+					<td>
+						<table>
+							<tr>
+								<th>Value</th>
+								<th>Meaning</th>
+							</tr>
+							<tr>
+								<td class="flag_id">
+									<c class="flagname">PAK_STRING_UNICODE</c>
+									<c class="flagvalue">0x01</c>
+								</td>
+								<td>
+									The strings are made up of UTF-16 <c>wchar_t</c> values instead of <c>char</c>.
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iTotalDataSize</c></td>
+					<td>
+						The size, in bytes, of all the data of all virtual files.
+					</td>
+				</tr>
+			</table>
+		</section>
+		
+		<section id="string-table">
+			<h3>String Table</h3>
+			<p>The string table consists of all strings used in the file.</p>
+			<p>The size of a character depends on the <c>PAK_STRING_UNICODE</c> flag:</p>
+			<ul>
+				<li>If <c>PAK_STRING_UNICODE</c> is set, strings consist of 16-bit <c>wchar_t</c> values (UTF-16 code units).</li>
+				<li>If <c>PAK_STRING_UNICODE</c> is <strong>not</strong> set, strings consist of 8-bit <c>char</c> values (ASCII characters ➝ only 7 bits are used).</li>
+			</ul>
+			<p>
+				Strings consist of at least one character and are always followed by a terminating zero.<br>
+				All strings are saved right after one another.<br>
+				Strings are referenced via their offset from the start of the string table.<br>
+				A single string may be referenced by multiple items, but all references must point to the very first character of the string.
+			</p>
+		</section>
+		
+		<section id="data">
+			<h3>The Data Block</h3>
+			<p>The binary data.</p>
+			<p>
+				<c>iTotalDataSize</c> bytes of data – all the data of the virtual files.<br>
+				Data is referenced via an offset to the start of the data block as well as the size of the data.<br>
+				Padding between the contents of multiple files, like for a certain alignment, is allowed. This padding must then consist of only zero-bytes.
+			</p>
+		</section>
+		
+		<section id="dir-table">
+			<h3>Directory Table</h3>
+			<p>The directory table holds all the information about subdirectories and their structure.</p>
+			<p>The number of directories is indicated by the <c>iDirCount</c> field of the file header.</p>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDirNameOffset</c></td>
+					<td>
+						The string offset of the name of the subdirectory.<br>
+						The name must be unique within the parent directory.
+					</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iParentDirID</c></td>
+					<td>
+						The ID of the parent directory.<br>
+						IDs are assigned implicitly by a directory's position in the file table.
+						IDs are 1-based, a value of 0 indicates that the directory has no parent directory and is therefore a direct subdirectory of the root directory.<br>
+						The ID of the parent directory can never be greater than or equal to the current directory's ID.
+					</td>
+				</tr>
+			</table>
+			<p>All entries are saved right after one another.</p>
+		</section>
+		
+		<section id="file-table">
+		  <h3>File Table</h3>
+			<p>The file table holds all the information about files.</p>
+			<p>The number of files is indicated by the <c>iFileCount</c> field of the file header.</p>
+			<table class="binarymap">
+				<tr>
+					<th>Size</th>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iFileNameOffset</c></td>
+					<td>
+						The string offset of the name of the file.<br>
+						The name must be unique within the parent directory.
+				  </td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iParentDirID</c></td>
+					<td>The ID of the parent directory.</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDataOffset</c></td>
+					<td>The offset from the start of the container file to the actual binary data of this file.</td>
+				</tr>
+				<tr>
+					<td>8 bytes</td>
+					<td class="datatype"><c>uint64_t</c></td>
+					<td class="dataname"><c>iDataSize</c></td>
+					<td>The size, in bytes, of the file's data.</td>
+				</tr>
+			</table>
+			<p>All entries are saved right after one another.</p>
+		</section>
+		
+		<footer>© <a href="https://www.robinle.de/" target="_blank">Robin Lemanska</a> 2023</footer>
+	</body>
+	
+</html>

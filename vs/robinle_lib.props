@@ -32,7 +32,7 @@
       <!-- 64-bit -->
       <AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">$(GitHub_rl_libs)lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
 	  <!-- global -->
-	  <AdditionalDependencies>rlUnitLib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+	  <AdditionalDependencies>rlUnits.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

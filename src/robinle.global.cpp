@@ -24,27 +24,29 @@ namespace rl
 				return false;
 			}
 
-			HKEY hKey;
+			HKEY hKey = NULL;
 			std::wstring sDLLPath;
 			if (rl::Registry::OpenRLKey(rl::Registry::RLKey::User, true, hKey))
 			{
+				rl::UniqueRegistryKey urk = hKey;
 				const auto oVal = rl::Registry::GetValue(hKey, szREGISTRY_VALUE_DLLDIR);
-				if (oVal.tryGetString(sDLLPath, true))
+				if (oVal && oVal.tryGetString(sDLLPath, true))
 					goto lbStringFound;
 			}
 			if (rl::Registry::OpenRLKey(rl::Registry::RLKey::Global, true, hKey))
 			{
+				rl::UniqueRegistryKey urk = hKey;
 				const auto oVal = rl::Registry::GetValue(hKey, szREGISTRY_VALUE_DLLDIR);
-				if (oVal.tryGetString(sDLLPath, true))
+				if (oVal && oVal.tryGetString(sDLLPath, true))
 					goto lbStringFound;
 			}
 
-			MessageBoxA(NULL, "No RobinLe DLL path was defined.\nPlease execute rlConfig.",
+			MessageBoxA(NULL, "No RobinLe DLL path was defined.\nPlease run rlConfig.",
 				szINITIALIZATION_ERROR, MB_ICONERROR | MB_SYSTEMMODAL);
 			return false;
 
 		lbStringFound:
-			if (!SetDllDirectoryW(sDLLPath.c_str()))
+			if (!AddDllDirectory(sDLLPath.c_str()))
 			{
 				std::wstring sMessage = L"Path \"";
 				sMessage += sDLLPath;

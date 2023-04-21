@@ -42,7 +42,7 @@ namespace rl
 			return ElevationResult::Failed;
 
 
-		return execute(szPath, nullptr, nullptr);
+		return execute(szPath, szArgs, szCurrentDir);
 	}
 
 	ElevationResult RunAsAdmin::execute(const wchar_t *szExe, const wchar_t *szArgs,

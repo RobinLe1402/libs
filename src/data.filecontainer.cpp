@@ -7,6 +7,8 @@
 
 // Win32
 #include <Windows.h>
+#include <ShlObj.h>
+#pragma comment(lib, "Shell32.lib")
 
 
 
@@ -17,92 +19,88 @@ namespace
 	constexpr char szMagicNumber[]       = "rlFILECONTAINER";
 	constexpr uint8_t iCurrentVersion[2] ={ 1, 0 };
 
-	constexpr uint16_t iFlag_Unicode = 0x01;
-
 #pragma pack(push, 1)
 
 	struct FileHeader
 	{
 		char     szMagicNo[16];
 		uint8_t  iFormatVersion[2];
-		uint16_t iFlags;
+		uint8_t  iFlags;
+		uint64_t iStringCount;
+		uint64_t iStringTableSize;
+		uint64_t iTotalDataSize;
 		uint64_t iDirCount;
 		uint64_t iFileCount;
 	};
 
-	constexpr size_t iElemNameLen = 50;
+	constexpr uint8_t PAK_STRING_UNICODE = 0x01;
 
-	template <typename TChar>
 	struct DirTableEntry
 	{
-		TChar  szName[iElemNameLen];
-		size_t iParentDirID;
+		uint64_t iStringOffset;
+		uint64_t iParentDirID;
 	};
-	using DirTableEntryA = DirTableEntry<char>;
-	using DirTableEntryW = DirTableEntry<wchar_t>;
 
-	template <typename TChar>
 	struct FileTableEntry
 	{
-		TChar  szName[iElemNameLen];
-		size_t iParentDirID;
-		size_t iDataOffset;
-		size_t iDataSize;
+		uint64_t iStringOffset;
+		uint64_t iParentDirID;
+		uint64_t iDataOffset;
+		uint64_t iDataSize;
 	};
-	using FileTableEntryA = FileTableEntry<char>;
-	using FileTableEntryW = FileTableEntry<wchar_t>;
 
 #pragma pack(pop)
 
 
-	// ! CHECK Directory::saveable() BEFORE USING!
-	template <typename TChar>
-	void SaveToList(const rl::FileContainer::Directory &o, uint64_t iParentDirID,
-		std::vector<DirTableEntry<TChar>> &oDirs,
-		std::vector<FileTableEntry<TChar>> &oFiles,
-		std::vector<const rl::FileContainer::File *> &oFileData)
+	struct TempDir
 	{
-		for (auto &oDir : o.directories())
+		size_t iStringIndex;
+		uint64_t iParentDir;
+	};
+
+	struct TempFile
+	{
+		size_t iStringIndex;
+		uint64_t iParentDir;
+		const rl::FileContainer::File *pFile;
+	};
+
+	void GetFileContainerElements(uint64_t iParentDir, const rl::FileContainer::Directory &oSrc,
+		std::vector<std::wstring> &oStrings, std::vector<TempDir> &oDirs,
+		std::vector<TempFile> &oFiles)
+	{
+		for (auto &itDir : oSrc.directories())
 		{
-			DirTableEntry<TChar> oEntry{};
+			TempDir oDir{};
+			oDir.iParentDir = iParentDir;
 
-			if constexpr (std::is_same<TChar, wchar_t>::value)
-				memcpy_s(oEntry.szName, sizeof(oEntry.szName), oDir.first.c_str(),
-					oDir.first.length() * sizeof(TChar));
-			else if constexpr (std::is_same<TChar, char>::value)
+			const auto itString = std::find(oStrings.begin(), oStrings.end(), itDir.first);
+			if (itString != oStrings.end())
+				oDir.iStringIndex = itString - oStrings.begin();
+			else
 			{
-				for (size_t i = 0; i < oDir.first.length() && i < 50; ++i)
-				{
-					oEntry.szName[i] = static_cast<char>(oDir.first[i]);
-				}
+				oDir.iStringIndex = oStrings.size();
+				oStrings.push_back(itDir.first);
 			}
-
-			oEntry.iParentDirID = iParentDirID;
-
-			oDirs.push_back(std::move(oEntry));
-			SaveToList<TChar>(oDir.second, oDirs.size(), oDirs, oFiles, oFileData);
+			oDirs.push_back(std::move(oDir));
+			GetFileContainerElements(oDirs.size(), itDir.second, oStrings, oDirs, oFiles);
 		}
 
-		for (auto &oFile : o.files())
+		for (auto &itFile : oSrc.files())
 		{
-			FileTableEntry<TChar> oEntry{};
+			TempFile oFile{};
+			oFile.iParentDir = iParentDir;
+			oFile.pFile      = &itFile.second;
 
-			if constexpr (std::is_same<TChar, wchar_t>::value)
-				memcpy_s(oEntry.szName, sizeof(oEntry.szName), oFile.first.c_str(),
-					oFile.first.length() * sizeof(TChar));
-			else if constexpr (std::is_same<TChar, char>::value)
+			const auto itString = std::find(oStrings.begin(), oStrings.end(), itFile.first);
+			if (itString != oStrings.end())
+				oFile.iStringIndex = itString - oStrings.begin();
+			else
 			{
-				for (size_t i = 0; i < oFile.first.length() && i < 50; ++i)
-				{
-					oEntry.szName[i] = static_cast<char>(oFile.first[i]);
-				}
+				oFile.iStringIndex = oStrings.size();
+				oStrings.push_back(itFile.first);
 			}
-
-			oEntry.iParentDirID = iParentDirID;
-			oEntry.iDataSize    = oFile.second.size();
-
-			oFiles.push_back(std::move(oEntry));
-			oFileData.push_back(&oFile.second);
+			oFiles.push_back(std::move(oFile));
 		}
 	}
 
@@ -278,6 +276,61 @@ namespace rl
 		return bResult;
 	}
 
+	bool FileContainer::Directory::extractToDirectory(const wchar_t *szDirPath) const
+	{
+		std::wstring_view svDirPath = szDirPath;
+
+		// try to create root directory
+		{
+			const auto iCreateDirResult = SHCreateDirectory(NULL, szDirPath);
+			switch (iCreateDirResult)
+			{
+			case ERROR_SUCCESS:
+			case ERROR_ALREADY_EXISTS:
+				break;
+
+			default:
+				return false; // couldn't create root directory
+			}
+		}
+
+		std::wstring sDirTrailingDelim = szDirPath;
+		if (!sDirTrailingDelim.ends_with(L"\\") && !sDirTrailingDelim.ends_with(L"/"))
+			sDirTrailingDelim += L'\\';
+
+		bool bAllExtracted = true;
+		for (auto &itFile : m_oFiles)
+		{
+			if (!itFile.second.save((sDirTrailingDelim + itFile.first).c_str()))
+				bAllExtracted = false;
+		}
+
+		for (auto &itDir : m_oSubDirectories)
+		{
+			std::wstring sDirPath = sDirTrailingDelim + itDir.first;
+
+			// try to create directory
+			{
+				const auto iCreateDirResult = SHCreateDirectory(NULL, sDirPath.c_str());
+				switch (iCreateDirResult)
+				{
+				case ERROR_SUCCESS:
+				case ERROR_ALREADY_EXISTS:
+					break;
+
+				default:
+					bAllExtracted = false;
+					continue; // next directory
+				}
+			}
+
+			if (!itDir.second.extractToDirectory(sDirPath.c_str()))
+				bAllExtracted = false;
+		}
+
+		return bAllExtracted;
+	}
+
 	void FileContainer::Directory::clear() noexcept
 	{
 		m_oFiles.clear();
@@ -344,71 +397,13 @@ namespace rl
 		return true;
 	}
 
-	/*void FileContainer::Directory::saveToListsW(uint64_t iParentDirID,
-				std::vector<DirTableEntryW> &oDirs,
-				std::vector<FileTableEntryW> &oFiles,
-				std::vector<const File *> &oFileData) const noexcept
-	{
-		for (auto &oDir : m_oSubDirectories)
-		{
-			DirTableEntryW oEntry{};
-			memcpy_s(oEntry.szName, sizeof(oEntry.szName), oDir.first.c_str(),
-				oDir.first.length() * sizeof(wchar_t));
-			oEntry.iParentDirID = iParentDirID;
-
-			oDirs.push_back(std::move(oEntry));
-			oDir.second.saveToListsW(oDirs.size(), oDirs, oFiles, oFileData);
-		}
-
-		for (auto &oFile : m_oFiles)
-		{
-			FileTableEntryW oEntry{};
-			memcpy_s(oEntry.szName, sizeof(oEntry.szName), oFile.first.c_str(),
-				oFile.first.length() * sizeof(wchar_t));
-			oEntry.iParentDirID = iParentDirID;
-			oEntry.iDataSize    = oFile.second.size();
-
-			oFiles.push_back(std::move(oEntry));
-			oFileData.push_back(&oFile.second);
-		}
-	}
-
-	void FileContainer::Directory::saveToListsA(uint64_t iParentDirID,
-				std::vector<DirTableEntryA> &oDirs,
-				std::vector<FileTableEntryA> &oFiles,
-				std::vector<const File *> &oFileData) const noexcept
-	{
-		for (auto &oDir : m_oSubDirectories)
-		{
-			DirTableEntryA oEntry{};
-			memcpy_s(oEntry.szName, sizeof(oEntry.szName), oDir.first.c_str(),
-				oDir.first.length() * sizeof(char));
-			oEntry.iParentDirID = iParentDirID;
-
-			oDirs.push_back(std::move(oEntry));
-			oDir.second.saveToListsA(oDirs.size(), oDirs, oFiles, oFileData);
-		}
-
-		for (auto &oFile : m_oFiles)
-		{
-			FileTableEntryA oEntry{};
-			memcpy_s(oEntry.szName, sizeof(oEntry.szName), oFile.first.c_str(),
-				oFile.first.length() * sizeof(char));
-			oEntry.iParentDirID = iParentDirID;
-			oEntry.iDataSize    = oFile.second.size();
-
-			oFiles.push_back(std::move(oEntry));
-			oFileData.push_back(&oFile.second);
-		}
-	}*/
-
 
 
 
 
 	bool FileContainer::load(const wchar_t *szPath)
 	{
-		m_oRootDir.clear();
+		clear();
 
 		std::ifstream in(szPath, std::ios::binary);
 		if (!in)
@@ -423,112 +418,103 @@ namespace rl
 			// FILE HEADER
 			FileHeader hdr{};
 			READVAR(hdr);
-
+			if (memcmp(hdr.szMagicNo, szMagicNumber, sizeof(szMagicNumber)) != 0)
+				return false; // wrong magic number
 			if (memcmp(hdr.iFormatVersion, iCurrentVersion, sizeof(iCurrentVersion)) != 0)
 				return false; // unknown file format version
 
-
-			std::unique_ptr<DirTableEntryW[]> up_oDirs;
-			std::unique_ptr<Directory *[]> up_oDirByIndex;
-			if (hdr.iDirCount > 0)
+			// STRING TABLE
+			std::map<size_t, size_t> oStringIndexByOffset; // offset --> index
+			std::vector<std::wstring> oStrings;
+			if (hdr.iStringCount > 0)
 			{
-				up_oDirs       = std::make_unique<DirTableEntryW[]>(hdr.iDirCount);
-				up_oDirByIndex = std::make_unique<Directory * []>(hdr.iDirCount);
+				oStrings.reserve(hdr.iStringCount);
 
-				memset(up_oDirByIndex.get(), 0, hdr.iDirCount * sizeof(up_oDirByIndex[0]));
-			}
-
-			std::unique_ptr<FileTableEntryW[]> up_oFiles;
-			if (hdr.iFileCount > 0)
-				up_oFiles = std::make_unique<FileTableEntryW[]>(hdr.iFileCount);
-
-			if (hdr.iFlags & iFlag_Unicode)
-			{
-				// DIRECTORIES
-				if (hdr.iDirCount > 0)
-					READBIN(up_oDirs.get(), sizeof(DirTableEntryW) * hdr.iDirCount);
-
-				// FILES
-				if (hdr.iFileCount > 0)
-					READBIN(up_oFiles.get(), sizeof(FileTableEntryW) * hdr.iFileCount);
-			}
-			else // ASCII version
-			{
-				// DIRECTORIES
-				if (hdr.iDirCount > 0)
+				// Unicode
+				if (hdr.iFlags & PAK_STRING_UNICODE)
 				{
-					auto up_oDirsA = std::make_unique<DirTableEntryA[]>(hdr.iDirCount);
-					READBIN(up_oDirsA.get(), sizeof(DirTableEntryA) * hdr.iDirCount);
+					auto up_szStrings =
+						std::make_unique<wchar_t[]>(hdr.iStringTableSize / sizeof(wchar_t));
+					READBIN(up_szStrings.get(), hdr.iStringTableSize);
 
-					for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
+					const wchar_t *sz = up_szStrings.get();
+					for (size_t i = 0; i < hdr.iStringCount; ++i)
 					{
-						auto &oDest = up_oDirs[iDir];
-						auto &oSrc  = up_oDirsA[iDir];
-
-						oDest.iParentDirID = oSrc.iParentDirID;
-						for (size_t iChar = 0; iChar < iElemNameLen; ++iChar)
-						{
-							oDest.szName[iChar] = oSrc.szName[iChar];
-						}
+						std::wstring_view sv = sz;
+						oStrings.push_back(sv.data());
+						oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
+							i;
+						sz += sv.length() + 1;
 					}
 				}
-								
-				// FILES
-				if (hdr.iFileCount > 0)
-				{
-					auto up_oFilesA = std::make_unique<FileTableEntryA[]>(hdr.iDirCount);
-					READBIN(up_oFilesA.get(), sizeof(FileTableEntryA) * hdr.iDirCount);
 
-					for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
-					{
-						auto &oDest = up_oFiles[iDir];
-						auto &oSrc  = up_oFilesA[iDir];
-
-						oDest.iParentDirID = oSrc.iParentDirID;
-						oDest.iDataOffset  = oSrc.iDataOffset;
-						oDest.iDataSize    = oSrc.iDataSize;
-						for (size_t iChar = 0; iChar < iElemNameLen; ++iChar)
-						{
-							oDest.szName[iChar] = oSrc.szName[iChar];
-						}
-					}
-				}
-			}
-
-			// create directories
-			for (size_t iDir = 0; iDir < hdr.iDirCount; ++iDir)
-			{
-				auto &oDir = up_oDirs[iDir];
-				if (oDir.iParentDirID > 0 && oDir.iParentDirID >= iDir)
-					return false; // invalid parent directory ID
-
-				wchar_t szName[51]{};
-				memcpy_s(szName, sizeof(szName), oDir.szName, sizeof(oDir.szName));
-
-				if (oDir.iParentDirID == 0)
-					up_oDirByIndex[iDir] = &m_oRootDir.directories()[szName];
+				// ASCII
 				else
-					up_oDirByIndex[iDir] =
-					&up_oDirByIndex[oDir.iParentDirID]->directories()[szName];
+				{
+					auto up_szStrings =
+						std::make_unique<char[]>(hdr.iStringTableSize);
+					READBIN(up_szStrings.get(), hdr.iStringTableSize);
+
+					const char *sz = up_szStrings.get();
+					for (size_t i = 0; i < hdr.iStringCount; ++i)
+					{
+						std::string_view sv = sz;
+						std::wstring s(sv.length(), L'\0');
+						for (size_t i = 0; i < sv.length(); ++i)
+						{
+							s[i] = sv[i];
+						}
+						oStrings.push_back(std::move(s));
+						oStringIndexByOffset[((uintptr_t)sz - (uintptr_t)up_szStrings.get())] =
+							i;
+						sz += sv.length() + 1;
+					}
+				}
 			}
 
-			// read actual data
+			// DATA BLOCK
+			std::unique_ptr<uint8_t[]> oData;
+			if (hdr.iTotalDataSize > 0)
+			{
+				oData = std::make_unique<uint8_t[]>(hdr.iTotalDataSize);
+				READBIN(oData.get(), hdr.iTotalDataSize);
+			}
+
+
+			// prepare for reading directories/files
+			std::vector<Directory *> oDirByIndex;
+			oDirByIndex.reserve(hdr.iDirCount + 1);
+			oDirByIndex.push_back(&m_oRootDir);
+
+			// DIR TABLE
+			// for-loop is 1-based because [0] is root directory
+			for (size_t iDir = 1; iDir <= hdr.iDirCount; ++iDir)
+			{
+				DirTableEntry dte{};
+				READVAR(dte);
+
+				if (dte.iParentDirID >= iDir)
+					return false; // invalid parent directory
+
+				oDirByIndex.push_back(
+					&oDirByIndex[dte.iParentDirID]->directories()[
+						oStrings[oStringIndexByOffset.at(dte.iStringOffset)]]);
+			}
+
+			// FILE TABLE
 			for (size_t iFile = 0; iFile < hdr.iFileCount; ++iFile)
 			{
-				auto &oFile = up_oFiles[iFile];
+				FileTableEntry fte{};
+				READVAR(fte);
 
-				wchar_t szName[51]{};
-				memcpy_s(szName, sizeof(szName), oFile.szName, sizeof(oFile.szName));
+				if (fte.iParentDirID > hdr.iDirCount)
+					return false; // invalid parent directory ID
 
-				File *pFile;
-
-				if (oFile.iParentDirID == 0)
-					pFile = &m_oRootDir.files()[szName];
-				else
-					pFile = &up_oDirByIndex[oFile.iParentDirID - 1]->files()[szName];
-
-				pFile->create(oFile.iDataSize, false);
-				READBIN(pFile->data(), pFile->size());
+				File oFile;
+				oFile.create(fte.iDataSize);
+				memcpy_s(oFile.data(), oFile.size(), oData.get() + fte.iDataOffset, fte.iDataSize);
+				oDirByIndex[fte.iParentDirID]->files()[
+					oStrings[oStringIndexByOffset.at(fte.iStringOffset)]] = std::move(oFile);
 			}
 
 #undef READVAR
@@ -536,7 +522,7 @@ namespace rl
 		}
 		catch (...)
 		{
-			m_oRootDir.clear();
+			clear();
 			return false;
 		}
 
@@ -559,90 +545,94 @@ namespace rl
 #define WRITEVAR(var) out.write(reinterpret_cast<const char*>(&var), sizeof(var))
 #define WRITEBIN(pSrc, iSize) out.write(reinterpret_cast<const char*>(pSrc), iSize)
 
+			// get all elements
+
+			std::vector<std::wstring> oStrings;
+			std::vector<TempDir>      oDirs;
+			std::vector<TempFile>     oFiles;
+			oDirs.reserve(m_oRootDir.totalDirectoryCount());
+			oFiles.reserve(m_oRootDir.totalFileCount());
+
+			GetFileContainerElements(0, m_oRootDir, oStrings, oDirs, oFiles);
+
+
 
 			// file header
 			FileHeader hdr{};
 			strcpy_s(hdr.szMagicNo, szMagicNumber);
 			memcpy_s(hdr.iFormatVersion, sizeof(hdr.iFormatVersion),
 				iCurrentVersion, sizeof(iCurrentVersion));
+			hdr.iStringCount = oStrings.size();
 			if (bUnicode)
-				hdr.iFlags |= iFlag_Unicode;
+				hdr.iFlags |= PAK_STRING_UNICODE;
+			// get total string size
+			for (size_t i = 0; i < oStrings.size(); ++i)
+			{
+				hdr.iStringTableSize += oStrings[i].length() + 1;
+			}
+			if (bUnicode)
+				hdr.iStringTableSize *= sizeof(wchar_t);
+			for (size_t i = 0; i < oFiles.size(); ++i)
+			{
+				hdr.iTotalDataSize += oFiles[i].pFile->size();
+			}
 			hdr.iDirCount  = m_oRootDir.totalDirectoryCount();
 			hdr.iFileCount = m_oRootDir.totalFileCount();
 			WRITEVAR(hdr);
 
+			std::vector<size_t> oStringOffsets;
+			oStringOffsets.reserve(oStrings.size());
+			std::vector<size_t> oFileOffsets;
+			oFileOffsets.reserve(oFiles.size());
 
-			std::vector<const File *> oData;
-			std::vector<size_t> oOffsets;
-
-
-			if (bUnicode)
+			// write string table
+			const size_t posStrings = out.tellp();
+			for (auto &s : oStrings)
 			{
-				size_t iOffsetOffset;
+				oStringOffsets.push_back((size_t)out.tellp() - posStrings);
+				if (bUnicode)
+					WRITEBIN(s.c_str(), (s.length() + 1) * sizeof(wchar_t));
+				else
 				{
-					FileTableEntryW dte{};
-					iOffsetOffset = sizeof(dte) - ((intptr_t)&dte.iDataOffset - (intptr_t)&dte);
-				}
-				std::vector<DirTableEntryW>  oDirs;
-				std::vector<FileTableEntryW> oFiles;
+					auto upString = std::make_unique<char[]>(s.length() + 1);
+					for (size_t i = 0; i < s.length(); ++i)
+						upString[i] = (char)s[i];
+					upString[s.length()] = 0; // terminating zero
 
-				SaveToList<wchar_t>(m_oRootDir, 0, oDirs, oFiles, oData);
-
-				// directory table
-				for (auto &oDir : oDirs)
-				{
-					WRITEVAR(oDir);
-				}
-
-				// file table
-				for (auto &oFile : oFiles)
-				{
-					WRITEVAR(oFile);
-					oOffsets.push_back(static_cast<size_t>(out.tellp()) - iOffsetOffset);
+					WRITEBIN(upString.get(), s.length() + 1);
 				}
 			}
 
-			else
+			// write binary data
+			const size_t posData = out.tellp();
+			for (size_t i = 0; i < oFiles.size(); ++i)
 			{
-				size_t iOffsetOffset;
-				{
-					FileTableEntryA dte{};
-					iOffsetOffset = sizeof(dte) - ((intptr_t)&dte.iDataOffset - (intptr_t)&dte);
-				}
-				std::vector<DirTableEntryA>  oDirs;
-				std::vector<FileTableEntryA> oFiles;
-				SaveToList<char>(m_oRootDir, 0, oDirs, oFiles, oData);
-
-				// directory table
-				for (auto &oDir : oDirs)
-				{
-					WRITEVAR(oDir);
-				}
-
-				// file table
-				for (auto &oFile : oFiles)
-				{
-					WRITEVAR(oFile);
-					oOffsets.push_back(static_cast<size_t>(out.tellp()) - iOffsetOffset);
-				}
+				oFileOffsets.push_back((size_t)out.tellp() - posData);
+				WRITEBIN(oFiles[i].pFile->data(), oFiles[i].pFile->size());
 			}
 
-
-			// file data
-			for (size_t i = 0; i < oData.size(); ++i)
+			// write directory table
+			DirTableEntry dte{};
+			for (auto &oDir : oDirs)
 			{
-				const auto oOffset = out.tellp();
-				const auto iOffset = static_cast<size_t>(oOffset);
-
-				// set offset in file table entry
-				out.seekp(oOffsets[i], std::ios::beg);
-				WRITEVAR(iOffset);
-
-				// write file data
-				out.seekp(oOffset);
-				WRITEBIN(oData[i]->data(), oData[i]->size());
+				dte.iParentDirID  = oDir.iParentDir;
+				dte.iStringOffset = oStringOffsets[oDir.iStringIndex];
+				WRITEVAR(dte);
 			}
 
+			// write file table
+			FileTableEntry fte{};
+			for (size_t iFile = 0; iFile < oFiles.size(); ++iFile)
+			{
+				auto &oFile = oFiles[iFile];
+
+				fte.iStringOffset = oStringOffsets[oFile.iStringIndex];
+				fte.iParentDirID  = oFile.iParentDir;
+				fte.iDataOffset   = oFileOffsets[iFile];
+				fte.iDataSize     = oFile.pFile->size();
+
+				WRITEVAR(fte);
+			}
 
 #undef WRITEVAR
 #undef WRITEBIN

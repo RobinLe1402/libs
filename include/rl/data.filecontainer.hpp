@@ -80,6 +80,7 @@ namespace rl
 		public: // methods
 
 			bool addDirectoryContents(const wchar_t *szDirPath, bool bRecursive);
+			bool extractToDirectory(const wchar_t *szDirPath) const;
 
 			void clear() noexcept;
 
@@ -111,8 +112,10 @@ namespace rl
 		bool load(const wchar_t *szPath);
 		bool save(const wchar_t *szPath, bool bUnicode) const;
 
-		auto &data()       { return m_oRootDir; }
-		auto &data() const { return m_oRootDir; }
+		auto &rootDir()       { return m_oRootDir; }
+		auto &rootDir() const { return m_oRootDir; }
+
+		void clear() { m_oRootDir.clear(); }
 
 
 	private: // variables

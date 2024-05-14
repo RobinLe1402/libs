@@ -1,5 +1,8 @@
 ﻿# RobinLe Libraries
-This repository is my main code base I'm constantly working on expanding and improving.
+This repository used to be my main code base. It contains several useful modules I might either extract or remake as their own static/dynamic library at one point.
+
+> [!IMPORTANT]  
+> Note that I stopped working with this codebase years ago. It only exists as a reference for new versions of the contained modules I might create in the future.
 
 
 ## Directory structure
@@ -27,7 +30,7 @@ Further info about the directory structure and contents are available in `readme
 ## Executable downloads
 Since this repository is the home of a multiple of unrelated applications and the GitHub release feed is not too good for this purpose, I outsourced downloads of executables to my own website.
 
-[Download executables here](https://download.robinle.de/github/libs/)
+~~Download executables here~~ (the executables are no longer available for download)
 
 
 ## Documentation
@@ -42,7 +45,7 @@ These are the ways I document my code in the moment:
 Mostly XML documentation (`summary`, `param`, `returns` etc.), but also regular comments (mostly with "internal" code)
 
 ### The GitHub wiki
-I try to maintain the [wiki of this repo](https://lnk.robinle.de/git/libs/wiki), though most of the time I'm not invested enough to update it as it seems to be the most tedious type of documentation to me.
+I try to maintain the [wiki of this repo](https://github.com/RobinLe1402/libs/wiki), though most of the time I'm not invested enough to update it as it seems to be the most tedious type of documentation to me.
  
 ### In `readme.md` files
 I put `readme.md` files in some directories containing more general documentation about their content.

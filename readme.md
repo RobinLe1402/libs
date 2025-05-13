@@ -45,7 +45,7 @@ These are the ways I document my code in the moment:
 Mostly XML documentation (`summary`, `param`, `returns` etc.), but also regular comments (mostly with "internal" code)
 
 ### The GitHub wiki
-I try to maintain the [wiki of this repo](https://github.com/RobinLe1402/libs/wiki), though most of the time I'm not invested enough to update it as it seems to be the most tedious type of documentation to me.
+I try to maintain the [wiki of this repo](https://rle.sh/git/libs/wiki), though most of the time I'm not invested enough to update it as it seems to be the most tedious type of documentation to me.
  
 ### In `readme.md` files
 I put `readme.md` files in some directories containing more general documentation about their content.
